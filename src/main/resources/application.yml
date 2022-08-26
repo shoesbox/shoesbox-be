@@ -1,0 +1,42 @@
+spring:
+  profiles:
+    include: keys
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
+  datasource:
+    url: jdbc:h2:mem:testdb
+    #    url: jdbc:h2:./testdb;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+#    username:
+#    password:
+  jpa:
+    hibernate.ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        check_nullability: true
+    defer-datasource-initialization: true
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+  servlet:
+    multipart:
+      maxFileSize: 10MB
+      maxRequestSize: 50MB
+
+logging:
+  level:
+    com.sparta.velog: debug
+    org:
+      hibernate:
+        type:
+          descriptor:
+            sql: trace
+            BasicBinder: trace
