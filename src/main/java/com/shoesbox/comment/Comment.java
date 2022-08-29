@@ -30,4 +30,11 @@ public class Comment {
         this.userId = commentRequestDto.getUserId();
         this.postId = postId;
     }
+
+    public String getUsername(){
+        return this.username;
+    }
+    public String getContent(){
+        return this.content;
+    }
 }
