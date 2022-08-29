@@ -37,4 +37,9 @@ public class Comment {
     public String getContent(){
         return this.content;
     }
+
+    public void update(CommentRequestDto commentRequestDto){
+        this.username = commentRequestDto.getUsername();
+        this.content = commentRequestDto.getContent();
+    }
 }
