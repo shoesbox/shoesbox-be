@@ -42,4 +42,13 @@ public class CommentService {
 
         return "댓글 수정 성공";
     }
+
+    @Transactional
+    public String deleteComment(Long postId, Long commentId){
+        Comment comment = commentRepository.findByIdAndPostId(commentId, postId).orElseThrow(
+                () -> new IllegalArgumentException("해당 게시글 혹은 댓글이 존재하지 않음"));
+
+        commentRepository.delete(comment);
+        return "댓글 삭제 성공";
+    }
 }
