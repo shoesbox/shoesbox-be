@@ -23,4 +23,11 @@ public class Comment {
 
     @Column(nullable = false)
     private Long postId;
+
+    public Comment(Long postId, CommentRequestDto commentRequestDto){
+        this.username = commentRequestDto.getUsername();
+        this.content = commentRequestDto.getContent();
+        this.userId = commentRequestDto.getUserId();
+        this.postId = postId;
+    }
 }
