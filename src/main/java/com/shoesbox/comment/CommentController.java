@@ -21,4 +21,10 @@ public class CommentController {
     public CommentRequestDto createComment(@PathVariable Long postId, @Valid @RequestBody CommentRequestDto commentRequestDto){
         return commentService.createComment(postId, commentRequestDto);
     }
+
+    @PutMapping("/{postId}/comments/{commentId}")
+    public String updateComment(@PathVariable("postId") Long postId, @PathVariable("commentId") Long commentId,
+                                @Valid @RequestBody CommentRequestDto commentRequestDto){
+        return commentService.updateComment(postId, commentId, commentRequestDto);
+    }
 }
