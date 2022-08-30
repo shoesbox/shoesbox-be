@@ -5,11 +5,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @NoArgsConstructor
-@Entity
+@Entity(name = "post")
 public class Post extends Timestamped{
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,7 +36,7 @@ public class Post extends Timestamped{
     private int day;
 
     @Column(nullable = true)
-    private List<String> images;
+    private List<String> images = new ArrayList<>();
 
     @Builder
     public Post(String contents, ...){
