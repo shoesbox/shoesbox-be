@@ -13,7 +13,7 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping("/{postId}/comments")
-    public List<CommentResponseDto> readComment(@PathVariable Long postId){
+    public List<Comment> readComment(@PathVariable Long postId){
         return commentService.readComment(postId);
     }
 
