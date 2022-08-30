@@ -14,15 +14,8 @@ public class CommentService {
     private final CommentRepository commentRepository;
 
     @Transactional
-    public List<CommentResponseDto> readComment(Long postId){
-        List<CommentResponseDto> commentList = new ArrayList<>();
-
-        List<Comment> comments = commentRepository.findAllByPostId(postId);
-        for(Comment comment : comments){
-            CommentResponseDto commentResponseDto = new CommentResponseDto(comment.getUsername(), comment.getContent());
-            commentList.add(commentResponseDto);
-        }
-        return commentList;
+    public List<Comment> readComment(Long postId){
+        return commentRepository.findAllByPostId(postId);
     }
 
     @Transactional

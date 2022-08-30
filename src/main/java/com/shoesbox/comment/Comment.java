@@ -1,15 +1,16 @@
 package com.shoesbox.comment;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
+@Getter
 @NoArgsConstructor
 @Entity(name="comment")
 public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column
     private Long id;
 
     @Column(nullable = false)
@@ -29,13 +30,6 @@ public class Comment {
         this.content = commentRequestDto.getContent();
         this.userId = commentRequestDto.getUserId();
         this.postId = postId;
-    }
-
-    public String getUsername(){
-        return this.username;
-    }
-    public String getContent(){
-        return this.content;
     }
 
     public void update(CommentRequestDto commentRequestDto){
