@@ -28,7 +28,7 @@ public class CommentService {
 
     @Transactional
     public String updateComment(Long postId, Long commentId, CommentRequestDto commentRequestDto){
-        Comment comment = commentRepository.findByIdAndPostId(commentId, postId).orElseThrow(
+        Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new IllegalArgumentException("해당 게시글 혹은 댓글이 존재하지 않음"));
 
         comment.update(commentRequestDto);
@@ -38,7 +38,7 @@ public class CommentService {
 
     @Transactional
     public String deleteComment(Long postId, Long commentId){
-        Comment comment = commentRepository.findByIdAndPostId(commentId, postId).orElseThrow(
+        Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new IllegalArgumentException("해당 게시글 혹은 댓글이 존재하지 않음"));
 
         commentRepository.delete(comment);
