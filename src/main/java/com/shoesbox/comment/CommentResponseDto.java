@@ -1,0 +1,22 @@
+package com.shoesbox.comment;
+
+import lombok.Builder;
+import lombok.Getter;
+
+@Getter
+public class CommentResponseDto {
+    private Long commentId;
+    private String nickname;
+    private String content;
+    private Long postId;
+    private Long userId;
+
+    @Builder
+    public CommentResponseDto(Comment comment){
+        this.commentId = comment.getId();
+        this.nickname = comment.getNickname();
+        this.content = comment.getContent();
+        this.postId = comment.getPostId();
+        this.userId = comment.getMemberId();
+    }
+}

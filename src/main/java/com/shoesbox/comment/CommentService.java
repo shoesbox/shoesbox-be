@@ -14,8 +14,15 @@ public class CommentService {
     private final CommentRepository commentRepository;
 
     @Transactional
-    public List<Comment> readComment(Long postId){
-        return commentRepository.findAllByPostId(postId);
+    public List<CommentResponseDto> readComment(Long postId){
+        List<CommentResponseDto> commentList = new ArrayList<>();
+        List<Comment> comments = commentRepository.findAllByPostId(postId);
+
+        for(Comment comment:comments){
+            CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
+            commentList.add(commentResponseDto);
+        }
+        return commentList;
     }
 
     @Transactional
@@ -27,7 +34,7 @@ public class CommentService {
     }
 
     @Transactional
-    public String updateComment(Long postId, Long commentId, CommentRequestDto commentRequestDto){
+    public String updateComment(Long commentId, CommentRequestDto commentRequestDto){
         Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new IllegalArgumentException("해당 게시글 혹은 댓글이 존재하지 않음"));
 
@@ -37,7 +44,7 @@ public class CommentService {
     }
 
     @Transactional
-    public String deleteComment(Long postId, Long commentId){
+    public String deleteComment(Long commentId){
         Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new IllegalArgumentException("해당 게시글 혹은 댓글이 존재하지 않음"));
 
