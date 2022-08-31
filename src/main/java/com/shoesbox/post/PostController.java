@@ -9,12 +9,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/posts")
 public class PostController {
     private final PostService postService;
-    private final PostRepository postRepository;
 
     @PostMapping
-    public String createPost(@RequestBody PostRequestDto postRequestDto){
-        this.postService.createPost(postRequestDto);
-        return "redirect:/post";
+    public Post createPost(@RequestBody PostRequestDto postRequestDto){
+        return this.postService.createPost(postRequestDto);
     }
 
 }

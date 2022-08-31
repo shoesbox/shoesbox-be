@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -36,11 +35,11 @@ public class Post extends Timestamped {
     @Column(nullable = false)
     private int day;
 
-    @Column(nullable = true)
-    private List<String> images = new ArrayList<>();
+    @Column
+    private String images;
 
     @Builder
-    public Post(String title, String content, boolean is_private, int year, int month, int day, List<String> images) {
+    public Post(String title, String content, boolean is_private, int year, int month, int day, String images) {
         Assert.hasText(title, "title must not be empty");
 
         this.title = title;
