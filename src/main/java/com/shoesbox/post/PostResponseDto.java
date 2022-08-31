@@ -11,10 +11,10 @@ public class PostResponseDto {
     private Long post_id;
     private String title;
     private String content;
-    private boolean is_private;
-    private int year;
-    private int month;
-    private int day;
+    private String is_private;
+    private String  year;
+    private String  month;
+    private String day;
     private String images;
 
 
@@ -24,14 +24,12 @@ public class PostResponseDto {
     @Builder
     public PostResponseDto(Post post){
         this.post_id = post.getId();
-        this.title = post.getTitle();
-        this.content = post.getContent();
-        this.is_private = post.is_private();
-        this.year = post.getYear();
-        this.month = post.getMonth();
-        this.day = post.getDay();
-        this.images = post.getImages();
+//        this.title = post.getTitle();
+//        this.content = post.getContent();
+//        this.year = post.getYear();
+//        this.month = post.getMonth();
+//        this.day = post.getDay();
+//        this.images = post.getImages();
         this.modifiedAt = post.getModifiedAt();
-
     }
 }

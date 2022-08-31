@@ -8,8 +8,5 @@ import lombok.ToString;
 public class PostRequestDto {
     private String title;
     private String content;
-    private boolean is_private;
-    private int year;
-    private int month;
-    private int day;
+    private String images;
 }

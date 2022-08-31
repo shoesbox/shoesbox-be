@@ -30,15 +30,11 @@ public class PostService {
     // 생성
     @Transactional
     public Post createPost(PostRequestDto dto){
-        Post post = Post.builder()
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .is_private(dto.is_private())
-                .year(dto.getYear())
-                .month(dto.getMonth())
-                .day(dto.getDay())
-                .build();
-        postRepository.save(post);
-        return post;
+//        Post post = Post.builder()
+//                .title(dto.getTitle())
+//                .content(dto.getContent())
+//                .build();
+//        postRepository.save(post);
+        return null;
     }
 }

@@ -6,11 +6,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.List;
+
 
 @Getter
 @NoArgsConstructor
-@Entity(name = "post")
+@Entity
+@Table(name = "posts")
 public class Post extends Timestamped {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,31 +25,27 @@ public class Post extends Timestamped {
     private String content;
 
     @Column(nullable = false)
-    private boolean is_private;
+    private boolean isPrivate;
 
     @Column(nullable = false)
-    private int year;
+    private int createdYear;
 
     @Column(nullable = false)
-    private int month;
+    private int createdMonth;
 
     @Column(nullable = false)
-    private int day;
+    private int createdDay;
 
     @Column
     private String images;
 
     @Builder
-    public Post(String title, String content, boolean is_private, int year, int month, int day, String images) {
+    public Post(String title, String content) {
         Assert.hasText(title, "title must not be empty");
 
         this.title = title;
         this.content = content;
-        this.is_private = is_private;
-        this.year = year;
-        this.month = month;
-        this.day = day;
-        this.images = images;
+
     }
 
 
