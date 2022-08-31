@@ -22,11 +22,9 @@ public class Comment {
     @Column(nullable = false)
     private String content;
 
-    @NotBlank
     @Column(nullable = false)
     private Long memberId;
 
-    @NotBlank
     @Column(nullable = false)
     private Long postId;
 
@@ -38,7 +36,6 @@ public class Comment {
     }
 
     public void update(CommentRequestDto commentRequestDto){
-        this.nickname = commentRequestDto.getNickname();
         this.content = commentRequestDto.getContent();
     }
 }

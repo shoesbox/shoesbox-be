@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -26,27 +27,27 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentRequestDto createComment(Long postId, CommentRequestDto commentRequestDto){
+    public Optional<Comment> createComment(Long postId, CommentRequestDto commentRequestDto){
         Comment comment = new Comment(postId, commentRequestDto);
         commentRepository.save(comment);
 
-        return commentRequestDto;
+        return commentRepository.findById(comment.getId());
     }
 
     @Transactional
-    public String updateComment(Long commentId, CommentRequestDto commentRequestDto){
+    public Optional<Comment> updateComment(Long commentId, CommentRequestDto commentRequestDto){
         Comment comment = commentRepository.findById(commentId).orElseThrow(
-                () -> new IllegalArgumentException("해당 게시글 혹은 댓글이 존재하지 않음"));
+                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
 
         comment.update(commentRequestDto);
 
-        return "댓글 수정 성공";
+        return commentRepository.findById(comment.getId());
     }
 
     @Transactional
     public String deleteComment(Long commentId){
         Comment comment = commentRepository.findById(commentId).orElseThrow(
-                () -> new IllegalArgumentException("해당 게시글 혹은 댓글이 존재하지 않음"));
+                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
 
         commentRepository.delete(comment);
         return "댓글 삭제 성공";

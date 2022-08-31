@@ -1,10 +1,13 @@
 package com.shoesbox.comment;
 
+import com.shoesbox.global.common.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
@@ -18,17 +21,19 @@ public class CommentController {
     }
 
     @PostMapping("/{postId}")
-    public CommentRequestDto createComment(@PathVariable Long postId, @Valid @RequestBody CommentRequestDto commentRequestDto){
-        return commentService.createComment(postId, commentRequestDto);
+    public ResponseEntity<ResponseWrapper<Optional<Comment>>> createComment(@PathVariable Long postId,
+                                                 @Valid @RequestBody CommentRequestDto commentRequestDto){
+        return ResponseWrapper.ok(commentService.createComment(postId, commentRequestDto));
     }
 
     @PutMapping("/{commentId}")
-    public String updateComment(@PathVariable("commentId") Long commentId, @Valid @RequestBody CommentRequestDto commentRequestDto){
-        return commentService.updateComment(commentId, commentRequestDto);
+    public ResponseEntity<ResponseWrapper<Optional<Comment>>> updateComment(@PathVariable("commentId") Long commentId,
+                                                                            @Valid @RequestBody CommentRequestDto commentRequestDto){
+        return ResponseWrapper.ok(commentService.updateComment(commentId, commentRequestDto));
     }
 
     @DeleteMapping("/{commentId}")
-    public String deleteComment(@PathVariable("commentId") Long commentId){
-        return commentService.deleteComment(commentId);
+    public ResponseEntity<ResponseWrapper<String>> deleteComment(@PathVariable("commentId") Long commentId){
+        return ResponseWrapper.ok(commentService.deleteComment(commentId));
     }
 }
