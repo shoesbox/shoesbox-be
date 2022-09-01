@@ -37,6 +37,9 @@ dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     compileOnly 'com.auth0:java-jwt:4.0.0'
 
+    //파일 처리 관련
+    implementation 'commons-io:commons-io:2.6'
+
 }
 
 tasks.named('test') {

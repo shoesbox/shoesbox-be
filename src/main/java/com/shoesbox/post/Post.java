@@ -1,16 +1,19 @@
 package com.shoesbox.post;
 
+import com.shoesbox.photo.Photo;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Getter
 @NoArgsConstructor
 @Entity
-@Table(name = "posts")
+@Table(name = "post")
 public class Post extends Timestamped {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +38,9 @@ public class Post extends Timestamped {
     @Column
     private String images;
 
+    @Column
+    private List<Photo> photo = new ArrayList<>();
+
     @Builder
     public Post(String title, String content, String images) {
         this.title = title;
@@ -46,6 +52,14 @@ public class Post extends Timestamped {
         this.title = title;
         this.content = content;
         this.images = images;
+    }
+
+    public void addPhoto(Photo photo) {
+        this.photo.add(photo);
+
+        if (photo.getPost() != this) {
+            photo.setPost(this);
+        }
     }
 
 
