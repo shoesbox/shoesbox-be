@@ -42,6 +42,12 @@ public class Post extends Timestamped {
         this.images = images;
     }
 
+    public void update(String title, String content, String images) {
+        this.title = title;
+        this.content = content;
+        this.images = images;
+    }
+
 
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "FK_user_post"))

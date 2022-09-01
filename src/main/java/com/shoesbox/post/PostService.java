@@ -32,21 +32,30 @@ public class PostService {
         Post post = postRepository.findById(post_id).orElseThrow(
                 () -> new NullPointerException()
         );
-        PostResponseDto postResponseDto = PostResponseDto.builder()
+        return PostResponseDto.builder()
                 .post(post)
                 .build();
-        return postResponseDto;
     }
 
     // 생성
     @Transactional
-    public Post createPost(PostRequestDto dto) {
+    public PostResponseDto createPost(PostRequestDto dto) {
         Post post = Post.builder()
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .images(dto.getImages())
                 .build();
         postRepository.save(post);
-        return post;
+        return PostResponseDto.builder().post(post).build();
+    }
+
+    @Transactional
+    public PostResponseDto updatePost(Long post_id, PostRequestDto postRequestDto) {
+        Post post = postRepository.findById(post_id).orElseThrow(
+                () -> new NullPointerException()
+        );
+        post.update(postRequestDto.getTitle(), postRequestDto.getContent(), postRequestDto.getImages());
+        postRepository.save(post);
+        return PostResponseDto.builder().post(post).build();
     }
 }

@@ -12,7 +12,7 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping
-    public Post createPost(@RequestBody PostRequestDto postRequestDto) {
+    public PostResponseDto createPost(@RequestBody PostRequestDto postRequestDto) {
         return this.postService.createPost(postRequestDto);
     }
 
@@ -24,6 +24,11 @@ public class PostController {
     @GetMapping("/{post_id}")
     public PostResponseDto getPost(@PathVariable Long post_id) {
         return postService.getPost(post_id);
+    }
+
+    @PutMapping("/{post_id}")
+    public PostResponseDto updatePost(@PathVariable Long post_id, @RequestBody PostRequestDto postRequestDto) {
+        return this.postService.updatePost(post_id, postRequestDto);
     }
 
 }
