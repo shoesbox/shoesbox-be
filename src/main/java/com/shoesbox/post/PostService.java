@@ -13,11 +13,11 @@ public class PostService {
     private final PostRepository postRepository;
 
     // 전체 조회
-    public List<PostResponseDto> getPostList(){
+    public List<PostResponseDto> getPostList() {
         List<Post> posts = postRepository.findAll();
         List<PostResponseDto> postList = new ArrayList<>();
 
-        for(Post post : posts){
+        for (Post post : posts) {
             PostResponseDto postResponseDto = PostResponseDto.builder()
                     .post(post)
                     .build();
@@ -29,12 +29,13 @@ public class PostService {
 
     // 생성
     @Transactional
-    public Post createPost(PostRequestDto dto){
-//        Post post = Post.builder()
-//                .title(dto.getTitle())
-//                .content(dto.getContent())
-//                .build();
-//        postRepository.save(post);
-        return null;
+    public Post createPost(PostRequestDto dto) {
+        Post post = Post.builder()
+                .title(dto.getTitle())
+                .content(dto.getContent())
+                .images(dto.getImages())
+                .build();
+        postRepository.save(post);
+        return post;
     }
 }

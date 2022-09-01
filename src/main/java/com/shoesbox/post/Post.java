@@ -1,6 +1,5 @@
 package com.shoesbox.post;
 
-import io.jsonwebtoken.lang.Assert;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,9 +24,6 @@ public class Post extends Timestamped {
     private String content;
 
     @Column(nullable = false)
-    private boolean isPrivate;
-
-    @Column(nullable = false)
     private int createdYear;
 
     @Column(nullable = false)
@@ -40,12 +36,10 @@ public class Post extends Timestamped {
     private String images;
 
     @Builder
-    public Post(String title, String content) {
-        Assert.hasText(title, "title must not be empty");
-
+    public Post(String title, String content, String images) {
         this.title = title;
         this.content = content;
-
+        this.images = images;
     }
 
 

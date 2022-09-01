@@ -11,25 +11,29 @@ public class PostResponseDto {
     private Long post_id;
     private String title;
     private String content;
-    private String is_private;
-    private String  year;
-    private String  month;
-    private String day;
+    private int year;
+    private int month;
+    private int day;
     private String images;
 
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime modifiedAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
+
+
     @Builder
-    public PostResponseDto(Post post){
+    public PostResponseDto(Post post) {
         this.post_id = post.getId();
-//        this.title = post.getTitle();
-//        this.content = post.getContent();
-//        this.year = post.getYear();
-//        this.month = post.getMonth();
-//        this.day = post.getDay();
-//        this.images = post.getImages();
+        this.title = post.getTitle();
+        this.content = post.getContent();
+        this.year = post.getCreatedYear();
+        this.month = post.getCreatedMonth();
+        this.day = post.getCreatedDay();
+        this.images = post.getImages();
         this.modifiedAt = post.getModifiedAt();
+        this.createdAt = post.getCreatedAt();
     }
 }

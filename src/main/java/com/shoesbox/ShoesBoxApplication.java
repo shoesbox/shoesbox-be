@@ -22,7 +22,7 @@ public class ShoesBoxApplication {
     @Bean
     public CommandLineRunner demo(PostRepository repository) {
         return (args) -> {
-            Post post1 = new Post("제목1", "내용1"); // 생성
+            Post post1 = new Post("제목1", "내용1", "사진1"); // 생성
             repository.save(post1); // 삽입
 
             List<Post> postList = repository.findAll(); // 조회
@@ -30,6 +30,7 @@ public class ShoesBoxApplication {
                 Post p = postList.get(i);
                 System.out.println(p.getTitle());
                 System.out.println(p.getContent());
+                System.out.println(p.getImages());
             }
         };
     }
