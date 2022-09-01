@@ -27,6 +27,17 @@ public class PostService {
         return postList;
     }
 
+    // 상세 조회
+    public PostResponseDto getPost(Long post_id) {
+        Post post = postRepository.findById(post_id).orElseThrow(
+                () -> new NullPointerException()
+        );
+        PostResponseDto postResponseDto = PostResponseDto.builder()
+                .post(post)
+                .build();
+        return postResponseDto;
+    }
+
     // 생성
     @Transactional
     public Post createPost(PostRequestDto dto) {

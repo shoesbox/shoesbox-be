@@ -21,4 +21,9 @@ public class PostController {
         return this.postService.getPostList();
     }
 
+    @GetMapping("/{post_id}")
+    public PostResponseDto getPost(@PathVariable Long post_id) {
+        return postService.getPost(post_id);
+    }
+
 }

@@ -11,7 +11,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @Entity
 @Table(name = "posts")
-public class Post {
+public class Post extends Timestamped {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
