@@ -52,7 +52,7 @@ public class PostService {
     @Transactional
     public PostResponseDto updatePost(Long post_id, PostRequestDto postRequestDto) {
         Post post = postRepository.findById(post_id).orElseThrow(
-                () -> new NullPointerException()
+                () -> new IllegalArgumentException("수정하려는 해당 게시물이 존재하지 않습니다.")
         );
         post.update(postRequestDto.getTitle(), postRequestDto.getContent(), postRequestDto.getImages());
         postRepository.save(post);
@@ -60,12 +60,12 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponseDto deletePost(Long post_id) throws NullPointerException {
+    public String deletePost(Long post_id) {
         Post post = postRepository.findById(post_id).orElseThrow(
-                () -> new NullPointerException()
+                () -> new IllegalArgumentException("삭제하려는 해당 게시물이 존재하지 않습니다.")
         );
         postRepository.deleteById(post_id);
-        return PostResponseDto.builder().post(post).build();
+        return "게시물 삭제 성공";
 
     }
 }
