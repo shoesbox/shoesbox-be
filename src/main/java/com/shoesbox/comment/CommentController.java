@@ -27,7 +27,7 @@ public class CommentController {
     }
 
     @PutMapping("/{commentId}")
-    public ResponseEntity<ResponseWrapper<Optional<Comment>>> updateComment(@PathVariable("commentId") Long commentId,
+    public ResponseEntity<ResponseWrapper<CommentResponseDto>> updateComment(@PathVariable("commentId") Long commentId,
                                                                             @Valid @RequestBody CommentRequestDto commentRequestDto){
         return ResponseWrapper.ok(commentService.updateComment(commentId, commentRequestDto));
     }

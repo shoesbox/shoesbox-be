@@ -34,13 +34,17 @@ public class CommentService {
     }
 
     @Transactional
-    public Optional<Comment> updateComment(Long commentId, CommentRequestDto commentRequestDto){
+    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto){
         Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
 
         comment.update(commentRequestDto);
 
-        return commentRepository.findById(comment.getId());
+        // 수정 확인용
+        comment = commentRepository.findById(commentId).orElseThrow(
+                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
+        CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
+        return commentResponseDto;
     }
 
     @Transactional
