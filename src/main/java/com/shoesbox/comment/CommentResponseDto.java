@@ -9,7 +9,7 @@ public class CommentResponseDto {
     private String nickname;
     private String content;
     private Long postId;
-    private Long userId;
+    private Long memberId;
 
     @Builder
     public CommentResponseDto(Comment comment){
@@ -17,6 +17,6 @@ public class CommentResponseDto {
         this.nickname = comment.getNickname();
         this.content = comment.getContent();
         this.postId = comment.getPostId();
-        this.userId = comment.getMemberId();
+        this.memberId = comment.getMemberId();
     }
 }

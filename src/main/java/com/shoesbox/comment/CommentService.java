@@ -27,11 +27,13 @@ public class CommentService {
     }
 
     @Transactional
-    public Optional<Comment> createComment(Long postId, CommentRequestDto commentRequestDto){
+    public CommentResponseDto createComment(Long postId, CommentRequestDto commentRequestDto){
         Comment comment = new Comment(postId, commentRequestDto);
         commentRepository.save(comment);
 
-        return commentRepository.findById(comment.getId());
+        CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
+
+        return commentResponseDto;
     }
 
     @Transactional

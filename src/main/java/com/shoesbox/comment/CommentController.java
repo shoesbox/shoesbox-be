@@ -15,13 +15,13 @@ import java.util.Optional;
 public class CommentController {
     private final CommentService commentService;
 
-    @GetMapping("/posts/{postId}")
-    public List<CommentResponseDto> readComment(@PathVariable Long postId){
-        return commentService.readComment(postId);
+    @GetMapping("/{postId}")
+    public ResponseEntity<ResponseWrapper<List<CommentResponseDto>>> readComment(@PathVariable Long postId){
+        return ResponseWrapper.ok(commentService.readComment(postId));
     }
 
     @PostMapping("/{postId}")
-    public ResponseEntity<ResponseWrapper<Optional<Comment>>> createComment(@PathVariable Long postId,
+    public ResponseEntity<ResponseWrapper<CommentResponseDto>> createComment(@PathVariable Long postId,
                                                  @Valid @RequestBody CommentRequestDto commentRequestDto){
         return ResponseWrapper.ok(commentService.createComment(postId, commentRequestDto));
     }
