@@ -1,5 +1,7 @@
 package com.shoesbox.comment;
 
+import com.shoesbox.post.Post;
+import com.shoesbox.post.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,23 +14,18 @@ import java.util.Optional;
 @Service
 public class CommentService {
 
+    private final PostRepository postRepository;
     private final CommentRepository commentRepository;
 
     @Transactional
     public List<CommentResponseDto> readComment(Long postId){
-        List<CommentResponseDto> commentList = new ArrayList<>();
-        List<Comment> comments = commentRepository.findAllByPostId(postId);
-
-        for(Comment comment:comments){
-            CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
-            commentList.add(commentResponseDto);
-        }
-        return commentList;
+        return getCommentList(postId);
     }
 
     @Transactional
     public CommentResponseDto createComment(Long postId, CommentRequestDto commentRequestDto){
-        Comment comment = new Comment(postId, commentRequestDto);
+        Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+        Comment comment = new Comment(commentRequestDto, post);
         commentRepository.save(comment);
 
         CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
@@ -53,5 +50,16 @@ public class CommentService {
 
         commentRepository.delete(comment);
         return "댓글 삭제 성공";
+    }
+
+    public List<CommentResponseDto> getCommentList(Long postId){
+        List<CommentResponseDto> commentList = new ArrayList<>();
+        List<Comment> comments = commentRepository.findAllByPostId(postId);
+
+        for(Comment comment:comments){
+            CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
+            commentList.add(commentResponseDto);
+        }
+        return commentList;
     }
 }

@@ -1,5 +1,6 @@
 package com.shoesbox.post;
 
+import com.shoesbox.comment.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @Service
 public class PostService {
     private final PostRepository postRepository;
+    private final CommentService commentService;
 
     // 전체 조회
     public List<PostResponseDto> getPostList() {
@@ -20,6 +22,7 @@ public class PostService {
         for (Post post : posts) {
             PostResponseDto postResponseDto = PostResponseDto.builder()
                     .post(post)
+                    .comment(commentService.getCommentList(post.getId()))
                     .build();
             postList.add(postResponseDto);
         }

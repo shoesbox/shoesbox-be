@@ -1,10 +1,12 @@
 package com.shoesbox.post;
 
+import com.shoesbox.comment.Comment;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.List;
 
 
 @Getter
@@ -35,11 +37,16 @@ public class Post {
     @Column
     private String images;
 
+    @OneToMany
+    @JoinColumn(name="post_id")
+    private List<Comment> comment;
+
     @Builder
-    public Post(String title, String content, String images) {
+    public Post(String title, String content, String images, List<Comment> comment) {
         this.title = title;
         this.content = content;
         this.images = images;
+        this.comment = comment;
     }
 
 
