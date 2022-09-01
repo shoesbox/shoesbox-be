@@ -58,4 +58,14 @@ public class PostService {
         postRepository.save(post);
         return PostResponseDto.builder().post(post).build();
     }
+
+    @Transactional
+    public PostResponseDto deletePost(Long post_id) throws NullPointerException {
+        Post post = postRepository.findById(post_id).orElseThrow(
+                () -> new NullPointerException()
+        );
+        postRepository.deleteById(post_id);
+        return PostResponseDto.builder().post(post).build();
+
+    }
 }
