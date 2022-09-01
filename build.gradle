@@ -36,6 +36,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
     implementation 'commons-codec:commons-codec:1.15'
     compileOnly 'com.auth0:java-jwt:4.0.0'
+
 }
 
 tasks.named('test') {
