@@ -1,5 +1,6 @@
 package com.shoesbox.post;
 
+import com.shoesbox.global.exception.runtime.PostNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +31,7 @@ public class PostService {
     // 상세 조회
     public PostResponseDto getPost(Long post_id) {
         Post post = postRepository.findById(post_id).orElseThrow(
-                () -> new NullPointerException()
+                () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
         );
         return PostResponseDto.builder()
                 .post(post)
@@ -52,7 +53,7 @@ public class PostService {
     @Transactional
     public PostResponseDto updatePost(Long post_id, PostRequestDto postRequestDto) {
         Post post = postRepository.findById(post_id).orElseThrow(
-                () -> new IllegalArgumentException("수정하려는 해당 게시물이 존재하지 않습니다.")
+                () -> new PostNotFoundException("수정하려는 해당 게시물이 존재하지 않습니다.")
         );
         post.update(postRequestDto.getTitle(), postRequestDto.getContent(), postRequestDto.getImages());
         postRepository.save(post);
@@ -62,7 +63,7 @@ public class PostService {
     @Transactional
     public String deletePost(Long post_id) {
         Post post = postRepository.findById(post_id).orElseThrow(
-                () -> new IllegalArgumentException("삭제하려는 해당 게시물이 존재하지 않습니다.")
+                () -> new PostNotFoundException("삭제하려는 해당 게시물이 존재하지 않습니다.")
         );
         postRepository.deleteById(post_id);
         return "게시물 삭제 성공";
