@@ -1,10 +1,13 @@
 package com.shoesbox.post;
 
+import com.shoesbox.comment.Comment;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.List;
 
 
 @Getter
@@ -15,6 +18,7 @@ public class Post {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
+    @Setter
     private Long id;
 
     @Column(nullable = false)
@@ -34,6 +38,9 @@ public class Post {
 
     @Column
     private String images;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
+    private List<Comment> comments;
 
     @Builder
     public Post(String title, String content, String images) {

@@ -1,5 +1,6 @@
 package com.shoesbox.comment;
 
+import com.shoesbox.post.Post;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -25,14 +26,18 @@ public class Comment {
     @Column(nullable = false)
     private Long memberId;
 
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
+
+    @Column(name = "post_id", updatable = false, insertable = false)
     private Long postId;
 
-    public Comment(Long postId, CommentRequestDto commentRequestDto){
+    public Comment(CommentRequestDto commentRequestDto, Post post){
         this.nickname = commentRequestDto.getNickname();
         this.content = commentRequestDto.getContent();
         this.memberId = commentRequestDto.getMemberId();
-        this.postId = postId;
+        this.post = post;
     }
 
     public void update(CommentRequestDto commentRequestDto){

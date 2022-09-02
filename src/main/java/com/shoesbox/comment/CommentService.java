@@ -1,12 +1,12 @@
 package com.shoesbox.comment;
 
+import com.shoesbox.post.Post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -14,7 +14,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<CommentResponseDto> readComment(Long postId){
         List<CommentResponseDto> commentList = new ArrayList<>();
         List<Comment> comments = commentRepository.findAllByPostId(postId);
@@ -28,7 +28,9 @@ public class CommentService {
 
     @Transactional
     public CommentResponseDto createComment(Long postId, CommentRequestDto commentRequestDto){
-        Comment comment = new Comment(postId, commentRequestDto);
+        Post post = new Post();
+        post.setId(postId);
+        Comment comment = new Comment(commentRequestDto, post);
         commentRepository.save(comment);
 
         CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
@@ -37,13 +39,17 @@ public class CommentService {
     }
 
     @Transactional
-    public Optional<Comment> updateComment(Long commentId, CommentRequestDto commentRequestDto){
+    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto){
         Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
 
         comment.update(commentRequestDto);
 
-        return commentRepository.findById(comment.getId());
+        // 수정 확인용
+        comment = commentRepository.findById(commentId).orElseThrow(
+                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
+        CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
+        return commentResponseDto;
     }
 
     @Transactional
