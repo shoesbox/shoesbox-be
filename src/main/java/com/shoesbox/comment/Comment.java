@@ -26,9 +26,12 @@ public class Comment {
     @Column(nullable = false)
     private Long memberId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
+
+    @Column(name = "post_id", updatable = false, insertable = false)
+    private Long postId;
 
     public Comment(CommentRequestDto commentRequestDto, Post post){
         this.nickname = commentRequestDto.getNickname();

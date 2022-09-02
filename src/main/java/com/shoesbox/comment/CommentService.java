@@ -1,30 +1,35 @@
 package com.shoesbox.comment;
 
 import com.shoesbox.post.Post;
-import com.shoesbox.post.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
 public class CommentService {
 
-    private final PostRepository postRepository;
     private final CommentRepository commentRepository;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<CommentResponseDto> readComment(Long postId){
-        return getCommentList(postId);
+        List<CommentResponseDto> commentList = new ArrayList<>();
+        List<Comment> comments = commentRepository.findAllByPostId(postId);
+
+        for(Comment comment:comments){
+            CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
+            commentList.add(commentResponseDto);
+        }
+        return commentList;
     }
 
     @Transactional
     public CommentResponseDto createComment(Long postId, CommentRequestDto commentRequestDto){
-        Post post = postRepository.findById(postId).orElseThrow(() -> new IllegalArgumentException("해당 게시글이 존재하지 않습니다."));
+        Post post = new Post();
+        post.setId(postId);
         Comment comment = new Comment(commentRequestDto, post);
         commentRepository.save(comment);
 
@@ -54,16 +59,5 @@ public class CommentService {
 
         commentRepository.delete(comment);
         return "댓글 삭제 성공";
-    }
-
-    public List<CommentResponseDto> getCommentList(Long postId){
-        List<CommentResponseDto> commentList = new ArrayList<>();
-        List<Comment> comments = commentRepository.findAllByPostId(postId);
-
-        for(Comment comment:comments){
-            CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
-            commentList.add(commentResponseDto);
-        }
-        return commentList;
     }
 }

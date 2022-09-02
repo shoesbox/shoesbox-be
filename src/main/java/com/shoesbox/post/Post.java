@@ -4,6 +4,7 @@ import com.shoesbox.comment.Comment;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.List;
@@ -17,6 +18,7 @@ public class Post {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
+    @Setter
     private Long id;
 
     @Column(nullable = false)
@@ -37,16 +39,14 @@ public class Post {
     @Column
     private String images;
 
-    @OneToMany
-    @JoinColumn(name="post_id")
-    private List<Comment> comment;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
+    private List<Comment> comments;
 
     @Builder
-    public Post(String title, String content, String images, List<Comment> comment) {
+    public Post(String title, String content, String images) {
         this.title = title;
         this.content = content;
         this.images = images;
-        this.comment = comment;
     }
 
 
