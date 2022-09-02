@@ -3,8 +3,8 @@ package com.shoesbox.post;
 import com.shoesbox.global.exception.runtime.PostNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +13,7 @@ import java.util.List;
 public class PostService {
     private final PostRepository postRepository;
 
+    @Transactional(readOnly = true)
     // 전체 조회
     public List<PostResponseDto> getPostList() {
         List<Post> posts = postRepository.findAll();
@@ -29,6 +30,7 @@ public class PostService {
     }
 
     // 상세 조회
+    @Transactional(readOnly = true)
     public PostResponseDto getPost(Long post_id) {
         Post post = postRepository.findById(post_id).orElseThrow(
                 () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
