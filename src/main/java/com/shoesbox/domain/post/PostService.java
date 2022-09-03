@@ -49,7 +49,7 @@ public class PostService {
 
         List<CommentResponseDto> commentList = new ArrayList<>();
         for (Comment comment : post.getComments()) {
-            commentList.add(new CommentResponseDto(comment));
+            commentList.add(CommentService.toCommentResponseDto(comment, post.getMemberId(), post.getId()));
         }
         return commentList;
     }

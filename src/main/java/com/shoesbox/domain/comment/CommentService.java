@@ -65,8 +65,7 @@ public class CommentService {
                 .orElseThrow(
                         () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
 
-        Post post = comment.getPost();
-        if (post.getMemberId() != currentMemberId) {
+        if (comment.getMemberId() != currentMemberId) {
             throw new UnAuthorizedException("본인이 작성한 댓글만 수정 가능합니다.");
         }
 
