@@ -1,21 +1,23 @@
-package com.shoesbox.post;
+package com.shoesbox.domain.post;
 
-import com.shoesbox.comment.Comment;
+import com.shoesbox.domain.comment.Comment;
+import com.shoesbox.domain.member.Member;
+import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 import java.util.List;
 
 
 @Getter
 @NoArgsConstructor
 @Entity
-@Table(name = "posts")
-public class Post {
-
+@Table(name = "post")
+public class Post extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Setter
@@ -26,6 +28,9 @@ public class Post {
 
     @Column(nullable = false)
     private String content;
+
+    @Column(nullable = false)
+    private String author;
 
     @Column(nullable = false)
     private int createdYear;
@@ -39,14 +44,28 @@ public class Post {
     @Column
     private String images;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
+    // 작성자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+    // 작성자 PK (읽기전용으로만 사용할 것)
+    @Column(name = "member_id", updatable = false, insertable = false)
+    private Long memberId;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post",
+            cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
 
     @Builder
-    public Post(String title, String content, String images) {
+    private Post(String title, String content, String author, String images, Member member) {
         this.title = title;
         this.content = content;
+        this.author = author;
         this.images = images;
+        this.member = member;
+        this.createdYear = LocalDate.now().getYear();
+        this.createdMonth = LocalDate.now().getMonthValue();
+        this.createdDay = LocalDate.now().getDayOfMonth();
     }
 
 

@@ -1,4 +1,4 @@
-package com.shoesbox.post;
+package com.shoesbox.domain.post;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

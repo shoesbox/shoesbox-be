@@ -10,24 +10,24 @@ import org.springframework.http.ResponseEntity;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
-public class ResponseWrapper<T> {
+public class ResponseHandler {
     private boolean success;
-    private T data;
+    private Object data;
     private ApiError errorDetails;
 
-    public static <T> ResponseEntity<ResponseWrapper<T>> ok(T data) {
-        return ResponseEntity.ok(ResponseWrapper.<T>builder()
+    public static ResponseEntity<Object> ok(Object data) {
+        return ResponseEntity.ok(ResponseHandler.builder()
                 .success(true)
                 .data(data)
                 .errorDetails(null)
                 .build());
     }
 
-    public static <T> ResponseWrapper<T> fail(ApiError apiError) {
-        return ResponseWrapper.<T>builder()
+    public static ResponseEntity<Object> fail(ApiError apiError) {
+        return new ResponseEntity<>(ResponseHandler.builder()
                 .success(false)
                 .data(null)
                 .errorDetails(apiError)
-                .build();
+                .build(), apiError.getStatus());
     }
 }

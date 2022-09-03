@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Set;
 
 @Data
-@JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.CUSTOM, property = "error", visible = true)
+@JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.CUSTOM, property = "error",
+        visible = true)
 @JsonTypeIdResolver(LowerCaseClassNameResolver.class)
 public class ApiError {
 
@@ -53,7 +54,9 @@ public class ApiError {
         this.status = status;
         this.httpStatusCode = status.value();
         this.message = message;
-        this.debugMessage = ex.getLocalizedMessage();
+        if (!message.equals(ex.getLocalizedMessage())) {
+            this.debugMessage = ex.getLocalizedMessage();
+        }
     }
 
     private void addSubError(ApiSubError subError) {
