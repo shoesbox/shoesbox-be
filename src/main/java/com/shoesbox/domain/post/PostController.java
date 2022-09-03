@@ -1,4 +1,4 @@
-package com.shoesbox.post;
+package com.shoesbox.domain.post;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

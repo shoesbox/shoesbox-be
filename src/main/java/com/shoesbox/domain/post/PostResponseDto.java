@@ -1,7 +1,7 @@
-package com.shoesbox.post;
+package com.shoesbox.domain.post;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.shoesbox.comment.CommentResponseDto;
+import com.shoesbox.domain.comment.CommentResponseDto;
 import lombok.Builder;
 import lombok.Getter;
 

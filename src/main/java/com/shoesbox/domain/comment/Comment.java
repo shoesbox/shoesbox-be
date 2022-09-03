@@ -1,6 +1,7 @@
-package com.shoesbox.comment;
+package com.shoesbox.domain.comment;
 
-import com.shoesbox.post.Post;
+import com.shoesbox.domain.post.Post;
+import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,7 +11,7 @@ import javax.validation.constraints.NotBlank;
 @Getter
 @NoArgsConstructor
 @Entity(name="comment")
-public class Comment {
+public class Comment extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

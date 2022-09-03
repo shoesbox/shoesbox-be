@@ -1,4 +1,4 @@
-package com.shoesbox.post;
+package com.shoesbox.domain.post;
 
 import lombok.Getter;
 import lombok.ToString;

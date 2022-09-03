@@ -1,7 +1,7 @@
-package com.shoesbox.post;
+package com.shoesbox.domain.post;
 
-import com.shoesbox.comment.Comment;
-import com.shoesbox.comment.CommentResponseDto;
+import com.shoesbox.domain.comment.Comment;
+import com.shoesbox.domain.comment.CommentResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

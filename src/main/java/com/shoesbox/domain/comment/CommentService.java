@@ -1,6 +1,6 @@
-package com.shoesbox.comment;
+package com.shoesbox.domain.comment;
 
-import com.shoesbox.post.Post;
+import com.shoesbox.domain.post.Post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

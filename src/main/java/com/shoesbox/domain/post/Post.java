@@ -1,6 +1,7 @@
-package com.shoesbox.post;
+package com.shoesbox.domain.post;
 
-import com.shoesbox.comment.Comment;
+import com.shoesbox.domain.comment.Comment;
+import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +14,8 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @Entity
-@Table(name = "posts")
-public class Post {
+@Table(name = "post")
+public class Post extends BaseTimeEntity {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
