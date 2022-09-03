@@ -1,5 +1,9 @@
 package com.shoesbox.global.config;
 
+import com.shoesbox.global.security.jwt.JwtAccessDeniedHandler;
+import com.shoesbox.global.security.jwt.JwtAuthenticationEntryPoint;
+import com.shoesbox.global.security.jwt.JwtFilter;
+import com.shoesbox.global.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +15,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -23,9 +28,9 @@ import java.util.List;
 @EnableWebSecurity
 @Configuration
 public class SecurityConfig {
-    // private final TokenProvider tokenProvider;
-    // private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    // private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final TokenProvider tokenProvider;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
@@ -63,11 +68,11 @@ public class SecurityConfig {
                 // cors 필터 적용
                 .cors().configurationSource(corsConfigurationSource())
 
-                // // 예외처리에 직접 구현한 클래스들을 사용하도록 추가
-                // .and()
-                // .exceptionHandling()
-                // .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                // .accessDeniedHandler(jwtAccessDeniedHandler)
+                // 예외처리에 직접 구현한 클래스들을 사용하도록 추가
+                .and()
+                .exceptionHandling()
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .accessDeniedHandler(jwtAccessDeniedHandler)
 
                 // 스프링 시큐리티는 기본적으로 세션을 사용
                 // 세션을 사용하지 않기 때문에 STATELESS로 설정
@@ -86,10 +91,11 @@ public class SecurityConfig {
                 // .antMatchers(HttpMethod.POST, "/api/posts/**").hasAnyAuthority("ROLE_USER")
 
                 // 나머지는 전부 인증 필요
-                .anyRequest().authenticated();
+                .anyRequest().authenticated()
 
-        // // JwtFilter 를 addFilterBefore 로 등록했던 JwtSecurityConfig 클래스를 적용
-        // .and()
+                // JwtFilter 를 addFilterBefore 로 등록했던 JwtSecurityConfig 클래스를 적용
+                .and()
+                .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
         // .apply(new JwtSecurityConfig(tokenProvider));
 
         return httpSecurity.build();
