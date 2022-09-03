@@ -2,6 +2,7 @@ package com.shoesbox.domain.post;
 
 import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.comment.CommentResponseDto;
+import com.shoesbox.domain.comment.CommentService;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.dto.PostListResponseDto;
 import com.shoesbox.domain.post.dto.PostRequestDto;
@@ -21,8 +22,9 @@ public class PostService {
     private final PostRepository postRepository;
 
     // 전체 조회
-    public Page<PostListResponseDto> getPostList(Pageable pageable) {
-        return postRepository.findAll(pageable).map(PostService::toPostListResponseDto);
+    @Transactional(readOnly = true)
+    public Page<PostListResponseDto> getPostList(Pageable pageable, long memberId, int year, int month) {
+        return postRepository.findByMemberIdAndCreatedYearAndCreatedMonth(pageable, memberId, year, month).map(PostService::toPostListResponseDto);
     }
 
     // 생성
