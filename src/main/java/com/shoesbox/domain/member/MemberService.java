@@ -3,10 +3,18 @@ package com.shoesbox.domain.member;
 import com.shoesbox.domain.auth.RefreshToken;
 import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
+import com.shoesbox.domain.auth.TokenRequestDto;
 import com.shoesbox.domain.member.dto.MemberInfoDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.global.exception.runtime.DuplicateUserInfoException;
+import com.shoesbox.global.exception.runtime.InvalidJWTException;
+import com.shoesbox.global.exception.runtime.RefreshTokenNotFoundException;
+import com.shoesbox.global.security.CustomUserDetails;
+import com.shoesbox.global.security.jwt.ExceptionCode;
 import com.shoesbox.global.security.jwt.TokenProvider;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -102,5 +110,54 @@ public class MemberService {
                 .profileImageUrl("Url")
                 .selfDescription("Hi")
                 .build();
+    }
+
+    @Transactional
+    public TokenDto renewToken(TokenRequestDto tokenRequestDto) {
+        // 1. Refresh Token 검증
+        try {
+            tokenProvider.validateToken(tokenRequestDto.getRefreshToken());
+        } catch (SecurityException | MalformedJwtException e) {
+            log.info(ExceptionCode.INVALID_SIGNATURE_TOKEN.getMessage());
+            throw new InvalidJWTException(ExceptionCode.INVALID_SIGNATURE_TOKEN.getMessage());
+        } catch (ExpiredJwtException e) {
+            log.info(ExceptionCode.EXPIRED_TOKEN.getMessage());
+            throw new InvalidJWTException(ExceptionCode.EXPIRED_TOKEN.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.info(ExceptionCode.UNSUPPORTED_TOKEN.getMessage());
+            throw new InvalidJWTException(ExceptionCode.UNSUPPORTED_TOKEN.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.info(ExceptionCode.WRONG_TOKEN.getMessage());
+            throw new InvalidJWTException(ExceptionCode.WRONG_TOKEN.getMessage());
+        } catch (Exception e) {
+            log.info(ExceptionCode.UNKNOWN_ERROR.getMessage());
+            throw new InvalidJWTException(ExceptionCode.UNKNOWN_ERROR.getMessage());
+        }
+
+        // 2. Access Token 에서 userId(PK) 가져오기
+        Authentication authentication = tokenProvider.getAuthentication(tokenRequestDto.getAccessToken());
+        var userDetails = (CustomUserDetails) authentication.getPrincipal();
+        var userId = userDetails.getMemberId();
+
+        // 3. 리프레쉬 토큰 저장소에서 userId(PK) 를 기반으로 토큰 가져옴
+        RefreshToken savedRefreshToken =
+                refreshTokenRepository.findById(userId).orElseThrow(() -> new RefreshTokenNotFoundException("로그아웃 된 " +
+                        "사용자입니다."));
+
+        // 4. Refresh Token 일치하는지 검사
+        if (!savedRefreshToken.getTokenValue().equals(tokenRequestDto.getRefreshToken())) {
+            throw new InvalidJWTException("토큰의 유저 정보가 일치하지 않습니다.");
+        }
+        // 리프레쉬 토큰 만료시간 검증 필요
+
+        // 5. Access Token 에서 가져온 userId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성
+        TokenDto tokenDto = tokenProvider.createTokenDto(authentication, userId);
+
+        // 6. db의 리프레쉬 토큰 정보 업데이트
+        RefreshToken newRefreshToken = savedRefreshToken.withTokenValue(tokenDto.getRefreshToken());
+        refreshTokenRepository.save(newRefreshToken);
+
+        // 토큰 발급
+        return tokenDto;
     }
 }
