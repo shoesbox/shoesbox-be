@@ -1,6 +1,6 @@
 package com.shoesbox.global.exception;
 
-import com.shoesbox.global.common.ResponseWrapper;
+import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.exception.apierror.ApiError;
 import com.shoesbox.global.exception.runtime.*;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +24,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import javax.validation.ConstraintViolationException;
 import java.util.Arrays;
 
 import static org.springframework.http.HttpStatus.*;
@@ -53,7 +54,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .message(error)
                 .ex(ex)
                 .build();
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+        return ResponseHandler.fail(apiError);
     }
 
     /**
@@ -77,7 +78,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .message(error)
                 .ex(ex)
                 .build();
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+        return ResponseHandler.fail(apiError);
     }
 
     /**
@@ -105,7 +106,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .message(builder.substring(0, builder.length() - 2))
                 .ex(ex)
                 .build();
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+        return ResponseHandler.fail(apiError);
     }
 
     /**
@@ -130,7 +131,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .build();
         apiError.addValidationErrors(ex.getBindingResult().getFieldErrors());
         apiError.addValidationError(ex.getBindingResult().getGlobalErrors());
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+        return ResponseHandler.fail(apiError);
     }
 
     /**
@@ -143,7 +144,9 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+                                                                  HttpHeaders headers, HttpStatus status,
+                                                                  WebRequest request) {
         var servletWebRequest = (ServletWebRequest) request;
         log.info("{} to {}", servletWebRequest.getHttpMethod(), servletWebRequest.getRequest().getServletPath());
         var error = "Malformed JSON request." +
@@ -153,7 +156,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .message(error)
                 .ex(ex)
                 .build();
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+        return ResponseHandler.fail(apiError);
     }
 
     /**
@@ -166,7 +169,9 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotWritable(HttpMessageNotWritableException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotWritable(HttpMessageNotWritableException ex,
+                                                                  HttpHeaders headers, HttpStatus status,
+                                                                  WebRequest request) {
         var error = "Error writing JSON output. " +
                 "기본 생성자, Getters, Jackson 의존성이 있는지 확인하십시오.";
         var apiError = ApiError.builder()
@@ -174,7 +179,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .message(error)
                 .ex(ex)
                 .build();
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+        return ResponseHandler.fail(apiError);
     }
 
     /**
@@ -198,7 +203,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .message(error)
                 .ex(ex)
                 .build();
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+        return ResponseHandler.fail(apiError);
     }
 
     /**
@@ -208,7 +213,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> IllegalArgument(IllegalArgumentException ex) {
+    protected ResponseEntity<Object> IllegalArgument(IllegalArgumentException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(BAD_REQUEST)
                 .message(ex.getMessage())
@@ -223,7 +228,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(DuplicateUserInfoException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> handleDuplicateUser(DuplicateUserInfoException ex) {
+    protected ResponseEntity<Object> handleDuplicateUser(DuplicateUserInfoException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(BAD_REQUEST)
                 .message(ex.getMessage())
@@ -238,7 +243,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(RefreshTokenNotFoundException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> handleRefreshTokenNotFound(RefreshTokenNotFoundException ex) {
+    protected ResponseEntity<Object> handleRefreshTokenNotFound(RefreshTokenNotFoundException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(NOT_FOUND)
                 .message(ex.getMessage())
@@ -253,7 +258,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(InvalidJWTException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> handleJWTVerification(InvalidJWTException ex) {
+    protected ResponseEntity<Object> handleJWTVerification(InvalidJWTException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(UNAUTHORIZED)
                 .message(ex.getMessage())
@@ -268,7 +273,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(BadCredentialsException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> handleBadCredentials(BadCredentialsException ex) {
+    protected ResponseEntity<Object> handleBadCredentials(BadCredentialsException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(BAD_REQUEST)
                 .message(ex.getMessage())
@@ -283,7 +288,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(UsernameNotFoundException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> handleUsernameNotFound(UsernameNotFoundException ex) {
+    protected ResponseEntity<Object> handleUsernameNotFound(UsernameNotFoundException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(NOT_FOUND)
                 .message(ex.getMessage())
@@ -298,7 +303,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(PostNotFoundException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> handlePostNotFound(PostNotFoundException ex) {
+    protected ResponseEntity<Object> handlePostNotFound(PostNotFoundException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(NOT_FOUND)
                 .message(ex.getMessage())
@@ -313,7 +318,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @ExceptionHandler(UnAuthorizedException.class)
-    protected ResponseEntity<ResponseWrapper<ApiError>> handleUnAuthorized(UnAuthorizedException ex) {
+    protected ResponseEntity<Object> handleUnAuthorized(UnAuthorizedException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(FORBIDDEN)
                 .message(ex.getMessage())
@@ -321,7 +326,22 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 .build());
     }
 
-    private ResponseEntity<ResponseWrapper<ApiError>> buildResponseEntity(ApiError apiError) {
-        return new ResponseEntity<>(ResponseWrapper.fail(apiError), apiError.getStatus());
+    /**
+     * validation을 통과하지 못했을 때 발생
+     *
+     * @param ex the Exception
+     * @return the ApiError object
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    protected ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
+        return buildResponseEntity(ApiError.builder()
+                .status(BAD_REQUEST)
+                .message(ex.getMessage())
+                .ex(ex)
+                .build());
+    }
+
+    private ResponseEntity<Object> buildResponseEntity(ApiError apiError) {
+        return ResponseHandler.fail(apiError);
     }
 }
