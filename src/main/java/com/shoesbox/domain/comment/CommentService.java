@@ -27,23 +27,36 @@ public class CommentService {
         var comments = post.getComments();
         List<CommentResponseDto> commentList = new ArrayList<>();
         for (Comment comment : comments) {
-            commentList.add(new CommentResponseDto(comment));
+            commentList.add(toCommentResponseDto(comment, post.getMemberId(), post.getId()));
         }
 
         return commentList;
     }
 
     @Transactional
-    public CommentResponseDto createComment(long currentMemberId, long postId, CommentRequestDto commentRequestDto) {
+    public CommentResponseDto createComment(
+            String currentMemberNickname,
+            String content,
+            long currentMemberId,
+            long postId) {
         Member member = Member.builder()
                 .id(currentMemberId)
                 .build();
-        Post post = new Post();
-        post.setId(postId);
-        Comment comment = new Comment(commentRequestDto, member, post);
+
+        Post post = Post.builder()
+                .id(postId)
+                .member(member)
+                .build();
+
+        Comment comment = Comment.builder()
+                .nickname(currentMemberNickname)
+                .content(content)
+                .member(member)
+                .post(post)
+                .build();
         commentRepository.save(comment);
 
-        return toCommentResponseDto(comment);
+        return toCommentResponseDto(comment, currentMemberId, postId);
     }
 
     @Transactional
@@ -59,7 +72,7 @@ public class CommentService {
 
         comment.update(commentRequestDto);
 
-        return toCommentResponseDto(comment);
+        return toCommentResponseDto(comment, currentMemberId, comment.getPostId());
     }
 
     @Transactional
@@ -76,7 +89,15 @@ public class CommentService {
         return "댓글 삭제 성공";
     }
 
-    private static CommentResponseDto toCommentResponseDto(Comment comment) {
-        return new CommentResponseDto(comment);
+    public static CommentResponseDto toCommentResponseDto(Comment comment, long memberId, long postId) {
+        return CommentResponseDto.builder()
+                .commentId(comment.getId())
+                .content(comment.getContent())
+                .nickname(comment.getNickname())
+                .memberId(memberId)
+                .postId(postId)
+                .createdAt(comment.getCreatedAt())
+                .modifiedAt(comment.getModifiedAt())
+                .build();
     }
 }

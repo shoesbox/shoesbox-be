@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +35,6 @@ public class PostService {
                 .title(postRequestDto.getTitle())
                 .content(postRequestDto.getContent())
                 .author(nickname)
-                .images(postRequestDto.getImages())
                 .member(member)
                 .build();
         postRepository.save(post);
@@ -61,7 +60,6 @@ public class PostService {
                 .title(post.getTitle())
                 .content(post.getContent())
                 .author(post.getAuthor())
-                .images(post.getImages())
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
@@ -75,7 +73,7 @@ public class PostService {
         return PostListResponseDto.builder()
                 .postId(post.getId())
                 .title(post.getTitle())
-                .thumbnailUrl(post.getImages())
+                .thumbnailUrl("URL")
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
                 .createdYear(post.getCreatedYear())

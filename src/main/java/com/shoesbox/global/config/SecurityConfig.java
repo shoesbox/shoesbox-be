@@ -7,7 +7,6 @@ import com.shoesbox.global.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -87,7 +86,7 @@ public class SecurityConfig {
 
                 .antMatchers("/").permitAll()
                 .antMatchers("/api/members/auth/**").permitAll()
-                .antMatchers(HttpMethod.GET, "/api/posts/**", "/api/comments/**").permitAll()
+                // .antMatchers(HttpMethod.GET, "/api/posts/**", "/api/comments/**").permitAll()
                 // .antMatchers(HttpMethod.POST, "/api/posts/**").hasAnyAuthority("ROLE_USER")
 
                 // 나머지는 전부 인증 필요

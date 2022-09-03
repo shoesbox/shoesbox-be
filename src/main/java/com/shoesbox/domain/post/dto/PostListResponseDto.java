@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class PostListResponseDto {
-    Long postId;
+    long postId;
     String title;
     String thumbnailUrl;
     String createdAt;

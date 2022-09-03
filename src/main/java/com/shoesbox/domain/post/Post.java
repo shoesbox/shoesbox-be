@@ -5,7 +5,6 @@ import com.shoesbox.domain.member.Member;
 import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
@@ -14,7 +13,6 @@ import java.util.List;
 
 
 @Getter
-@NoArgsConstructor
 @Entity
 @Table(name = "post")
 public class Post extends BaseTimeEntity {
@@ -33,16 +31,16 @@ public class Post extends BaseTimeEntity {
     private String author;
 
     @Column(nullable = false)
-    private int createdYear;
+    private final int createdYear;
 
     @Column(nullable = false)
-    private int createdMonth;
+    private final int createdMonth;
 
     @Column(nullable = false)
-    private int createdDay;
+    private final int createdDay;
 
-    @Column
-    private String images;
+    // @Column
+    // private List<MultipartFile> images;
 
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,16 +54,20 @@ public class Post extends BaseTimeEntity {
             cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
 
-    @Builder
-    private Post(String title, String content, String author, String images, Member member) {
-        this.title = title;
-        this.content = content;
-        this.author = author;
-        this.images = images;
-        this.member = member;
+    protected Post() {
         this.createdYear = LocalDate.now().getYear();
         this.createdMonth = LocalDate.now().getMonthValue();
         this.createdDay = LocalDate.now().getDayOfMonth();
+    }
+
+    @Builder
+    private Post(long id, String title, String content, String author, Member member) {
+        this();
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.author = author;
+        this.member = member;
     }
 
 
