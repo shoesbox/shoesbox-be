@@ -40,3 +40,4 @@ application-keys.yml
 ### DB ###
 /testdb.mv.db
 /testdb.trace.db
+/testdb.lock.db
