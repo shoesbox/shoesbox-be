@@ -34,7 +34,7 @@ public class MemberController {
         return ResponseHandler.ok(memberService.renewToken(tokenRequestDto));
     }
 
-    // 내 정보 가져오기
+    // 사용자 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
     @GetMapping("/info")
     public ResponseEntity<Object> getMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId) {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
