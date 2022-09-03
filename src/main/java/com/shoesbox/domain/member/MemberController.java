@@ -35,9 +35,19 @@ public class MemberController {
     }
 
     // 내 정보 가져오기
-    @GetMapping("/myinfo")
-    public ResponseEntity<Object> getMyInfo() {
-        var userId = SecurityUtil.getCurrentMemberIdByLong();
-        return ResponseEntity.ok(memberService.getUserInfo(userId));
+    @GetMapping("/info")
+    public ResponseEntity<Object> getMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId) {
+        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        if (targetId == 0L) {
+            return ResponseEntity.ok(memberService.getMemberInfo(memberId, memberId));
+        }
+        return ResponseEntity.ok(memberService.getMemberInfo(memberId, targetId));
+    }
+
+    // 로그아웃
+    @GetMapping("/logout")
+    public ResponseEntity<Object> logout() {
+        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        return ResponseEntity.ok(memberService.logout(memberId));
     }
 }
