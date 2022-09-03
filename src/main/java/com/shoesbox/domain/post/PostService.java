@@ -2,7 +2,13 @@ package com.shoesbox.domain.post;
 
 import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.comment.CommentResponseDto;
+import com.shoesbox.domain.member.Member;
+import com.shoesbox.domain.post.dto.PostListResponseDto;
+import com.shoesbox.domain.post.dto.PostRequestDto;
+import com.shoesbox.domain.post.dto.PostResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -15,41 +21,66 @@ public class PostService {
     private final PostRepository postRepository;
 
     // 전체 조회
-    public List<PostResponseDto> getPostList() {
-        List<Post> posts = postRepository.findAll();
-        List<PostResponseDto> postList = new ArrayList<>();
-
-        for (Post post : posts) {
-            PostResponseDto postResponseDto = PostResponseDto.builder()
-                    .post(post)
-                    .comment(getCommentList(post))
-                    .build();
-            postList.add(postResponseDto);
-        }
-
-        return postList;
+    public Page<PostListResponseDto> getPostList(Pageable pageable) {
+        return postRepository.findAll(pageable).map(PostService::toPostListResponseDto);
     }
 
     // 생성
     @Transactional
-    public Post createPost(PostRequestDto dto) {
+    public PostResponseDto createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
+        Member member = Member.builder()
+                .id(memberId)
+                .build();
         Post post = Post.builder()
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .images(dto.getImages())
+                .title(postRequestDto.getTitle())
+                .content(postRequestDto.getContent())
+                .author(nickname)
+                .images(postRequestDto.getImages())
+                .member(member)
                 .build();
         postRepository.save(post);
-        return post;
+        return toPostResponseDto(post);
     }
 
-    private List<CommentResponseDto> getCommentList(Post post){
-        List<CommentResponseDto> commentList = new ArrayList<>();
-        List<Comment> comments = post.getComments();
+    // 댓글 목록 보기
+    private static List<CommentResponseDto> getCommentList(Post post) {
+        if (post.getComments() == null) {
+            return new ArrayList<>();
+        }
 
-        for(Comment comment:comments){
-            CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
-            commentList.add(commentResponseDto);
+        List<CommentResponseDto> commentList = new ArrayList<>();
+        for (Comment comment : post.getComments()) {
+            commentList.add(new CommentResponseDto(comment));
         }
         return commentList;
+    }
+
+    private static PostResponseDto toPostResponseDto(Post post) {
+        return PostResponseDto.builder()
+                .postId(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .author(post.getAuthor())
+                .images(post.getImages())
+                .comments(getCommentList(post))
+                .createdAt(post.getCreatedAt())
+                .modifiedAt(post.getModifiedAt())
+                .createdYear(post.getCreatedYear())
+                .createdMonth(post.getCreatedMonth())
+                .createdDay(post.getCreatedDay())
+                .build();
+    }
+
+    private static PostListResponseDto toPostListResponseDto(Post post) {
+        return PostListResponseDto.builder()
+                .postId(post.getId())
+                .title(post.getTitle())
+                .thumbnailUrl(post.getImages())
+                .createdAt(post.getCreatedAt())
+                .modifiedAt(post.getModifiedAt())
+                .createdYear(post.getCreatedYear())
+                .createdMonth(post.getCreatedMonth())
+                .createdDay(post.getCreatedDay())
+                .build();
     }
 }

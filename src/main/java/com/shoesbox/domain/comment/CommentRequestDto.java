@@ -1,20 +1,23 @@
 package com.shoesbox.domain.comment;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.jackson.Jacksonized;
 
 import javax.validation.constraints.NotBlank;
 
+@Jacksonized
 @Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class CommentRequestDto {
-    private Long memberId;
+    long memberId;
     @NotBlank(message = "닉네임 입력하지 않음")
-    private String nickname;
+    String nickname;
     @NotBlank(message = "내용 입력하지 않음")
-    private String content;
-
-    public CommentRequestDto(Long memberId, String nickname, String content){
-        this.memberId = memberId;
-        this.nickname = nickname;
-        this.content = content;
-    }
+    String content;
 }

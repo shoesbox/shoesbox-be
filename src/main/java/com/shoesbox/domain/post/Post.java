@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -29,6 +30,9 @@ public class Post extends BaseTimeEntity {
     private String content;
 
     @Column(nullable = false)
+    private String author;
+
+    @Column(nullable = false)
     private int createdYear;
 
     @Column(nullable = false)
@@ -47,16 +51,21 @@ public class Post extends BaseTimeEntity {
     // 작성자 PK (읽기전용으로만 사용할 것)
     @Column(name = "member_id", updatable = false, insertable = false)
     private Long memberId;
-    
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "post",
             cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
 
     @Builder
-    public Post(String title, String content, String images) {
+    private Post(String title, String content, String author, String images, Member member) {
         this.title = title;
         this.content = content;
+        this.author = author;
         this.images = images;
+        this.member = member;
+        this.createdYear = LocalDate.now().getYear();
+        this.createdMonth = LocalDate.now().getMonthValue();
+        this.createdDay = LocalDate.now().getDayOfMonth();
     }
 
 

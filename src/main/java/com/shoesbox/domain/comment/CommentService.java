@@ -1,6 +1,10 @@
 package com.shoesbox.domain.comment;
 
+import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.Post;
+import com.shoesbox.domain.post.PostRepository;
+import com.shoesbox.global.exception.runtime.PostNotFoundException;
+import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,53 +15,68 @@ import java.util.List;
 @RequiredArgsConstructor
 @Service
 public class CommentService {
-
     private final CommentRepository commentRepository;
+    private final PostRepository postRepository;
 
     @Transactional(readOnly = true)
-    public List<CommentResponseDto> readComment(Long postId){
-        List<CommentResponseDto> commentList = new ArrayList<>();
-        List<Comment> comments = commentRepository.findAllByPostId(postId);
+    public List<CommentResponseDto> readComment(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(
+                        () -> new PostNotFoundException("해당 게시글이 존재하지 않습니다."));
 
-        for(Comment comment:comments){
-            CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
-            commentList.add(commentResponseDto);
+        var comments = post.getComments();
+        List<CommentResponseDto> commentList = new ArrayList<>();
+        for (Comment comment : comments) {
+            commentList.add(new CommentResponseDto(comment));
         }
+
         return commentList;
     }
 
     @Transactional
-    public CommentResponseDto createComment(Long postId, CommentRequestDto commentRequestDto){
+    public CommentResponseDto createComment(long currentMemberId, long postId, CommentRequestDto commentRequestDto) {
+        Member member = Member.builder()
+                .id(currentMemberId)
+                .build();
         Post post = new Post();
         post.setId(postId);
-        Comment comment = new Comment(commentRequestDto, post);
+        Comment comment = new Comment(commentRequestDto, member, post);
         commentRepository.save(comment);
 
-        CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
-
-        return commentResponseDto;
+        return toCommentResponseDto(comment);
     }
 
     @Transactional
-    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto){
-        Comment comment = commentRepository.findById(commentId).orElseThrow(
-                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
+    public CommentResponseDto updateComment(long currentMemberId, long commentId, CommentRequestDto commentRequestDto) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
+
+        Post post = comment.getPost();
+        if (post.getMemberId() != currentMemberId) {
+            throw new UnAuthorizedException("본인이 작성한 댓글만 수정 가능합니다.");
+        }
 
         comment.update(commentRequestDto);
 
-        // 수정 확인용
-        comment = commentRepository.findById(commentId).orElseThrow(
-                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
-        CommentResponseDto commentResponseDto = CommentResponseDto.builder().comment(comment).build();
-        return commentResponseDto;
+        return toCommentResponseDto(comment);
     }
 
     @Transactional
-    public String deleteComment(Long commentId){
+    public String deleteComment(long currentMemberId, long commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
 
+        Post post = comment.getPost();
+        if (post.getMemberId() != currentMemberId) {
+            throw new UnAuthorizedException("본인이 작성한 댓글만 삭제 가능합니다.");
+        }
+
         commentRepository.delete(comment);
         return "댓글 삭제 성공";
+    }
+
+    private static CommentResponseDto toCommentResponseDto(Comment comment) {
+        return new CommentResponseDto(comment);
     }
 }

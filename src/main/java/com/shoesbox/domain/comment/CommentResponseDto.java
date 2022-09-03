@@ -1,18 +1,19 @@
 package com.shoesbox.domain.comment;
 
-import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.experimental.FieldDefaults;
 
 @Getter
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class CommentResponseDto {
-    private Long commentId;
-    private String nickname;
-    private String content;
-    private Long postId;
-    private Long memberId;
+    Long commentId;
+    String nickname;
+    String content;
+    Long postId;
+    Long memberId;
 
-    @Builder
-    public CommentResponseDto(Comment comment){
+    public CommentResponseDto(Comment comment) {
         this.commentId = comment.getId();
         this.nickname = comment.getNickname();
         this.content = comment.getContent();

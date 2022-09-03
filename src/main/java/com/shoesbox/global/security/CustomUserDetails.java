@@ -15,19 +15,19 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
 
     private final String email;
     private String password;
-    private final long userId;
+    private final long memberId;
     private final Set<GrantedAuthority> authorities;
 
     public CustomUserDetails(
             String email,
             String password,
-            long userId,
+            long memberId,
             Collection<? extends GrantedAuthority> authorities) {
         Assert.isTrue(email != null && !"".equals(email) && password != null,
                 "Cannot pass null or empty values to constructor");
         this.email = email;
         this.password = password;
-        this.userId = userId;
+        this.memberId = memberId;
         this.authorities = Collections.unmodifiableSet(sortAuthorities(authorities));
     }
 
@@ -73,6 +73,10 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
 
     public String getUsername() {
         return this.email;
+    }
+
+    public String getNickname() {
+        return this.email.split("@")[0];
     }
 
     @Override

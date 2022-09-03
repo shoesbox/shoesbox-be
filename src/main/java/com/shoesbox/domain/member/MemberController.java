@@ -30,7 +30,7 @@ public class MemberController {
     // 내 정보 가져오기
     @GetMapping("/myinfo")
     public ResponseEntity<Object> getMyInfo() {
-        var userId = SecurityUtil.getCurrentUserIdByLong();
+        var userId = SecurityUtil.getCurrentMemberIdByLong();
         return ResponseEntity.ok(memberService.getUserInfo(userId));
     }
 }

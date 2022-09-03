@@ -40,10 +40,10 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "post_id", updatable = false, insertable = false)
     private Long postId;
 
-    public Comment(CommentRequestDto commentRequestDto, Post post) {
+    public Comment(CommentRequestDto commentRequestDto, Member member, Post post) {
         this.nickname = commentRequestDto.getNickname();
         this.content = commentRequestDto.getContent();
-        this.memberId = commentRequestDto.getMemberId();
+        this.member = member;
         this.post = post;
     }
 
