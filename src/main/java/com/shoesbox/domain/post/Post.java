@@ -1,6 +1,7 @@
 package com.shoesbox.domain.post;
 
 import com.shoesbox.domain.comment.Comment;
+import com.shoesbox.domain.member.Member;
 import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,7 +17,6 @@ import java.util.List;
 @Entity
 @Table(name = "post")
 public class Post extends BaseTimeEntity {
-
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Setter
@@ -40,7 +40,16 @@ public class Post extends BaseTimeEntity {
     @Column
     private String images;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
+    // 작성자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+    // 작성자 PK (읽기전용으로만 사용할 것)
+    @Column(name = "member_id", updatable = false, insertable = false)
+    private Long memberId;
+    
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post",
+            cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
 
     @Builder

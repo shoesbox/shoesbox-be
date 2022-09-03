@@ -1,5 +1,6 @@
 package com.shoesbox.domain.comment;
 
+import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.Getter;
@@ -10,7 +11,7 @@ import javax.validation.constraints.NotBlank;
 
 @Getter
 @NoArgsConstructor
-@Entity(name="comment")
+@Entity(name = "comment")
 public class Comment extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,7 +25,12 @@ public class Comment extends BaseTimeEntity {
     @Column(nullable = false)
     private String content;
 
-    @Column(nullable = false)
+    // 작성자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
+    // 작성자 PK (읽기전용으로만 사용할 것)
+    @Column(name = "member_id", updatable = false, insertable = false)
     private Long memberId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -34,14 +40,14 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "post_id", updatable = false, insertable = false)
     private Long postId;
 
-    public Comment(CommentRequestDto commentRequestDto, Post post){
+    public Comment(CommentRequestDto commentRequestDto, Post post) {
         this.nickname = commentRequestDto.getNickname();
         this.content = commentRequestDto.getContent();
         this.memberId = commentRequestDto.getMemberId();
         this.post = post;
     }
 
-    public void update(CommentRequestDto commentRequestDto){
+    public void update(CommentRequestDto commentRequestDto) {
         this.content = commentRequestDto.getContent();
     }
 }
