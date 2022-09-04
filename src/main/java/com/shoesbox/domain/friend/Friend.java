@@ -16,29 +16,34 @@ public class Friend {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 요청 상태 (요청시 request, 수락했을 시 accept)
-    @Column
-    @Enumerated(EnumType.STRING)
-    private FriendState friendState;
+    // 요청 상태 (요청시 false, 수락했을 시 true)
+    @Column(nullable = false)
+    private boolean friendState;
 
+    // 친구 요청한 member
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+    @JoinColumn(name = "from_member_id", nullable = false)
+    private Member fromMember;
 
-    @Column(name = "member_id", updatable = false, insertable = false)
-    private Long memberId;
+    @Column(name = "from_member_id", updatable = false, insertable = false)
+    private Long fromMemberId;
 
-    @Column(name = "friend_id")
-    private long friendId;
+    // 친구 요청받는 member
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "to_member_id", nullable = false)
+    private Member toMember;
 
-    @Column(name = "friend_name")
-    private String friendName;
+    @Column(name = "to_member_id", updatable = false, insertable = false)
+    private long toMemberId;
 
     @Builder
-    private Friend(Member member, long friendId, String friendName, FriendState friendState){
-        this.member = member;
-        this.friendId = friendId;
-        this.friendName = friendName;
+    private Friend(Member fromMember, Member toMember, boolean friendState){
+        this.fromMember = fromMember;
+        this.toMember = toMember;
+        this.friendState = friendState;
+    }
+
+    public void updateFriendState(boolean friendState){
         this.friendState = friendState;
     }
 }

@@ -9,13 +9,13 @@ import lombok.experimental.FieldDefaults;
 @Getter
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class FriendListResponseDto {
-    long requestedFriendId;
-    String requestedFriendName;
-    FriendState friendState;
+    long fromMemberId;
+    String fromMemberNickname;
+    boolean friendState;
 
-    public FriendListResponseDto(long requestedFriendId, String requestedFriendName, FriendState friendState){
-        this.requestedFriendId = requestedFriendId;
-        this.requestedFriendName = requestedFriendName;
+    public FriendListResponseDto(long fromMemberId, String fromMemberNickname, boolean friendState){
+        this.fromMemberId = fromMemberId;
+        this.fromMemberNickname = fromMemberNickname;
         this.friendState = friendState;
     }
 }

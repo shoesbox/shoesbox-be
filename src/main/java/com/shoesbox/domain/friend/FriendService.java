@@ -23,24 +23,23 @@ public class FriendService {
     public String requestFriend(FriendRequestDto friendRequestDto){
 
         long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
-        Member joinedFriend = memberRepository.findByEmail(friendRequestDto.getEmail()).orElseThrow(
+        Member toMember = memberRepository.findByEmail(friendRequestDto.getEmail()).orElseThrow(
                 () -> new NullPointerException("해당 회원을 찾을 수 없습니다."));
 
-        if(friendRepository.existsByFriendIdAndAndMemberId(joinedFriend.getId(), currentUserId)){
+        if(friendRepository.existsByFromMemberIdAndToMemberId(currentUserId, toMember.getId())){
             throw new RuntimeException("이미 친구 요청한 상태입니다.");
-        } else if(currentUserId == joinedFriend.getId()){
+        } else if(currentUserId == toMember.getId()){
             throw new RuntimeException("자기 자신을 친구추가 할 수 없습니다.");
         }
 
-        Member currentUser = Member.builder()
+        Member fromMember = Member.builder()
                 .id(currentUserId)
                 .build();
 
         Friend friend = Friend.builder()
-                .member(currentUser)
-                .friendId(joinedFriend.getId())
-                .friendName(joinedFriend.getNickname())
-                .friendState(FriendState.STATE_REQUEST)
+                .fromMember(fromMember)
+                .toMember(toMember)
+                .friendState(false)
                 .build();
 
         friendRepository.save(friend);
@@ -49,14 +48,23 @@ public class FriendService {
     }
 
     @Transactional(readOnly = true)
-    public List<FriendListResponseDto> getFriendList(FriendState state) {
+    public List<FriendListResponseDto> getFriendList(boolean friendState) {
         long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
-        List<Friend> friends = friendRepository.findAllByFriendIdAndFriendState(currentUserId, state);
+        List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(currentUserId, friendState);
 
         List<FriendListResponseDto> friendList = new ArrayList<>();
         for (Friend friend : friends) {
-            friendList.add(new FriendListResponseDto(friend.getMemberId(), friend.getMember().getNickname(), friend.getFriendState()));
+            friendList.add(new FriendListResponseDto(friend.getFromMemberId(), friend.getFromMember().getNickname(), friend.isFriendState()));
         }
         return friendList;
     }
+
+//    public String acceptFriend(long requestedFriendId){
+//        Friend requestedFriend = friendRepository.findByMemberId(requestedFriendId).orElseThrow(
+//                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+//
+//        requestedFriend.updateFriendState(FriendState.STATE_ACCEPT);
+//
+//        return "친구 수락 완료!";
+//    }
 }

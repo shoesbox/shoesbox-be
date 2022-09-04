@@ -22,11 +22,16 @@ public class FriendController {
 
     @GetMapping
     public List<FriendListResponseDto> getFriendList(){
-        return friendService.getFriendList(FriendState.STATE_ACCEPT);
+        return friendService.getFriendList(true);
     }
 
     @GetMapping("/request")
     public List<FriendListResponseDto> getFriendRequestList(){
-        return friendService.getFriendList(FriendState.STATE_REQUEST);
+        return friendService.getFriendList(false);
     }
+
+//    @PutMapping("/{requestedFriendId}/accept")
+//    public String acceptFriend(@PathVariable long requestedFriendId){
+//        return friendService.acceptFriend(requestedFriendId);
+//    }
 }

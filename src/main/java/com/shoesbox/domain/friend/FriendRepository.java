@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FriendRepository extends JpaRepository<Friend, Long> {
-    List<Friend> findAllByFriendIdAndFriendState(long memberId, FriendState state);
+    List<Friend> findAllByToMemberIdAndFriendState(long toMemberId, boolean isFriend);
 
-    boolean existsByFriendIdAndAndMemberId(long friendId, long memberId);
+//    Optional<Friend> findByMemberId(long memberId);
+
+    boolean existsByFromMemberIdAndToMemberId(long fromMember, long toMember);
 }
