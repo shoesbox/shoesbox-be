@@ -30,8 +30,18 @@ public class FriendController {
         return friendService.getFriendList(false);
     }
 
-//    @PutMapping("/{requestedFriendId}/accept")
-//    public String acceptFriend(@PathVariable long requestedFriendId){
-//        return friendService.acceptFriend(requestedFriendId);
-//    }
+    @PutMapping("/{fromMemberId}/accept")
+    public String acceptFriend(@PathVariable long fromMemberId){
+        return friendService.acceptFriend(fromMemberId, false);
+    }
+
+    @DeleteMapping("/{fromMemberId}/refuse")
+    public String refuseFriend(@PathVariable long fromMemberId){
+        return friendService.deleteFriend(fromMemberId, false);
+    }
+
+    @DeleteMapping("/{fromMemberId}")
+    public String deleteFriend(@PathVariable long fromMemberId){
+        return friendService.deleteFriend(fromMemberId, true);
+    }
 }

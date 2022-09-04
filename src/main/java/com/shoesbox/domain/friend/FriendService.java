@@ -59,12 +59,23 @@ public class FriendService {
         return friendList;
     }
 
-//    public String acceptFriend(long requestedFriendId){
-//        Friend requestedFriend = friendRepository.findByMemberId(requestedFriendId).orElseThrow(
-//                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-//
-//        requestedFriend.updateFriendState(FriendState.STATE_ACCEPT);
-//
-//        return "친구 수락 완료!";
-//    }
+    @Transactional
+    public String acceptFriend(long fromMemberId, boolean friendState){
+        Friend requestedFriend = friendRepository.findByFromMemberIdAndFriendState(fromMemberId, friendState).orElseThrow(
+                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        requestedFriend.updateFriendState(true);
+
+        return "친구 수락 완료!";
+    }
+
+    @Transactional
+    public String deleteFriend(long fromMemberId, boolean friendState){
+        Friend requestedFriend = friendRepository.findByFromMemberIdAndFriendState(fromMemberId, friendState).orElseThrow(
+                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        friendRepository.delete(requestedFriend);
+
+        return friendState?"친구 삭제 완료":"친구 요청 거부 완료";
+    }
 }

@@ -1,6 +1,7 @@
 package com.shoesbox.domain.friend;
 
 import com.shoesbox.domain.member.Member;
+import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,7 +12,7 @@ import javax.persistence.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity(name = "friend")
-public class Friend {
+public class Friend extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
