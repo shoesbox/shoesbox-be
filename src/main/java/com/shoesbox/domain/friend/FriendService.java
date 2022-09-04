@@ -1,5 +1,6 @@
 package com.shoesbox.domain.friend;
 
+import com.shoesbox.domain.friend.dto.FriendListResponseDto;
 import com.shoesbox.domain.friend.dto.FriendRequestDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
@@ -7,6 +8,9 @@ import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -44,4 +48,15 @@ public class FriendService {
         return "친구 요청 성공!";
     }
 
+    @Transactional(readOnly = true)
+    public List<FriendListResponseDto> getFriendList(FriendState state) {
+        long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
+        List<Friend> friends = friendRepository.findAllByFriendIdAndFriendState(currentUserId, state);
+
+        List<FriendListResponseDto> friendList = new ArrayList<>();
+        for (Friend friend : friends) {
+            friendList.add(new FriendListResponseDto(friend.getMemberId(), friend.getMember().getNickname(), friend.getFriendState()));
+        }
+        return friendList;
+    }
 }
