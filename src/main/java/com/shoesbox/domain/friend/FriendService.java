@@ -66,7 +66,8 @@ public class FriendService {
 
     @Transactional
     public FriendListResponseDto acceptFriend(long fromMemberId, boolean friendState){
-        Friend requestedFriend = friendRepository.findByFromMemberIdAndFriendState(fromMemberId, friendState).orElseThrow(
+        long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
+        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentUserId, friendState).orElseThrow(
                 () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         requestedFriend.updateFriendState(true);
@@ -76,7 +77,8 @@ public class FriendService {
 
     @Transactional
     public FriendListResponseDto deleteFriend(long fromMemberId, boolean friendState){
-        Friend requestedFriend = friendRepository.findByFromMemberIdAndFriendState(fromMemberId, friendState).orElseThrow(
+        long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
+        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentUserId, friendState).orElseThrow(
                 () -> new IllegalArgumentException("목록에 없는 친구입니다."));
 
         friendRepository.delete(requestedFriend);
