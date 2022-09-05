@@ -85,16 +85,34 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public MemberInfoDto getUserInfo(Long userId) {
-        Member member = memberRepository.findById(userId)
+    public MemberInfoDto getMemberInfo(long memberId, long targetId) {
+        if (memberId != targetId) {
+            if (!memberRepository.existsById(memberId)) {
+                throw new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다.");
+            }
+
+            Member targetMember = memberRepository.findById(targetId)
+                    .orElseThrow(
+                            () -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다.")
+                    );
+
+            return MemberInfoDto.builder()
+                    .nickname(targetMember.getNickname())
+                    .profileImageUrl(targetMember.getProfileImageUrl())
+                    .selfDescription(targetMember.getSelfDescription())
+                    .build();
+        }
+
+        Member currentMember = memberRepository.findById(memberId)
                 .orElseThrow(
-                        () -> new UsernameNotFoundException("userId: " + userId + "는 존재하지 않는 아이디입니다.")
+                        () -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다.")
                 );
+
         return MemberInfoDto.builder()
-                .nickname(member.getNickname())
-                .email(member.getEmail())
-                .profileImageUrl(member.getProfileImageUrl())
-                .selfDescription(member.getSelfDescription())
+                .nickname(currentMember.getNickname())
+                .email(currentMember.getEmail())
+                .profileImageUrl(currentMember.getProfileImageUrl())
+                .selfDescription(currentMember.getSelfDescription())
                 .build();
     }
 
@@ -161,5 +179,15 @@ public class MemberService {
 
         // 토큰 발급
         return tokenDto;
+    }
+
+    @Transactional
+    public TokenDto logout(long memberId) {
+        var token = refreshTokenRepository.findById(memberId)
+                .orElseThrow(
+                        () -> new RefreshTokenNotFoundException("memberId: " + memberId + "의 리프레쉬 토큰을 찾을 수 없습니다.")
+                );
+        refreshTokenRepository.delete(token);
+        return tokenProvider.createEmptyTokenDto();
     }
 }

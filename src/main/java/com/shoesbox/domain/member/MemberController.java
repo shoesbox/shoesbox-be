@@ -34,10 +34,20 @@ public class MemberController {
         return ResponseHandler.ok(memberService.renewToken(tokenRequestDto));
     }
 
-    // 내 정보 가져오기
-    @GetMapping("/myinfo")
-    public ResponseEntity<Object> getMyInfo() {
-        var userId = SecurityUtil.getCurrentMemberIdByLong();
-        return ResponseEntity.ok(memberService.getUserInfo(userId));
+    // 사용자 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
+    @GetMapping("/info")
+    public ResponseEntity<Object> getMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId) {
+        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        if (targetId == 0L) {
+            return ResponseEntity.ok(memberService.getMemberInfo(memberId, memberId));
+        }
+        return ResponseEntity.ok(memberService.getMemberInfo(memberId, targetId));
+    }
+
+    // 로그아웃
+    @GetMapping("/logout")
+    public ResponseEntity<Object> logout() {
+        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        return ResponseEntity.ok(memberService.logout(memberId));
     }
 }

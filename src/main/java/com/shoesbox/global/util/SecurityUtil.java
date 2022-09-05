@@ -1,11 +1,12 @@
 package com.shoesbox.global.util;
 
+import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import com.shoesbox.global.security.CustomUserDetails;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Slf4j
 @NoArgsConstructor
@@ -13,30 +14,35 @@ public class SecurityUtil {
     public static long getCurrentMemberIdByLong() {
         var principal = getPrincipal();
 
-        if (principal != null) {
-            return principal.getMemberId();
+        if (principal == null) {
+            throw new UnAuthorizedException("Security Context에 인증 정보가 없습니다.");
         }
 
-        return 0L;
+        return principal.getMemberId();
     }
 
     public static String getCurrentMemberNickname() {
         var principal = getPrincipal();
 
-        if (principal != null) {
-            return principal.getNickname();
+        if (principal == null) {
+            throw new UnAuthorizedException("Security Context에 인증 정보가 없습니다.");
         }
 
-        return null;
+        return principal.getNickname();
     }
 
     private static CustomUserDetails getPrincipal() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             log.debug("Security Context에 인증 정보가 없습니다.");
-            throw new UsernameNotFoundException(
+            throw new UnAuthorizedException(
                     "Security Context에 인증 정보가 없습니다.");
         }
-        return (CustomUserDetails) authentication.getPrincipal();
+
+        if (authentication.getPrincipal() instanceof UserDetails) {
+            return (CustomUserDetails) authentication.getPrincipal();
+        }
+
+        return null;
     }
 }
