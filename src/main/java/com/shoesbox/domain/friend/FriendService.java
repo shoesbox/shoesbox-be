@@ -37,6 +37,10 @@ public class FriendService {
                 .id(currentUserId)
                 .build();
 
+        if(twoWayCheck(fromMember.getId(), toMember.getId())){
+            throw new IllegalArgumentException("이미 요청 대기중인 친구입니다.");
+        }
+
         Friend friend = Friend.builder()
                 .fromMember(fromMember)
                 .toMember(toMember)
@@ -82,5 +86,12 @@ public class FriendService {
 
     private FriendListResponseDto toFriendListResponseDto(Friend friend){
         return new FriendListResponseDto(friend.getFromMember().getId(), friend.getFromMember().getNickname(), friend.isFriendState());
+    }
+
+    private boolean twoWayCheck(long fromMemberId, long toMemberId){
+        // 요청값과 반대의 경우가 존재하는지(쌍방 요청인지) 체크
+        // 상대방이 요청한 이력이 있을 경우 친구 요청 불가(요청리스트에서 수락)
+
+        return friendRepository.existsByFromMemberIdAndToMemberId(toMemberId, fromMemberId);
     }
 }
