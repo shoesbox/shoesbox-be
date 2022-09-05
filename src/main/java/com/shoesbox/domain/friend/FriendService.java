@@ -45,7 +45,7 @@ public class FriendService {
         Friend friend = Friend.builder()
                 .fromMember(fromMember)
                 .toMember(toMember)
-                .friendState(false)
+                .friendState(FriendState.REQUEST)
                 .build();
 
         friendRepository.save(friend);
@@ -54,7 +54,7 @@ public class FriendService {
     }
 
     @Transactional(readOnly = true)
-    public List<FriendResponseDto> getFriendList(boolean friendState) {
+    public List<FriendResponseDto> getFriendList(FriendState friendState) {
         long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
         List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(currentUserId, friendState);
 
@@ -66,18 +66,18 @@ public class FriendService {
     }
 
     @Transactional
-    public FriendResponseDto acceptFriend(long fromMemberId, boolean friendState){
+    public FriendResponseDto acceptFriend(long fromMemberId, FriendState friendState){
         long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
         Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentUserId, friendState).orElseThrow(
                 () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
-        requestedFriend.updateFriendState(true);
+        requestedFriend.updateFriendState(FriendState.FRIEND);
 
         return toFriendResponseDto(requestedFriend);
     }
 
     @Transactional
-    public FriendResponseDto deleteFriend(long fromMemberId, boolean friendState){
+    public FriendResponseDto deleteFriend(long fromMemberId, FriendState friendState){
         long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
         Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentUserId, friendState).orElseThrow(
                 () -> new IllegalArgumentException("목록에 없는 친구입니다."));
@@ -93,7 +93,7 @@ public class FriendService {
                 .toMemberNickname(friend.getToMember().getNickname())
                 .fromMemberId(friend.getFromMember().getId())
                 .fromMemberNickname(friend.getFromMember().getNickname())
-                .friendState(friend.isFriendState())
+                .friendState(friend.getFriendState())
                 .build();
 
         return responseDto;

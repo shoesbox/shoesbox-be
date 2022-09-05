@@ -17,9 +17,10 @@ public class Friend extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 요청 상태 (요청시 false, 수락했을 시 true)
+    // 요청 상태 (요청시 REQUEST, 수락했을 시 FRIEND)
     @Column(nullable = false)
-    private boolean friendState;
+    @Enumerated(EnumType.STRING)
+    private FriendState friendState;
 
     // 친구 요청한 member
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,13 +33,13 @@ public class Friend extends BaseTimeEntity {
     private Member toMember;
 
     @Builder
-    private Friend(Member fromMember, Member toMember, boolean friendState){
+    private Friend(Member fromMember, Member toMember, FriendState friendState){
         this.fromMember = fromMember;
         this.toMember = toMember;
         this.friendState = friendState;
     }
 
-    public void updateFriendState(boolean friendState){
+    public void updateFriendState(FriendState friendState){
         this.friendState = friendState;
     }
 }

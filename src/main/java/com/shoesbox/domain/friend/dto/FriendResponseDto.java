@@ -1,5 +1,6 @@
 package com.shoesbox.domain.friend.dto;
 
+import com.shoesbox.domain.friend.FriendState;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,10 +13,10 @@ public class FriendResponseDto {
     private String toMemberNickname;
     private long fromMemberId;
     private String fromMemberNickname;
-    private boolean friendState;
+    private FriendState friendState;
 
     @Builder
-    public FriendResponseDto(long toMemberId, String toMemberNickname, long fromMemberId, String fromMemberNickname, boolean friendState){
+    public FriendResponseDto(long toMemberId, String toMemberNickname, long fromMemberId, String fromMemberNickname, FriendState friendState){
         this.toMemberId = toMemberId;
         this.toMemberNickname = toMemberNickname;
         this.fromMemberId = fromMemberId;

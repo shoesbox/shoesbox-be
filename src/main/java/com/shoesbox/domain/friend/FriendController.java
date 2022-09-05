@@ -23,26 +23,26 @@ public class FriendController {
 
     @GetMapping
     public ResponseEntity<Object> getFriendList(){
-        return ResponseHandler.ok(friendService.getFriendList(true));
+        return ResponseHandler.ok(friendService.getFriendList(FriendState.FRIEND));
     }
 
     @GetMapping("/request")
     public ResponseEntity<Object> getFriendRequestList(){
-        return ResponseHandler.ok(friendService.getFriendList(false));
+        return ResponseHandler.ok(friendService.getFriendList(FriendState.REQUEST));
     }
 
     @PutMapping("/{fromMemberId}/accept")
     public ResponseEntity<Object> acceptFriend(@PathVariable long fromMemberId){
-        return ResponseHandler.ok(friendService.acceptFriend(fromMemberId, false));
+        return ResponseHandler.ok(friendService.acceptFriend(fromMemberId, FriendState.REQUEST));
     }
 
     @DeleteMapping("/{fromMemberId}/refuse")
     public ResponseEntity<Object> refuseFriend(@PathVariable long fromMemberId){
-        return ResponseHandler.ok(friendService.deleteFriend(fromMemberId, false));
+        return ResponseHandler.ok(friendService.deleteFriend(fromMemberId, FriendState.REQUEST));
     }
 
     @DeleteMapping("/{fromMemberId}")
     public ResponseEntity<Object> deleteFriend(@PathVariable long fromMemberId){
-        return ResponseHandler.ok(friendService.deleteFriend(fromMemberId, true));
+        return ResponseHandler.ok(friendService.deleteFriend(fromMemberId, FriendState.FRIEND));
     }
 }
