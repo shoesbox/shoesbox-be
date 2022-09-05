@@ -141,8 +141,10 @@ public class MemberService {
 
         // 3. 리프레쉬 토큰 저장소에서 userId(PK) 를 기반으로 토큰 가져옴
         RefreshToken savedRefreshToken =
-                refreshTokenRepository.findById(userId).orElseThrow(() -> new RefreshTokenNotFoundException("로그아웃 된 " +
-                        "사용자입니다."));
+                refreshTokenRepository.findById(userId)
+                        .orElseThrow(
+                                () -> new RefreshTokenNotFoundException("로그아웃 된 사용자입니다.")
+                        );
 
         // 4. Refresh Token 일치하는지 검사
         if (!savedRefreshToken.getTokenValue().equals(tokenRequestDto.getRefreshToken())) {

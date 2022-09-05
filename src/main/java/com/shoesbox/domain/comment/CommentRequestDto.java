@@ -15,9 +15,6 @@ import javax.validation.constraints.NotBlank;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class CommentRequestDto {
-    long memberId;
-    @NotBlank(message = "닉네임 입력하지 않음")
-    String nickname;
     @NotBlank(message = "내용 입력하지 않음")
     String content;
 }

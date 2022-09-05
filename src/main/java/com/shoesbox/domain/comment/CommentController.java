@@ -23,7 +23,9 @@ public class CommentController {
     public ResponseEntity<Object> createComment(@PathVariable long postId,
                                                 @Valid @RequestBody CommentRequestDto commentRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberIdByLong();
-        return ResponseHandler.ok(commentService.createComment(currentMemberId, postId, commentRequestDto));
+        String currentMemberNickname = SecurityUtil.getCurrentMemberNickname();
+        return ResponseHandler.ok(commentService.createComment(
+                currentMemberNickname, commentRequestDto.getContent(), currentMemberId, postId));
     }
 
     @PutMapping("/{commentId}")

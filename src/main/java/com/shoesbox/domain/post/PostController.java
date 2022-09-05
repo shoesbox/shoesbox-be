@@ -18,10 +18,10 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping
-    public PostResponseDto createPost(@RequestBody PostRequestDto postRequestDto) {
+    public ResponseEntity<Object> createPost(@RequestBody PostRequestDto postRequestDto) {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
         String nickname = SecurityUtil.getCurrentMemberNickname();
-        return this.postService.createPost(nickname, memberId, postRequestDto);
+        return ResponseHandler.ok(postService.createPost(nickname, memberId, postRequestDto));
     }
 
     @GetMapping

@@ -3,6 +3,8 @@ package com.shoesbox.domain.comment;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.global.common.BaseTimeEntity;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,7 +12,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity(name = "comment")
 public class Comment extends BaseTimeEntity {
     @Id
@@ -40,9 +42,10 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "post_id", updatable = false, insertable = false)
     private Long postId;
 
-    public Comment(CommentRequestDto commentRequestDto, Member member, Post post) {
-        this.nickname = commentRequestDto.getNickname();
-        this.content = commentRequestDto.getContent();
+    @Builder
+    private Comment(String nickname, String content, Member member, Post post) {
+        this.nickname = nickname;
+        this.content = content;
         this.member = member;
         this.post = post;
     }
