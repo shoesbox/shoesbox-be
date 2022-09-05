@@ -26,16 +26,10 @@ public class Friend extends BaseTimeEntity {
     @JoinColumn(name = "from_member_id", nullable = false)
     private Member fromMember;
 
-    @Column(name = "from_member_id", updatable = false, insertable = false)
-    private Long fromMemberId;
-
     // 친구 요청받는 member
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_member_id", nullable = false)
     private Member toMember;
-
-    @Column(name = "to_member_id", updatable = false, insertable = false)
-    private long toMemberId;
 
     @Builder
     private Friend(Member fromMember, Member toMember, boolean friendState){
