@@ -2,6 +2,7 @@ package com.shoesbox.domain.post;
 
 import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.comment.CommentResponseDto;
+import com.shoesbox.domain.comment.CommentService;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.dto.PostListResponseDto;
 import com.shoesbox.domain.post.dto.PostRequestDto;

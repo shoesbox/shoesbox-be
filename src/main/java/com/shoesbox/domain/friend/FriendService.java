@@ -2,6 +2,7 @@ package com.shoesbox.domain.friend;
 
 import com.shoesbox.domain.friend.dto.FriendListResponseDto;
 import com.shoesbox.domain.friend.dto.FriendRequestDto;
+import com.shoesbox.domain.friend.dto.RequestFriendResponseDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.global.util.SecurityUtil;
@@ -20,16 +21,16 @@ public class FriendService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public String requestFriend(FriendRequestDto friendRequestDto){
+    public RequestFriendResponseDto requestFriend(FriendRequestDto friendRequestDto){
 
         long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
         Member toMember = memberRepository.findByEmail(friendRequestDto.getEmail()).orElseThrow(
-                () -> new NullPointerException("해당 회원을 찾을 수 없습니다."));
+                () -> new IllegalArgumentException("해당 회원을 찾을 수 없습니다."));
 
         if(friendRepository.existsByFromMemberIdAndToMemberId(currentUserId, toMember.getId())){
-            throw new RuntimeException("이미 친구 요청한 상태입니다.");
+            throw new IllegalArgumentException("이미 친구 요청한 상태입니다.");
         } else if(currentUserId == toMember.getId()){
-            throw new RuntimeException("자기 자신을 친구추가 할 수 없습니다.");
+            throw new IllegalArgumentException("자기 자신을 친구추가 할 수 없습니다.");
         }
 
         Member fromMember = Member.builder()
@@ -44,7 +45,7 @@ public class FriendService {
 
         friendRepository.save(friend);
 
-        return "친구 요청 성공!";
+        return new RequestFriendResponseDto(friend.getToMember().getId(), friend.getToMember().getNickname(), friend.isFriendState());
     }
 
     @Transactional(readOnly = true)
@@ -60,22 +61,26 @@ public class FriendService {
     }
 
     @Transactional
-    public String acceptFriend(long fromMemberId, boolean friendState){
+    public FriendListResponseDto acceptFriend(long fromMemberId, boolean friendState){
         Friend requestedFriend = friendRepository.findByFromMemberIdAndFriendState(fromMemberId, friendState).orElseThrow(
                 () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         requestedFriend.updateFriendState(true);
 
-        return "친구 수락 완료!";
+        return toFriendListResponseDto(requestedFriend);
     }
 
     @Transactional
-    public String deleteFriend(long fromMemberId, boolean friendState){
+    public FriendListResponseDto deleteFriend(long fromMemberId, boolean friendState){
         Friend requestedFriend = friendRepository.findByFromMemberIdAndFriendState(fromMemberId, friendState).orElseThrow(
-                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                () -> new IllegalArgumentException("목록에 없는 친구입니다."));
 
         friendRepository.delete(requestedFriend);
 
-        return friendState?"친구 삭제 완료":"친구 요청 거부 완료";
+        return toFriendListResponseDto(requestedFriend);
+    }
+
+    private FriendListResponseDto toFriendListResponseDto(Friend friend){
+        return new FriendListResponseDto(friend.getFromMember().getId(), friend.getFromMember().getNickname(), friend.isFriendState());
     }
 }
