@@ -17,34 +17,29 @@ public class Friend extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 요청 상태 (요청시 false, 수락했을 시 true)
+    // 요청 상태 (요청시 REQUEST, 수락했을 시 FRIEND)
     @Column(nullable = false)
-    private boolean friendState;
+    @Enumerated(EnumType.STRING)
+    private FriendState friendState;
 
     // 친구 요청한 member
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "from_member_id", nullable = false)
     private Member fromMember;
 
-    @Column(name = "from_member_id", updatable = false, insertable = false)
-    private Long fromMemberId;
-
     // 친구 요청받는 member
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "to_member_id", nullable = false)
     private Member toMember;
 
-    @Column(name = "to_member_id", updatable = false, insertable = false)
-    private long toMemberId;
-
     @Builder
-    private Friend(Member fromMember, Member toMember, boolean friendState){
+    private Friend(Member fromMember, Member toMember, FriendState friendState){
         this.fromMember = fromMember;
         this.toMember = toMember;
         this.friendState = friendState;
     }
 
-    public void updateFriendState(boolean friendState){
+    public void updateFriendState(FriendState friendState){
         this.friendState = friendState;
     }
 }
