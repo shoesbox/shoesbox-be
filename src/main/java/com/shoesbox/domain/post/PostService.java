@@ -7,6 +7,7 @@ import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.dto.PostListResponseDto;
 import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
+import com.shoesbox.global.exception.runtime.PostNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,11 +21,6 @@ import java.util.List;
 @Service
 public class PostService {
     private final PostRepository postRepository;
-
-    // 전체 조회
-    public Page<PostListResponseDto> getPostList(Pageable pageable) {
-        return postRepository.findAll(pageable).map(PostService::toPostListResponseDto);
-    }
 
     // 생성
     @Transactional
@@ -40,6 +36,59 @@ public class PostService {
                 .build();
         postRepository.save(post);
         return toPostResponseDto(post);
+    }
+
+    // 전체 조회
+    public Page<PostListResponseDto> getPostList(Pageable pageable) {
+        return postRepository.findAll(pageable).map(PostService::toPostListResponseDto);
+    }
+
+    // 상세 조회
+    @Transactional(readOnly = true)
+    public PostResponseDto getPost(long memberId, long postId) {
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
+        );
+        long myMemberId = post.getMemberId();
+        if (myMemberId == memberId) {
+            return toPostResponseDto(post);
+        } else {
+            new IllegalAccessError("해당 게시물에 접근할 수 없습니다.");
+            return null;
+        }
+    }
+
+    // 수정
+    @Transactional
+    public PostResponseDto updatePost(long memberId, long postId, PostRequestDto postRequestDto) {
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다.")
+        );
+        long myMemberId = post.getMemberId();
+        if (myMemberId == memberId) {
+            post.update(postRequestDto.getTitle(), postRequestDto.getContent());//, postRequestDto.getImages());
+            postRepository.save(post);
+            return toPostResponseDto(post);
+        } else {
+            new IllegalAccessError("해당 게시물의 수정 권한이 없습니다.");
+            return null;
+        }
+    }
+
+    // 삭제
+    @Transactional
+    public String deletePost(long memberId, long postId) {
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다.")
+        );
+        long myMemberId = post.getMemberId();
+        if (myMemberId == memberId) {
+            postRepository.deleteById(postId);
+            return "게시물 삭제 성공";
+        } else {
+            new IllegalAccessError("삭제 권한이 없습니다.");
+            return null;
+        }
     }
 
     // 댓글 목록 보기
