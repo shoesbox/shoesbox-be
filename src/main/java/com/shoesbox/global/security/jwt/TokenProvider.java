@@ -69,7 +69,7 @@ public class TokenProvider {
     }
 
     // 토큰 생성
-    public TokenDto createTokenDto(Authentication authentication, long userId) {
+    public TokenDto createTokenDto(Authentication authentication, long memberId) {
         // 권한 가져오기
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -88,7 +88,7 @@ public class TokenProvider {
                 // 클레임에 username 저장
                 .claim(EMAIL, authentication.getName())
                 // 클레임에 userId(PK) 저장
-                .claim(USER_ID, String.valueOf(userId))
+                .claim(USER_ID, String.valueOf(memberId))
                 // payload "auth": "ROLE_USER"
                 .claim(AUTHORITIES_KEY, authorities)
                 // payload "exp": accessTokenLifetimeInSeconds * 1000
@@ -111,6 +111,7 @@ public class TokenProvider {
                 .refreshToken(refreshToken)
                 .refreshTokenLifetime(this.REFRESH_TOKEN_LIFETIME_IN_MS)
                 .username(authentication.getName())
+                .memberId(memberId)
                 .build();
     }
 
