@@ -70,6 +70,11 @@ public class Post extends BaseTimeEntity {
         this.member = member;
     }
 
+    protected void update(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
+
 
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "FK_user_post"))
