@@ -45,49 +45,46 @@ public class PostService {
 
     // 상세 조회
     @Transactional(readOnly = true)
-    public PostResponseDto getPost(long memberId, long postId) {
+    public PostResponseDto getPost(long myMemberId, long postId) {
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
         );
-        long myMemberId = post.getMemberId();
+        long memberId = post.getMemberId();
         if (myMemberId == memberId) {
             return toPostResponseDto(post);
         } else {
-            new IllegalAccessError("해당 게시물에 접근할 수 없습니다.");
-            return null;
+            throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
         }
     }
 
     // 수정
     @Transactional
-    public PostResponseDto updatePost(long memberId, long postId, PostRequestDto postRequestDto) {
+    public PostResponseDto updatePost(long myMemberId, long postId, PostRequestDto postRequestDto) {
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다.")
         );
-        long myMemberId = post.getMemberId();
+        long memberId = post.getMemberId();
         if (myMemberId == memberId) {
             post.update(postRequestDto.getTitle(), postRequestDto.getContent());//, postRequestDto.getImages());
             postRepository.save(post);
             return toPostResponseDto(post);
         } else {
-            new IllegalAccessError("해당 게시물의 수정 권한이 없습니다.");
-            return null;
+            throw new IllegalArgumentException("해당 게시물의 수정 권한이 없습니다.");
         }
     }
 
     // 삭제
     @Transactional
-    public String deletePost(long memberId, long postId) {
+    public String deletePost(long myMemberId, long postId) {
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다.")
         );
-        long myMemberId = post.getMemberId();
+        long memberId = post.getMemberId();
         if (myMemberId == memberId) {
             postRepository.deleteById(postId);
             return "게시물 삭제 성공";
         } else {
-            new IllegalAccessError("삭제 권한이 없습니다.");
-            return null;
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
     }
 
