@@ -39,8 +39,9 @@ public class PostService {
     }
 
     // 전체 조회
-    public Page<PostListResponseDto> getPostList(Pageable pageable) {
-        return postRepository.findAll(pageable).map(PostService::toPostListResponseDto);
+    @Transactional(readOnly = true)
+    public Page<PostListResponseDto> getPosts(Pageable pageable, long memberId, int year, int month) {
+        return postRepository.findByMemberIdAndCreatedYearAndCreatedMonth(pageable, memberId, year, month).map(PostService::toPostListResponseDto);
     }
 
     // 상세 조회
