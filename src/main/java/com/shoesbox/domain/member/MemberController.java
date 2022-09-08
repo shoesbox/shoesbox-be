@@ -3,6 +3,7 @@ package com.shoesbox.domain.member;
 import com.shoesbox.domain.auth.TokenRequestDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.global.common.ResponseHandler;
+import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -49,5 +50,15 @@ public class MemberController {
     public ResponseEntity<Object> logout() {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
         return ResponseEntity.ok(memberService.logout(memberId));
+    }
+
+    // 회원 탈퇴
+    @PostMapping("/delete")
+    public ResponseEntity<Object> deleteAccount(@RequestParam(value = "m") long targetId) {
+        long currentMemberId = SecurityUtil.getCurrentMemberIdByLong();
+        if (currentMemberId != targetId) {
+            throw new UnAuthorizedException("본인의 memberId가 아닙니다.");
+        }
+        return ResponseEntity.ok(memberService.deleteAccount(targetId));
     }
 }

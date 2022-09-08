@@ -43,8 +43,8 @@ public class MemberService {
             log.info("이미 가입되어 있는 유저입니다");
             throw new DuplicateUserInfoException("이미 가입되어 있는 유저입니다");
         }
-
         Member createdMember = memberRepository.save(toMember(signDto));
+
         return createdMember.getNickname();
     }
 
@@ -63,19 +63,18 @@ public class MemberService {
             log.info("아이디, 혹은 비밀번호가 잘못되었습니다.");
             throw new BadCredentialsException("아이디, 혹은 비밀번호가 잘못되었습니다.");
         }
-
-        long userId = memberRepository.findByEmail(authentication.getName())
+        long memberId = memberRepository.findByEmail(authentication.getName())
                 .map(Member::getId)
                 .orElseThrow(
-                        () -> new UsernameNotFoundException("아이디를 찾을 수 없습니다.")
+                        () -> new UsernameNotFoundException("email: " + authentication.getName() + "은 존재하지 않는 계정입니다.")
                 );
 
         // 3. 인증 정보를 사용해 JWT 토큰 생성
-        TokenDto tokenDto = tokenProvider.createTokenDto(authentication, userId);
+        TokenDto tokenDto = tokenProvider.createTokenDto(authentication, memberId);
 
         // 5. RefreshToken 저장
         RefreshToken refreshToken = RefreshToken.builder()
-                .userId(userId)
+                .userId(memberId)
                 .tokenValue(tokenDto.getRefreshToken())
                 .build();
         refreshTokenRepository.save(refreshToken);
@@ -188,6 +187,17 @@ public class MemberService {
                         () -> new RefreshTokenNotFoundException("memberId: " + memberId + "의 리프레쉬 토큰을 찾을 수 없습니다.")
                 );
         refreshTokenRepository.delete(token);
+
         return tokenProvider.createEmptyTokenDto();
+    }
+
+    public long deleteAccount(long targetId) {
+        var member = memberRepository.findById(targetId)
+                .orElseThrow(
+                        () -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다.")
+                );
+        memberRepository.delete(member);
+
+        return targetId;
     }
 }
