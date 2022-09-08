@@ -1,5 +1,6 @@
 package com.shoesbox.global.security;
 
+import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,15 +19,14 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
     private final long memberId;
     private final Set<GrantedAuthority> authorities;
 
-    public CustomUserDetails(
+    @Builder
+    private CustomUserDetails(
             String email,
             String password,
             long memberId,
             Collection<? extends GrantedAuthority> authorities) {
-        Assert.isTrue(email != null && !"".equals(email) && password != null,
-                "Cannot pass null or empty values to constructor");
         this.email = email;
-        this.password = password;
+        this.password = (password == null) ? "" : password;
         this.memberId = memberId;
         this.authorities = Collections.unmodifiableSet(sortAuthorities(authorities));
     }

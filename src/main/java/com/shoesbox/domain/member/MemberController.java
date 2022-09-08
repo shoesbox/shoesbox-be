@@ -30,9 +30,9 @@ public class MemberController {
     }
 
     // 토큰 재발급
-    @PostMapping("/renew")
-    public ResponseEntity<Object> renewToken(@RequestBody TokenRequestDto tokenRequestDto) {
-        return ResponseHandler.ok(memberService.renewToken(tokenRequestDto));
+    @PostMapping("/refresh")
+    public ResponseEntity<Object> refreshToken(@RequestBody TokenRequestDto tokenRequestDto) {
+        return ResponseHandler.ok(memberService.refreshToken(tokenRequestDto));
     }
 
     // 사용자 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
@@ -42,14 +42,14 @@ public class MemberController {
         if (targetId == 0L) {
             return ResponseEntity.ok(memberService.getMemberInfo(memberId, memberId));
         }
-        return ResponseEntity.ok(memberService.getMemberInfo(memberId, targetId));
+        return ResponseHandler.ok(memberService.getMemberInfo(memberId, targetId));
     }
 
     // 로그아웃
     @GetMapping("/logout")
     public ResponseEntity<Object> logout() {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
-        return ResponseEntity.ok(memberService.logout(memberId));
+        return ResponseHandler.ok(memberService.logout(memberId));
     }
 
     // 회원 탈퇴
@@ -59,6 +59,6 @@ public class MemberController {
         if (currentMemberId != targetId) {
             throw new UnAuthorizedException("본인의 memberId가 아닙니다.");
         }
-        return ResponseEntity.ok(memberService.deleteAccount(targetId));
+        return ResponseHandler.ok(memberService.deleteAccount(targetId));
     }
 }
