@@ -1,6 +1,7 @@
 package com.shoesbox.domain.member;
 
 import com.shoesbox.domain.auth.TokenRequestDto;
+import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
@@ -35,7 +36,7 @@ public class MemberController {
         return ResponseHandler.ok(memberService.refreshToken(tokenRequestDto));
     }
 
-    // 사용자 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
+    // 회원 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
     @GetMapping("/info")
     public ResponseEntity<Object> getMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId) {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
@@ -43,6 +44,16 @@ public class MemberController {
             return ResponseEntity.ok(memberService.getMemberInfo(memberId, memberId));
         }
         return ResponseHandler.ok(memberService.getMemberInfo(memberId, targetId));
+    }
+
+    // 회원 정보 수정
+    @PatchMapping("/info")
+    public ResponseEntity<Object> updateMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
+        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        if (memberId != targetId) {
+            throw new UnAuthorizedException("수정 권한이 없습니다.");
+        }
+        return ResponseEntity.ok(memberService.updateMemberInfo(memberId, memberInfoUpdateDto));
     }
 
     // 로그아웃

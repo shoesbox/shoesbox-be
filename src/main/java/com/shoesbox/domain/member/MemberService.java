@@ -4,8 +4,10 @@ import com.shoesbox.domain.auth.RefreshToken;
 import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
 import com.shoesbox.domain.auth.TokenRequestDto;
-import com.shoesbox.domain.member.dto.MemberInfoDto;
+import com.shoesbox.domain.member.dto.MemberInfoResponseDto;
+import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
+import com.shoesbox.domain.photo.S3Service;
 import com.shoesbox.global.exception.runtime.DuplicateUserInfoException;
 import com.shoesbox.global.exception.runtime.InvalidJWTException;
 import com.shoesbox.global.exception.runtime.RefreshTokenNotFoundException;
@@ -36,6 +38,8 @@ public class MemberService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final TokenProvider tokenProvider;
+
+    private final S3Service s3Service;
 
     @Transactional
     public String signUp(SignDto signDto) {
@@ -86,7 +90,7 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public MemberInfoDto getMemberInfo(long memberId, long targetId) {
+    public MemberInfoResponseDto getMemberInfo(long memberId, long targetId) {
         if (memberId != targetId) {
             if (!memberRepository.existsById(memberId)) {
                 throw new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다.");
@@ -95,7 +99,7 @@ public class MemberService {
             Member targetMember = memberRepository.findById(targetId)
                     .orElseThrow(() -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다."));
 
-            return MemberInfoDto.builder()
+            return MemberInfoResponseDto.builder()
                     .nickname(targetMember.getNickname())
                     .profileImageUrl(targetMember.getProfileImageUrl())
                     .selfDescription(targetMember.getSelfDescription())
@@ -105,7 +109,7 @@ public class MemberService {
         Member currentMember = memberRepository.findById(memberId)
                 .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
-        return MemberInfoDto.builder()
+        return MemberInfoResponseDto.builder()
                 .nickname(currentMember.getNickname())
                 .email(currentMember.getEmail())
                 .profileImageUrl(currentMember.getProfileImageUrl())
@@ -113,17 +117,23 @@ public class MemberService {
                 .build();
     }
 
-    public boolean checkEmail(String email) {
-        return !memberRepository.existsByEmail(email);
-    }
+    @Transactional
+    public MemberInfoResponseDto updateMemberInfo(long memberId, MemberInfoUpdateDto memberInfoUpdateDto) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
-    private Member toMember(SignDto signDto) {
-        return Member.builder()
-                .email(signDto.getEmail())
-                .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
-                .nickname(signDto.getEmail().split("@")[0])
-                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
-                .selfDescription("안녕하세요.")
+        String savedUrl = null;
+        if (!memberInfoUpdateDto.getImageFile().isEmpty()) {
+            savedUrl = s3Service.uploadImage(memberInfoUpdateDto.getImageFile());
+        }
+
+        member.updateInfo(memberInfoUpdateDto.getNickname(), savedUrl, memberInfoUpdateDto.getSelfDescription());
+
+        return MemberInfoResponseDto.builder()
+                .nickname(member.getNickname())
+                .email(member.getEmail())
+                .profileImageUrl(member.getProfileImageUrl())
+                .selfDescription(member.getSelfDescription())
                 .build();
     }
 
@@ -193,5 +203,19 @@ public class MemberService {
         memberRepository.delete(member);
 
         return targetId;
+    }
+
+    private boolean checkEmail(String email) {
+        return !memberRepository.existsByEmail(email);
+    }
+
+    private Member toMember(SignDto signDto) {
+        return Member.builder()
+                .email(signDto.getEmail())
+                .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
+                .nickname(signDto.getEmail().split("@")[0])
+                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
+                .selfDescription("안녕하세요.")
+                .build();
     }
 }

@@ -46,6 +46,9 @@ public class PostService {
         // 이미지 업로드
         if (postRequestDto.getImageFiles() != null) {
             for (var imageFile : postRequestDto.getImageFiles()) {
+                if (imageFile.isEmpty()) {
+                    continue;
+                }
                 var uploadedImageUrl = s3Service.uploadImage(imageFile);
                 Photo photo = Photo.builder()
                         .url(uploadedImageUrl)
