@@ -40,8 +40,8 @@ public class MemberService {
     @Transactional
     public String signUp(SignDto signDto) {
         if (!checkEmail(signDto.getEmail())) {
-            log.info("이미 가입되어 있는 유저입니다");
-            throw new DuplicateUserInfoException("이미 가입되어 있는 유저입니다");
+            log.info("사용중인 이메일입니다. 로그인 해주세요.");
+            throw new DuplicateUserInfoException("사용중인 이메일입니다. 로그인 해주세요.");
         }
         Member createdMember = memberRepository.save(toMember(signDto));
 
@@ -124,8 +124,8 @@ public class MemberService {
                 .email(signDto.getEmail())
                 .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
                 .nickname(signDto.getEmail().split("@")[0])
-                .profileImageUrl("Url")
-                .selfDescription("Hi")
+                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
+                .selfDescription("안녕하세요.")
                 .build();
     }
 
