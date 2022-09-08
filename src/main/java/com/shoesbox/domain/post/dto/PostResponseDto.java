@@ -18,6 +18,7 @@ public class PostResponseDto {
     String author;
     String images;
     List<CommentResponseDto> comments;
+    List<String> url;
     String createdAt;
     String modifiedAt;
     int createdYear;

@@ -2,6 +2,7 @@ package com.shoesbox.domain.member;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shoesbox.domain.comment.Comment;
+import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.*;
@@ -62,6 +63,11 @@ public class Member extends BaseTimeEntity {
     private List<Comment> comments;
 
     private int commentCount;
+
+    // 사진
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "member",
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Photo> photos;
 
     public Member updateInfo(
             String nickname,
