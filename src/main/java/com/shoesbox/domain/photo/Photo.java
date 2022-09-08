@@ -21,10 +21,6 @@ public class Photo extends BaseTimeEntity {
     @Column(nullable = false)
     private String url;
 
-//    @Column
-//    private int state = 1;
-
-
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -39,6 +35,5 @@ public class Photo extends BaseTimeEntity {
     private Post post;
     @Column(name = "post_id", updatable = false, insertable = false)
     private Long postId;
-
 
 }
