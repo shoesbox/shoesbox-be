@@ -42,14 +42,14 @@ public class MemberController {
         if (targetId == 0L) {
             return ResponseEntity.ok(memberService.getMemberInfo(memberId, memberId));
         }
-        return ResponseEntity.ok(memberService.getMemberInfo(memberId, targetId));
+        return ResponseHandler.ok(memberService.getMemberInfo(memberId, targetId));
     }
 
     // 로그아웃
     @GetMapping("/logout")
     public ResponseEntity<Object> logout() {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
-        return ResponseEntity.ok(memberService.logout(memberId));
+        return ResponseHandler.ok(memberService.logout(memberId));
     }
 
     // 회원 탈퇴
@@ -59,6 +59,6 @@ public class MemberController {
         if (currentMemberId != targetId) {
             throw new UnAuthorizedException("본인의 memberId가 아닙니다.");
         }
-        return ResponseEntity.ok(memberService.deleteAccount(targetId));
+        return ResponseHandler.ok(memberService.deleteAccount(targetId));
     }
 }
