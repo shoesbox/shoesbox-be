@@ -46,10 +46,10 @@ public class OAuthRequestFactory {
     public String getProfileUrl(String provider) {
         if (provider.equals("kakao")) {
             return kakaoInfo.getKakaoProfileUrl();
-        } else if(provider.equals("google")) {
-            return googleInfo.getGoogleProfileUrl();
-        } else {
+        } else if(provider.equals("naver")) {
             return naverInfo.getNaverProfileUrl();
+        } else {
+            return googleInfo.getGoogleProfileUrl();
         }
     }
 

@@ -10,6 +10,7 @@ import com.shoesbox.domain.auth.TokenDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.social.dto.KakaoProfile;
+import com.shoesbox.domain.social.dto.NaverProfile;
 import com.shoesbox.domain.social.dto.ProfileDto;
 import com.shoesbox.global.security.CustomUserDetails;
 import com.shoesbox.global.security.jwt.TokenProvider;
@@ -23,7 +24,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
@@ -140,6 +140,13 @@ public class ProviderService {
                     .email(kakaoProfile.getKakao_account().getEmail())
                     .nickname(kakaoProfile.getKakao_account().getProfile().getNickname())
                     .profileImage(kakaoProfile.getKakao_account().getProfile().getProfile_image_url())
+                    .build();
+        } else if(provider.equals("naver")) {
+            NaverProfile naverProfile = gson.fromJson(response.getBody(), NaverProfile.class);
+            return ProfileDto.builder()
+                    .email(naverProfile.getResponse().getEmail())
+                    .nickname(naverProfile.getResponse().getNickname())
+                    .profileImage(naverProfile.getResponse().getProfile_image())
                     .build();
         } else{
             return null;

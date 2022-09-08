@@ -16,7 +16,7 @@ public class SocialController {
 
     // 카카오에 redirect url을 통해 인가코드(AuthorizedCode) 요청 - code이름으로 받아옴
     @GetMapping("/oauth2/authorization/{provider}")
-    public TokenDto kakaoLogin(@RequestParam String code, @PathVariable String provider) throws JsonProcessingException {
+    public TokenDto socialLogin(@RequestParam String code, @PathVariable String provider) throws JsonProcessingException {
         return providerService.SocialLogin(code, provider);
     }
 }
