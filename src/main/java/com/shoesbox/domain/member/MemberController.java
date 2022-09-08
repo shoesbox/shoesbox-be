@@ -30,9 +30,9 @@ public class MemberController {
     }
 
     // 토큰 재발급
-    @PostMapping("/renew")
-    public ResponseEntity<Object> renewToken(@RequestBody TokenRequestDto tokenRequestDto) {
-        return ResponseHandler.ok(memberService.renewToken(tokenRequestDto));
+    @PostMapping("/refresh")
+    public ResponseEntity<Object> refreshToken(@RequestBody TokenRequestDto tokenRequestDto) {
+        return ResponseHandler.ok(memberService.refreshToken(tokenRequestDto));
     }
 
     // 사용자 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
