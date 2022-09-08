@@ -18,7 +18,7 @@ public class PostController {
 
     // 생성
     @PostMapping
-    public ResponseEntity<Object> createPost(@RequestBody PostRequestDto postRequestDto) {
+    public ResponseEntity<Object> createPost(PostRequestDto postRequestDto) {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
         String nickname = SecurityUtil.getCurrentMemberNickname();
         return ResponseHandler.ok(postService.createPost(nickname, memberId, postRequestDto));

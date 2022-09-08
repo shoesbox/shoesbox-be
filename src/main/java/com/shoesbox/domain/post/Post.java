@@ -2,6 +2,7 @@ package com.shoesbox.domain.post;
 
 import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.member.Member;
+import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,9 +40,6 @@ public class Post extends BaseTimeEntity {
     @Column(nullable = false)
     private final int createdDay;
 
-    // @Column
-    // private List<MultipartFile> images;
-
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -50,9 +48,16 @@ public class Post extends BaseTimeEntity {
     @Column(name = "member_id", updatable = false, insertable = false)
     private Long memberId;
 
+    // 댓글
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "post",
             cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
+
+    // 이미지
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post",
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Photo> photos;
+
 
     protected Post() {
         this.createdYear = LocalDate.now().getYear();
@@ -75,17 +80,4 @@ public class Post extends BaseTimeEntity {
         this.content = content;
     }
 
-
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "FK_user_post"))
-//    private User user;}
-//    public void mapToUser(User userFoundById) {
-//        this.user = userFoundById;
-//        userFoundById.mapToContents(this);
-//    }
-//    public void mapToPost(String images) {
-//        this.images = images;
-//    }
-
 }
-

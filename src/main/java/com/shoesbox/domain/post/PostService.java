@@ -4,6 +4,9 @@ import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.comment.CommentResponseDto;
 import com.shoesbox.domain.comment.CommentService;
 import com.shoesbox.domain.member.Member;
+import com.shoesbox.domain.photo.Photo;
+import com.shoesbox.domain.photo.PhotoRepository;
+import com.shoesbox.domain.photo.S3Service;
 import com.shoesbox.domain.post.dto.PostListResponseDto;
 import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
@@ -21,21 +24,41 @@ import java.util.List;
 @Service
 public class PostService {
     private final PostRepository postRepository;
+    private final PhotoRepository photoRepository;
+    private final S3Service s3Service;
 
     // 생성
     @Transactional
-    public PostResponseDto createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
+    public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
         Member member = Member.builder()
                 .id(memberId)
                 .build();
+
+        // 게시글 생성
         Post post = Post.builder()
                 .title(postRequestDto.getTitle())
                 .content(postRequestDto.getContent())
                 .author(nickname)
                 .member(member)
                 .build();
-        postRepository.save(post);
-        return toPostResponseDto(post);
+        post = postRepository.save(post);
+
+        // 이미지 업로드
+        if (postRequestDto.getImageFiles() != null) {
+            for (var imageFile : postRequestDto.getImageFiles()) {
+                var uploadedImageUrl = s3Service.uploadImage(imageFile);
+                Photo photo = Photo.builder()
+                        .url(uploadedImageUrl)
+                        .post(post)
+                        .member(member)
+                        .build();
+                photoRepository.save(
+                        photo
+                );
+            }
+        }
+
+        return post.getId();
     }
 
     // 전체 조회
@@ -102,11 +125,16 @@ public class PostService {
     }
 
     private static PostResponseDto toPostResponseDto(Post post) {
+        var urls = new ArrayList<String>();
+        for (var photo : post.getPhotos()) {
+            urls.add(photo.getUrl());
+        }
         return PostResponseDto.builder()
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .author(post.getAuthor())
+                .url(urls)
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
@@ -117,10 +145,11 @@ public class PostService {
     }
 
     private static PostListResponseDto toPostListResponseDto(Post post) {
+        String url = post.getPhotos().get(0).getUrl();
         return PostListResponseDto.builder()
                 .postId(post.getId())
                 .title(post.getTitle())
-                .thumbnailUrl("URL")
+                .thumbnailUrl(url)
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
                 .createdYear(post.getCreatedYear())
