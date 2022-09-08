@@ -214,8 +214,8 @@ public class MemberService {
                 .email(signDto.getEmail())
                 .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
                 .nickname(signDto.getEmail().split("@")[0])
-                .profileImageUrl("Url")
-                .selfDescription("Hi")
+                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
+                .selfDescription("안녕하세요.")
                 .build();
     }
 }
