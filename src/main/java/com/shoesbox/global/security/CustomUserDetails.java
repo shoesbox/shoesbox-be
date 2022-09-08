@@ -20,7 +20,7 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
     private final Set<GrantedAuthority> authorities;
 
     @Builder
-    private CustomUserDetails(
+    public CustomUserDetails(
             String email,
             String password,
             long memberId,
