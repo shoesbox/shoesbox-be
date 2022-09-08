@@ -9,6 +9,7 @@ import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
+import com.shoesbox.domain.social.dto.GoogleProfile;
 import com.shoesbox.domain.social.dto.KakaoProfile;
 import com.shoesbox.domain.social.dto.NaverProfile;
 import com.shoesbox.domain.social.dto.ProfileDto;
@@ -149,7 +150,12 @@ public class ProviderService {
                     .profileImage(naverProfile.getResponse().getProfile_image())
                     .build();
         } else{
-            return null;
+            GoogleProfile googleProfile = gson.fromJson(response.getBody(), GoogleProfile.class);
+            return ProfileDto.builder()
+                    .email(googleProfile.getEmail())
+                    .nickname(googleProfile.getName())
+                    .profileImage(googleProfile.getPicture())
+                    .build();
         }
     }
 }
