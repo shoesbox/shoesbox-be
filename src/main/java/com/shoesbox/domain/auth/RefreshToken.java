@@ -19,13 +19,11 @@ import javax.validation.constraints.NotNull;
 @Table(name = "refresh_token")
 @Entity
 public class RefreshToken extends BaseTimeEntity {
-
     @Id
     @Column
     @NotNull
-    // userId(PK)가 들어감
-    Long userId;
-
+    // memberId(Member Entity의 PK)가 들어감
+    Long memberId;
     @With
     @Column
     @NotBlank

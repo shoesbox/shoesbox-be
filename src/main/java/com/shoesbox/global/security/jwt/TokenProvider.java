@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class TokenProvider {
-
     private static final String AUTHORITIES_KEY = "auth";
     private static final String BEARER_TYPE = "bearer";
     private static final String EMAIL = "email";
@@ -38,14 +37,6 @@ public class TokenProvider {
     private final long REFRESH_TOKEN_LIFETIME_IN_MS;
     private final Key key;
     private final RefreshTokenRepository refreshTokenRepository;
-
-    public long getACCESS_TOKEN_LIFETIME_IN_MS() {
-        return ACCESS_TOKEN_LIFETIME_IN_MS;
-    }
-
-    public long getREFRESH_TOKEN_LIFETIME_IN_MS() {
-        return REFRESH_TOKEN_LIFETIME_IN_MS;
-    }
 
     // yml에 저장한 secret key와 토큰 지속시간 가져오기
     public TokenProvider(
@@ -69,9 +60,9 @@ public class TokenProvider {
     }
 
     // 토큰 생성
-    public TokenDto createTokenDto(Authentication authentication, long memberId) {
+    public TokenDto createTokenDto(CustomUserDetails userDetails) {
         // 권한 가져오기
-        String authorities = authentication.getAuthorities().stream()
+        String authorities = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
@@ -86,9 +77,9 @@ public class TokenProvider {
                 // payload "sub": "name"
                 .setSubject("Access Token")
                 // 클레임에 username 저장
-                .claim(EMAIL, authentication.getName())
+                .claim(EMAIL, userDetails.getEmail())
                 // 클레임에 userId(PK) 저장
-                .claim(USER_ID, String.valueOf(memberId))
+                .claim(USER_ID, String.valueOf(userDetails.getMemberId()))
                 // payload "auth": "ROLE_USER"
                 .claim(AUTHORITIES_KEY, authorities)
                 // payload "exp": accessTokenLifetimeInSeconds * 1000
@@ -110,8 +101,9 @@ public class TokenProvider {
                 .accessTokenLifetime(this.ACCESS_TOKEN_LIFETIME_IN_MS)
                 .refreshToken(refreshToken)
                 .refreshTokenLifetime(this.REFRESH_TOKEN_LIFETIME_IN_MS)
-                .username(authentication.getName())
-                .memberId(memberId)
+                .email(userDetails.getEmail())
+                .nickname(userDetails.getNickname())
+                .memberId(userDetails.getMemberId())
                 .build();
     }
 
@@ -122,7 +114,9 @@ public class TokenProvider {
                 .accessTokenLifetime(1L)
                 .refreshToken("logout")
                 .refreshTokenLifetime(1L)
-                .username("")
+                .email("logout")
+                .nickname("logout")
+                .memberId(0L)
                 .build();
     }
 
@@ -130,12 +124,12 @@ public class TokenProvider {
         // 토큰 복호화
         Claims claims = parseClaims(accessToken);
 
-        // 클레임에서 username 가져오기
-        String username = (String) claims.get(EMAIL);
-        // 클레임에서 userId 가져오기
-        long userId = Long.parseLong((String) claims.get(USER_ID));
+        // 클레임에서 email 가져오기
+        String email = (String) claims.get(EMAIL);
+        // 클레임에서 memberId 가져오기
+        long memberId = Long.parseLong((String) claims.get(USER_ID));
         // db에서 리프레쉬 토큰이 존재하는지(로그인 여부) 확인
-        if (!refreshTokenRepository.existsById(userId)) {
+        if (!refreshTokenRepository.existsById(memberId)) {
             throw new InvalidJWTException("로그아웃한 유저입니다.");
         }
 
@@ -148,11 +142,14 @@ public class TokenProvider {
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
-        // User 객체를 생성해서 Authentication 반환
-        CustomUserDetails principal =
-                new CustomUserDetails(
-                        username, "", userId, authorities);
+        // CustomUserDetails 객체를 생성해서
+        CustomUserDetails principal = CustomUserDetails.builder()
+                .email(email)
+                .memberId(memberId)
+                .authorities(authorities)
+                .build();
 
+        // Authentication 반환
         return new UsernamePasswordAuthenticationToken(principal, accessToken, authorities);
     }
 

@@ -29,8 +29,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
-
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -46,8 +44,8 @@ public class MemberService {
     @Transactional
     public String signUp(SignDto signDto) {
         if (!checkEmail(signDto.getEmail())) {
-            log.info("이미 가입되어 있는 유저입니다");
-            throw new DuplicateUserInfoException("이미 가입되어 있는 유저입니다");
+            log.info("사용중인 이메일입니다. 로그인 해주세요.");
+            throw new DuplicateUserInfoException("사용중인 이메일입니다. 로그인 해주세요.");
         }
         Member createdMember = memberRepository.save(toMember(signDto));
 
@@ -72,15 +70,17 @@ public class MemberService {
         long memberId = memberRepository.findByEmail(authentication.getName())
                 .map(Member::getId)
                 .orElseThrow(
-                        () -> new UsernameNotFoundException("email: " + authentication.getName() + "은 존재하지 않는 계정입니다.")
-                );
+                        () -> new UsernameNotFoundException(
+                                "email: " + authentication.getName() + "은 존재하지 않는 계정입니다."));
+        // CustomUserDetails 생성
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         // 3. 인증 정보를 사용해 JWT 토큰 생성
-        TokenDto tokenDto = tokenProvider.createTokenDto(authentication, memberId);
+        TokenDto tokenDto = tokenProvider.createTokenDto(userDetails);
 
         // 5. RefreshToken 저장
         RefreshToken refreshToken = RefreshToken.builder()
-                .userId(memberId)
+                .memberId(memberId)
                 .tokenValue(tokenDto.getRefreshToken())
                 .build();
         refreshTokenRepository.save(refreshToken);
@@ -97,9 +97,7 @@ public class MemberService {
             }
 
             Member targetMember = memberRepository.findById(targetId)
-                    .orElseThrow(
-                            () -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다.")
-                    );
+                    .orElseThrow(() -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다."));
 
             return MemberInfoResponseDto.builder()
                     .nickname(targetMember.getNickname())
@@ -109,9 +107,7 @@ public class MemberService {
         }
 
         Member currentMember = memberRepository.findById(memberId)
-                .orElseThrow(
-                        () -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다.")
-                );
+                .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
         return MemberInfoResponseDto.builder()
                 .nickname(currentMember.getNickname())
@@ -142,7 +138,7 @@ public class MemberService {
     }
 
     @Transactional
-    public TokenDto renewToken(TokenRequestDto tokenRequestDto) {
+    public TokenDto refreshToken(TokenRequestDto tokenRequestDto) {
         // 1. Refresh Token 검증
         try {
             tokenProvider.validateToken(tokenRequestDto.getRefreshToken());
@@ -163,33 +159,29 @@ public class MemberService {
             throw new InvalidJWTException(ExceptionCode.UNKNOWN_ERROR.getMessage());
         }
 
-        // 2. Access Token 에서 userId(PK) 가져오기
+        // 2. Access Token 에서 memberId(PK) 가져오기
         Authentication authentication = tokenProvider.getAuthentication(tokenRequestDto.getAccessToken());
         var userDetails = (CustomUserDetails) authentication.getPrincipal();
-        var userId = userDetails.getMemberId();
 
-        // 3. 리프레쉬 토큰 저장소에서 userId(PK) 를 기반으로 토큰 가져옴
+        // 3. 리프레쉬 토큰 저장소에서 memberId(PK) 를 기반으로 토큰 가져옴
         RefreshToken savedRefreshToken =
-                refreshTokenRepository.findById(userId)
-                        .orElseThrow(
-                                () -> new RefreshTokenNotFoundException("로그아웃 된 사용자입니다.")
-                        );
+                refreshTokenRepository.findById(userDetails.getMemberId())
+                        .orElseThrow(() -> new RefreshTokenNotFoundException("로그아웃 된 사용자입니다."));
 
         // 4. Refresh Token 일치하는지 검사
         if (!savedRefreshToken.getTokenValue().equals(tokenRequestDto.getRefreshToken())) {
             throw new InvalidJWTException("토큰의 유저 정보가 일치하지 않습니다.");
         }
-        // 리프레쉬 토큰 만료시간 검증 필요
 
-        // 5. Access Token 에서 가져온 userId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성
-        TokenDto tokenDto = tokenProvider.createTokenDto(authentication, userId);
+
+        // 5. Access Token 에서 가져온 memberId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성
+        TokenDto refreshedTokenDto = tokenProvider.createTokenDto(userDetails);
 
         // 6. db의 리프레쉬 토큰 정보 업데이트
-        RefreshToken newRefreshToken = savedRefreshToken.withTokenValue(tokenDto.getRefreshToken());
-        refreshTokenRepository.save(newRefreshToken);
+        refreshTokenRepository.save(savedRefreshToken.withTokenValue(refreshedTokenDto.getRefreshToken()));
 
         // 토큰 발급
-        return tokenDto;
+        return refreshedTokenDto;
     }
 
     @Transactional
