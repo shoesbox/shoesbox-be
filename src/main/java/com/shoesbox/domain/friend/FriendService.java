@@ -38,19 +38,23 @@ public class FriendService {
                 .nickname(currentUserName)
                 .build();
 
-        if(twoWayCheck(fromMember.getId(), toMember.getId())){
-            throw new IllegalArgumentException("이미 요청 대기중인 친구입니다.");
+        if(twoWayCheck(fromMember.getId(), toMember.getId()) != null) {
+            if(twoWayCheck(fromMember.getId(), toMember.getId()).getFriendState() == FriendState.REQUEST){
+                throw new IllegalArgumentException("이미 요청 대기중인 친구입니다.");
+            } else {
+                throw new IllegalArgumentException("이미 친구인 상태입니다.");
+            }
+        } else{
+            Friend friend = Friend.builder()
+                    .fromMember(fromMember)
+                    .toMember(toMember)
+                    .friendState(FriendState.REQUEST)
+                    .build();
+
+            friendRepository.save(friend);
+
+            return toFriendResponseDto(friend);
         }
-
-        Friend friend = Friend.builder()
-                .fromMember(fromMember)
-                .toMember(toMember)
-                .friendState(FriendState.REQUEST)
-                .build();
-
-        friendRepository.save(friend);
-
-        return toFriendResponseDto(friend);
     }
 
     @Transactional(readOnly = true)
@@ -69,7 +73,7 @@ public class FriendService {
     public FriendResponseDto acceptFriend(long fromMemberId, FriendState friendState){
         long currentUserId = SecurityUtil.getCurrentMemberIdByLong();
         Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentUserId, friendState).orElseThrow(
-                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                () -> new IllegalArgumentException("요청 목록에 없는 회원입니다."));
 
         requestedFriend.updateFriendState(FriendState.FRIEND);
 
@@ -99,9 +103,9 @@ public class FriendService {
         return responseDto;
     }
 
-    private boolean twoWayCheck(long fromMemberId, long toMemberId){
+    private Friend twoWayCheck(long fromMemberId, long toMemberId){
         // 요청값과 반대의 경우가 존재하는지(쌍방 요청인지) 체크
         // 상대방이 요청한 이력이 있을 경우 친구 요청 불가(요청리스트에서 수락)
-        return friendRepository.existsByFromMemberIdAndToMemberId(toMemberId, fromMemberId);
+        return friendRepository.findByFromMemberIdAndToMemberId(toMemberId, fromMemberId);
     }
 }
