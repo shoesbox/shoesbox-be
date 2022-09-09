@@ -71,6 +71,7 @@ public class ProviderService {
         }
     }
 
+    @Transactional
     public TokenDto getTokenInfo(Member member){
 
         // 강제 로그인 처리
