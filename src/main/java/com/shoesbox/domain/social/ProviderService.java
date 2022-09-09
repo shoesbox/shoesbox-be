@@ -50,16 +50,15 @@ public class ProviderService {
 
         ProfileDto profileDto = getProfile(accessToken, provider);
 
-        if(memberRepository.existsByEmail(profileDto.getEmail())) {
+        Member member = memberRepository.findByEmail(profileDto.getEmail()).orElseThrow(
+                () -> new IllegalArgumentException("해당 유저 정보가 없습니다"));
+        if (member != null) {
             // db에 있을 시 토큰 생성
-            Member member = memberRepository.findByEmail(profileDto.getEmail()).orElseThrow(
-                    () -> new IllegalArgumentException("해당 유저 정보가 없습니다"));
-
             return getTokenInfo(member);
         } else{
             // db에 없을 경우 등록 후 토큰 생성
             String password = UUID.randomUUID().toString(); // 랜덤 password 생성
-            Member member = Member.builder()
+            member = Member.builder()
                     .email(profileDto.getEmail())
                     .password(bCryptPasswordEncoder.encode(password))
                     .nickname(profileDto.getNickname())
@@ -80,9 +79,11 @@ public class ProviderService {
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
-        CustomUserDetails principal =
-                new CustomUserDetails(
-                        member.getEmail(), "", member.getId(), authorities);
+        CustomUserDetails principal = CustomUserDetails.builder()
+                .email(member.getEmail())
+                .memberId(member.getId())
+                .authorities(authorities)
+                .build();
 
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, authorities));
 
@@ -110,7 +111,7 @@ public class ProviderService {
         HttpEntity<LinkedMultiValueMap<String, String>> request = new HttpEntity<>(oAuthRequest.getMap(), headers);
 
         RestTemplate rt = new RestTemplate();
-        ResponseEntity<String> response = rt.postForEntity(oAuthRequest.getToeknUrl(), request, String.class);
+        ResponseEntity<String> response = rt.postForEntity(oAuthRequest.getTokenUrl(), request, String.class);
 
         // HTTP 응답 (JSON) -> 액세스 토큰 파싱
         String responseBody = response.getBody();

@@ -1,11 +1,12 @@
 package com.shoesbox.domain.social.dto;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor
 public class KakaoProfile {
     KakaoAccount kakao_account;

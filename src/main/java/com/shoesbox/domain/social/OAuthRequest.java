@@ -7,6 +7,6 @@ import org.springframework.util.LinkedMultiValueMap;
 @Getter
 @AllArgsConstructor
 public class OAuthRequest {
-    private String toeknUrl;
+    private String tokenUrl;
     private LinkedMultiValueMap<String, String> map;
 }
