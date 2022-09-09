@@ -173,7 +173,6 @@ public class MemberService {
             throw new InvalidJWTException("토큰의 유저 정보가 일치하지 않습니다.");
         }
 
-
         // 5. Access Token 에서 가져온 memberId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성
         TokenDto refreshedTokenDto = tokenProvider.createTokenDto(userDetails);
 
