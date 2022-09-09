@@ -30,6 +30,10 @@ public class PostService {
     // 생성
     @Transactional
     public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
+        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty()) {
+            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+        }
+
         Member member = Member.builder()
                 .id(memberId)
                 .build();
@@ -137,7 +141,8 @@ public class PostService {
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .author(post.getAuthor())
+                .nickname(post.getAuthor())
+                .memberId(post.getMemberId())
                 .url(urls)
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
@@ -149,10 +154,14 @@ public class PostService {
     }
 
     private static PostListResponseDto toPostListResponseDto(Post post) {
-        String url = post.getPhotos().get(0).getUrl();
+        String url = null;
+        if (post.getPhotos() != null && !post.getPhotos().isEmpty()) {
+            url = post.getPhotos().get(0).getUrl();
+        }
         return PostListResponseDto.builder()
                 .postId(post.getId())
                 .title(post.getTitle())
+                // TODO: 썸네일 최적화 필요
                 .thumbnailUrl(url)
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())

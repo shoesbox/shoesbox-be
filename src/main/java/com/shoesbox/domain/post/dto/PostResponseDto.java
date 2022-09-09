@@ -15,7 +15,8 @@ public class PostResponseDto {
     Long postId;
     String title;
     String content;
-    String author;
+    String nickname;
+    long memberId;
     String images;
     List<CommentResponseDto> comments;
     List<String> url;
