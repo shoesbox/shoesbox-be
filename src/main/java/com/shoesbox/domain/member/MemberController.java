@@ -48,7 +48,8 @@ public class MemberController {
 
     // 회원 정보 수정
     @PatchMapping("/info")
-    public ResponseEntity<Object> updateMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
+    public ResponseEntity<Object> updateMemberInfo(@RequestParam(value = "m",
+            defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
         if (memberId != targetId) {
             throw new UnAuthorizedException("수정 권한이 없습니다.");
@@ -64,7 +65,7 @@ public class MemberController {
     }
 
     // 회원 탈퇴
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public ResponseEntity<Object> deleteAccount(@RequestParam(value = "m") long targetId) {
         long currentMemberId = SecurityUtil.getCurrentMemberIdByLong();
         if (currentMemberId != targetId) {
