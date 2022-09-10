@@ -2,6 +2,7 @@ package com.shoesbox.domain.member;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shoesbox.domain.comment.Comment;
+import com.shoesbox.domain.friend.Friend;
 import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.global.common.BaseTimeEntity;
@@ -64,12 +65,19 @@ public class Member extends BaseTimeEntity {
 
     private int commentCount;
 
+    // 친구들
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "fromMember",
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Friend> friends;
+
+    private int friendCount;
+
     // 사진
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "member",
             cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Photo> photos;
 
-    public Member updateInfo(
+    public void updateInfo(
             String nickname,
             String profileImageUrl,
             String selfDescription) {
@@ -84,8 +92,6 @@ public class Member extends BaseTimeEntity {
         if (selfDescription != null) {
             this.selfDescription = selfDescription;
         }
-
-        return this;
     }
 
     public int addPostCount() {
@@ -102,5 +108,13 @@ public class Member extends BaseTimeEntity {
 
     public int minusCommentCount() {
         return --commentCount;
+    }
+
+    public int addFriendCount() {
+        return ++friendCount;
+    }
+
+    public int minusFriendCount() {
+        return --friendCount;
     }
 }
