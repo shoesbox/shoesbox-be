@@ -39,7 +39,7 @@ public class MemberController {
     // 회원 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
     @GetMapping("/info")
     public ResponseEntity<Object> getMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         if (targetId == 0L) {
             return ResponseEntity.ok(memberService.getMemberInfo(memberId, memberId));
         }
@@ -50,7 +50,7 @@ public class MemberController {
     @PatchMapping("/info")
     public ResponseEntity<Object> updateMemberInfo(@RequestParam(value = "m",
             defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         if (memberId != targetId) {
             throw new UnAuthorizedException("수정 권한이 없습니다.");
         }
@@ -60,14 +60,14 @@ public class MemberController {
     // 로그아웃
     @GetMapping("/logout")
     public ResponseEntity<Object> logout() {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(memberService.logout(memberId));
     }
 
     // 회원 탈퇴
     @DeleteMapping("/delete")
     public ResponseEntity<Object> deleteAccount(@RequestParam(value = "m") long targetId) {
-        long currentMemberId = SecurityUtil.getCurrentMemberIdByLong();
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
         if (currentMemberId != targetId) {
             throw new UnAuthorizedException("본인의 memberId가 아닙니다.");
         }

@@ -21,7 +21,7 @@ public class PostController {
     // 생성
     @PostMapping
     public ResponseEntity<Object> createPost(PostRequestDto postRequestDto) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         String nickname = SecurityUtil.getCurrentMemberNickname();
         return ResponseHandler.ok(postService.createPost(nickname, memberId, postRequestDto));
     }
@@ -34,7 +34,7 @@ public class PostController {
             @RequestParam(value = "y", defaultValue = "0", required = false) int year,
             @RequestParam(value = "m", defaultValue = "0", required = false) int month) {
         if (memberId == 0) {
-            memberId = SecurityUtil.getCurrentMemberIdByLong();
+            memberId = SecurityUtil.getCurrentMemberId();
         }
 
         if (year == 0) {
@@ -51,21 +51,21 @@ public class PostController {
     // 상세 조회
     @GetMapping("/{postId}")
     public ResponseEntity<Object> getPost(@PathVariable long postId) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(postService.getPost(memberId, postId));
     }
 
     // 수정
     @PutMapping("/{postId}")
     public ResponseEntity<Object> updatePost(@PathVariable long postId, @RequestBody PostRequestDto postRequestDto) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(postService.updatePost(memberId, postId, postRequestDto));
     }
 
     // 삭제
     @DeleteMapping("/{postId}")
     public ResponseEntity<Object> deletePost(@PathVariable long postId) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(postService.deletePost(memberId, postId));
     }
 
