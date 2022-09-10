@@ -17,9 +17,8 @@ public class PostResponseDto {
     String content;
     String nickname;
     long memberId;
-    String images;
     List<CommentResponseDto> comments;
-    List<String> url;
+    List<String> imageUrls;
     String createdAt;
     String modifiedAt;
     int createdYear;

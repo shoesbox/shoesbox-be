@@ -30,7 +30,7 @@ public class PostService {
     // 생성
     @Transactional
     public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
-        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty()) {
+        if (postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
             throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
         }
 
@@ -59,9 +59,7 @@ public class PostService {
                         .post(post)
                         .member(member)
                         .build();
-                photoRepository.save(
-                        photo
-                );
+                photoRepository.save(photo);
             }
         }
 
@@ -143,7 +141,7 @@ public class PostService {
                 .content(post.getContent())
                 .nickname(post.getAuthor())
                 .memberId(post.getMemberId())
-                .url(urls)
+                .imageUrls(urls)
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
