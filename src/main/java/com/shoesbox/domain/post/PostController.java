@@ -57,7 +57,7 @@ public class PostController {
 
     // 수정
     @PutMapping("/{postId}")
-    public ResponseEntity<Object> updatePost(@PathVariable long postId, @RequestBody PostRequestDto postRequestDto) {
+    public ResponseEntity<Object> updatePost(@PathVariable long postId, PostRequestDto postRequestDto) {
         long memberId = SecurityUtil.getCurrentMemberIdByLong();
         return ResponseHandler.ok(postService.updatePost(memberId, postId, postRequestDto));
     }
