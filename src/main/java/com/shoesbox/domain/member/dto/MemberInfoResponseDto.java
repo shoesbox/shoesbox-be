@@ -13,8 +13,8 @@ import lombok.extern.jackson.Jacksonized;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class MemberInfoResponseDto {
+    long memberId;
     String nickname;
     String email;
     String profileImageUrl;
-    String selfDescription;
 }

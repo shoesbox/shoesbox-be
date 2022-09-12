@@ -45,9 +45,6 @@ public class Member extends BaseTimeEntity {
     private String profileImageUrl;
     @Column
     @NotBlank
-    private String selfDescription;
-    @Column
-    @NotBlank
     @JsonIgnore
     private final String authority = "ROLE_USER";
 
@@ -82,18 +79,13 @@ public class Member extends BaseTimeEntity {
 
     public void updateInfo(
             String nickname,
-            String profileImageUrl,
-            String selfDescription) {
+            String profileImageUrl) {
         if (nickname != null) {
             this.nickname = nickname;
         }
 
         if (profileImageUrl != null) {
             this.profileImageUrl = profileImageUrl;
-        }
-
-        if (selfDescription != null) {
-            this.selfDescription = selfDescription;
         }
     }
 

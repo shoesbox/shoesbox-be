@@ -16,7 +16,9 @@ import com.shoesbox.domain.social.dto.ProfileDto;
 import com.shoesbox.global.security.CustomUserDetails;
 import com.shoesbox.global.security.jwt.TokenProvider;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -52,10 +54,7 @@ public class ProviderService {
 
         Member member = memberRepository.findByEmail(profileDto.getEmail()).orElseThrow(
                 () -> new IllegalArgumentException("해당 유저 정보가 없습니다"));
-        if (member != null) {
-            // db에 있을 시 토큰 생성
-            return getTokenInfo(member);
-        } else{
+        if (member == null) {
             // db에 없을 경우 등록 후 토큰 생성
             String password = UUID.randomUUID().toString(); // 랜덤 password 생성
             member = Member.builder()
@@ -63,16 +62,17 @@ public class ProviderService {
                     .password(bCryptPasswordEncoder.encode(password))
                     .nickname(profileDto.getNickname())
                     .profileImageUrl(profileDto.getProfileImage())
-                    .selfDescription(provider + " 유저입니다.")
                     .build();
             memberRepository.save(member);
 
-            return getTokenInfo(member);
         }
+        
+        // db에 있을 시 그냥 토큰 생성
+        return getTokenInfo(member);
     }
 
     @Transactional
-    public TokenDto getTokenInfo(Member member){
+    public TokenDto getTokenInfo(Member member) {
 
         // 강제 로그인 처리
         Collection<? extends GrantedAuthority> authorities =
@@ -86,7 +86,8 @@ public class ProviderService {
                 .authorities(authorities)
                 .build();
 
-        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, authorities));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null,
+                authorities));
 
         // 토큰 생성
         TokenDto tokenDto = tokenProvider.createTokenDto(principal);
@@ -122,7 +123,7 @@ public class ProviderService {
         return jsonNode.get("access_token").asText();
     }
 
-    public ProfileDto getProfile(String accessToken, String provider) throws JsonProcessingException {
+    public ProfileDto getProfile(String accessToken, String provider) {
         // HTTP Header 생성
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
@@ -136,7 +137,7 @@ public class ProviderService {
         return extractProfile(response, provider);
     }
 
-    private ProfileDto extractProfile(ResponseEntity<String> response, String provider) throws JsonProcessingException {
+    private ProfileDto extractProfile(ResponseEntity<String> response, String provider) {
         if (provider.equals("kakao")) {
             KakaoProfile kakaoProfile = gson.fromJson(response.getBody(), KakaoProfile.class);
             return ProfileDto.builder()
@@ -144,14 +145,14 @@ public class ProviderService {
                     .nickname(kakaoProfile.getKakao_account().getProfile().getNickname())
                     .profileImage(kakaoProfile.getKakao_account().getProfile().getProfile_image_url())
                     .build();
-        } else if(provider.equals("naver")) {
+        } else if (provider.equals("naver")) {
             NaverProfile naverProfile = gson.fromJson(response.getBody(), NaverProfile.class);
             return ProfileDto.builder()
                     .email(naverProfile.getResponse().getEmail())
                     .nickname(naverProfile.getResponse().getNickname())
                     .profileImage(naverProfile.getResponse().getProfile_image())
                     .build();
-        } else{
+        } else {
             GoogleProfile googleProfile = gson.fromJson(response.getBody(), GoogleProfile.class);
             return ProfileDto.builder()
                     .email(googleProfile.getEmail())
