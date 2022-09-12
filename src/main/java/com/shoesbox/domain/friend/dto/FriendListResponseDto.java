@@ -5,13 +5,13 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Getter
-@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class FriendListResponseDto {
     long memberId;
     String memberNickname;
     FriendState friendState;
 
-    @Builder
     public FriendListResponseDto (long memberId, String memberNickname, FriendState friendState){
         this.memberId = memberId;
         this.memberNickname = memberNickname;

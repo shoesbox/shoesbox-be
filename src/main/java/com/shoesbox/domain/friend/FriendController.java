@@ -18,38 +18,38 @@ public class FriendController {
 
     @PostMapping
     public ResponseEntity<Object> requestFriend(@Valid @RequestBody FriendRequestDto friendRequestDto){
-        long currentUserId = SecurityUtil.getCurrentMemberId();
-        String currentUserName = SecurityUtil.getCurrentMemberNickname();
-        return ResponseHandler.ok(friendService.requestFriend(currentUserId, currentUserName, friendRequestDto));
+        long currnetMemberId = SecurityUtil.getCurrentMemberId();
+        String currentMemberNickname = SecurityUtil.getCurrentMemberNickname();
+        return ResponseHandler.ok(friendService.requestFriend(currnetMemberId, currentMemberNickname, friendRequestDto));
     }
 
     @GetMapping
     public ResponseEntity<Object> getFriendList(){
-        long currentUserId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(friendService.getFriendList(currentUserId, FriendState.FRIEND));
+        long currnetMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(friendService.getFriendList(currnetMemberId, FriendState.FRIEND));
     }
 
     @GetMapping("/request")
     public ResponseEntity<Object> getFriendRequestList(){
-        long currentUserId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(friendService.getFriendList(currentUserId, FriendState.REQUEST));
+        long currnetMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(friendService.getFriendList(currnetMemberId, FriendState.REQUEST));
     }
 
     @PutMapping("/{fromMemberId}/accept")
     public ResponseEntity<Object> acceptFriend(@PathVariable long fromMemberId){
-        long currentUserId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(friendService.acceptFriend(fromMemberId, currentUserId, FriendState.REQUEST));
+        long currnetMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(friendService.acceptFriend(fromMemberId, currnetMemberId, FriendState.REQUEST));
     }
 
     @DeleteMapping("/{fromMemberId}/refuse")
     public ResponseEntity<Object> refuseFriend(@PathVariable long fromMemberId){
-        long currentUserId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(friendService.refuseFriend(fromMemberId, currentUserId, FriendState.REQUEST));
+        long currnetMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(friendService.refuseFriend(fromMemberId, currnetMemberId, FriendState.REQUEST));
     }
 
     @DeleteMapping("/{friendId}")
     public ResponseEntity<Object> deleteFriend(@PathVariable long friendId){
-        long currentUserId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(friendService.deleteFriend(friendId, currentUserId, FriendState.FRIEND));
+        long currnetMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(friendService.deleteFriend(friendId, currnetMemberId, FriendState.FRIEND));
     }
 }

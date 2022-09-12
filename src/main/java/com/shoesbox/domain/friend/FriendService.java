@@ -20,19 +20,19 @@ public class FriendService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public FriendResponseDto requestFriend(long currentUserId, String currentUserName, FriendRequestDto friendRequestDto){
+    public FriendResponseDto requestFriend(long currentMemberId, String currentMemberNickname, FriendRequestDto friendRequestDto){
 
         Member toMember = memberRepository.findByEmail(friendRequestDto.getEmail()).orElseThrow(
                 () -> new IllegalArgumentException("해당 회원을 찾을 수 없습니다."));
 
-        Member fromMember = Member.builder()
-                .id(currentUserId)
-                .nickname(currentUserName)
-                .build();
-
-        if(currentUserId == toMember.getId()){
+        if(currentMemberId == toMember.getId()){
             throw new IllegalArgumentException("자기 자신을 친구추가 할 수 없습니다.");
         }
+
+        Member fromMember = Member.builder()
+                .id(currentMemberId)
+                .nickname(currentMemberNickname)
+                .build();
 
         // 친구요청 받은 건 중복체크
         Friend requestToMe = friendRepository.findByToMemberIdAndFromMemberId(toMember.getId(), fromMember.getId());
@@ -57,12 +57,9 @@ public class FriendService {
     }
 
     @Transactional(readOnly = true)
-    public List<FriendListResponseDto> getFriendList(long currentUserId, FriendState friendState) {
-        // 친구 요청을 받은 리스트
-        List<Friend> fromFriends = friendRepository.findAllByFromMemberIdAndFriendState(currentUserId, friendState);
+    public List<FriendListResponseDto> getFriendList(long currentMemberId, FriendState friendState) {
         // 친구 요청을 한 리스트
-        List<Friend> toFriends = friendRepository.findAllByToMemberIdAndFriendState(currentUserId, friendState);
-
+        List<Friend> toFriends = friendRepository.findAllByToMemberIdAndFriendState(currentMemberId, friendState);
         List<FriendListResponseDto> friendList = new ArrayList<>();
         for (Friend friend : toFriends) {
             friendList.add(toFromFriendListResponseDto(friend));
@@ -70,6 +67,8 @@ public class FriendService {
 
         // 친구 상태인 경우 요청한 리스트까지 추가
         if (friendState == FriendState.FRIEND){
+            // 친구 요청을 받은 리스트
+            List<Friend> fromFriends = friendRepository.findAllByFromMemberIdAndFriendState(currentMemberId, friendState);
             for (Friend friend : fromFriends) {
                 friendList.add(toToFriendListResponseDto(friend));
             }
@@ -79,8 +78,8 @@ public class FriendService {
     }
 
     @Transactional
-    public FriendResponseDto acceptFriend(long fromMemberId, long currentUserId, FriendState friendState){
-        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentUserId, friendState).orElseThrow(
+    public FriendResponseDto acceptFriend(long fromMemberId, long currentMemberId, FriendState friendState){
+        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentMemberId, friendState).orElseThrow(
                 () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         requestedFriend.updateFriendState(FriendState.FRIEND);
@@ -88,8 +87,8 @@ public class FriendService {
         return toFriendResponseDto(requestedFriend);
     }
 
-    public FriendResponseDto refuseFriend(long fromMemberId, long currentUserId, FriendState friendState){
-        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentUserId, friendState).orElseThrow(
+    public FriendResponseDto refuseFriend(long fromMemberId, long currentMemberId, FriendState friendState){
+        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentMemberId, friendState).orElseThrow(
                 () -> new IllegalArgumentException("요청 목록에 없는 회원입니다."));
 
         friendRepository.delete(requestedFriend);
@@ -97,8 +96,8 @@ public class FriendService {
     }
 
     @Transactional
-    public FriendListResponseDto deleteFriend(long friendId, long currentUserId, FriendState friendState){
-        Friend friend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(friendId, currentUserId, friendState).orElse(null);
+    public FriendListResponseDto deleteFriend(long friendId, long currentMemberId, FriendState friendState){
+        Friend friend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(friendId, currentMemberId, friendState).orElse(null);
         FriendListResponseDto responseDto = null;
 
         // 요청받은 건 삭제 (친구 요청 상태, 친구 상태 모두)
@@ -109,7 +108,7 @@ public class FriendService {
 
         // 내가 요청해서 친구가 된 경우 삭제
         if(friendState == FriendState.FRIEND){
-            friend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(currentUserId, friendId, friendState).orElse(null);
+            friend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(currentMemberId, friendId, friendState).orElse(null);
             if(friend != null) {
                 friendRepository.delete(friend);
                 responseDto = toToFriendListResponseDto(friend);
