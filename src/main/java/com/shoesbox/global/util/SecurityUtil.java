@@ -11,7 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Slf4j
 @NoArgsConstructor
 public class SecurityUtil {
-    public static long getCurrentMemberIdByLong() {
+    public static long getCurrentMemberId() {
         var principal = getPrincipal();
 
         if (principal == null) {
