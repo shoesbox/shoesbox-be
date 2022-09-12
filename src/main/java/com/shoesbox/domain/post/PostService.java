@@ -87,7 +87,10 @@ public class PostService {
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
             post.update(postRequestDto.getTitle(), postRequestDto.getContent());
-            createPhoto(postRequestDto.getImageFiles(), post, null);
+
+            deletePhoto(post);
+            createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
+
             postRepository.save(post);
             return toPostResponseDto(post);
         } else {
@@ -103,6 +106,7 @@ public class PostService {
         );
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
+            deletePhoto(post);
             postRepository.deleteById(postId);
             return "게시물 삭제 성공";
         } else {
@@ -134,7 +138,7 @@ public class PostService {
                 .content(post.getContent())
                 .nickname(post.getNickname())
                 .memberId(post.getMemberId())
-                .imageUrls(urls)
+                .images(urls)
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
@@ -184,4 +188,17 @@ public class PostService {
             post.getPhotos().addAll(photos);
         }
     }
+
+
+    private void deletePhoto(Post post) {
+        // s3 버킷에서 기존 이미지 삭제
+        for (var photo : post.getPhotos()) {
+            s3Service.deleteObjectByImageUrl(photo.getUrl());
+        }
+
+        post.getPhotos().clear();
+
+    }
+
+
 }
