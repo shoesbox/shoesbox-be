@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +31,7 @@ public class PostService {
     // 생성
     @Transactional
     public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
-        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty()) {
+        if (postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
             throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
         }
 
@@ -42,28 +43,13 @@ public class PostService {
         Post post = Post.builder()
                 .title(postRequestDto.getTitle())
                 .content(postRequestDto.getContent())
-                .author(nickname)
+                .nickname(nickname)
                 .member(member)
                 .build();
         post = postRepository.save(post);
 
         // 이미지 업로드
-        if (postRequestDto.getImageFiles() != null) {
-            for (var imageFile : postRequestDto.getImageFiles()) {
-                if (imageFile.isEmpty()) {
-                    continue;
-                }
-                var uploadedImageUrl = s3Service.uploadImage(imageFile);
-                Photo photo = Photo.builder()
-                        .url(uploadedImageUrl)
-                        .post(post)
-                        .member(member)
-                        .build();
-                photoRepository.save(
-                        photo
-                );
-            }
-        }
+        createPhoto(postRequestDto.getImageFiles(), post, member);
 
         return post.getId();
     }
@@ -91,12 +77,17 @@ public class PostService {
     // 수정
     @Transactional
     public PostResponseDto updatePost(long myMemberId, long postId, PostRequestDto postRequestDto) {
+        if (postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
+            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+        }
+
         Post post = postRepository.findById(postId).orElseThrow(
-                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다.")
-        );
+                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
+
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
-            post.update(postRequestDto.getTitle(), postRequestDto.getContent());//, postRequestDto.getImages());
+            post.update(postRequestDto.getTitle(), postRequestDto.getContent());
+            createPhoto(postRequestDto.getImageFiles(), post, null);
             postRepository.save(post);
             return toPostResponseDto(post);
         } else {
@@ -141,9 +132,9 @@ public class PostService {
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .nickname(post.getAuthor())
+                .nickname(post.getNickname())
                 .memberId(post.getMemberId())
-                .url(urls)
+                .imageUrls(urls)
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
@@ -169,5 +160,28 @@ public class PostService {
                 .createdMonth(post.getCreatedMonth())
                 .createdDay(post.getCreatedDay())
                 .build();
+    }
+
+    private void createPhoto(List<MultipartFile> imageFiles, Post post, Member member) {
+        if (imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
+            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+        }
+
+        var photos = new ArrayList<Photo>();
+        for (var imageFile : imageFiles) {
+            var uploadedImageUrl = s3Service.uploadImage(imageFile);
+            Photo photo = Photo.builder()
+                    .url(uploadedImageUrl)
+                    .post(post)
+                    .member((member == null) ? post.getMember() : member)
+                    .build();
+            photoRepository.save(photo);
+            photos.add(photo);
+        }
+
+        if (post.getPhotos() != null) {
+            post.getPhotos().clear();
+            post.getPhotos().addAll(photos);
+        }
     }
 }

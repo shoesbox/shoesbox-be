@@ -29,7 +29,7 @@ public class Post extends BaseTimeEntity {
     private String content;
 
     @Column(nullable = false)
-    private String author;
+    private String nickname;
 
     @Column(nullable = false)
     private final int createdYear;
@@ -66,12 +66,12 @@ public class Post extends BaseTimeEntity {
     }
 
     @Builder
-    private Post(long id, String title, String content, String author, Member member) {
+    private Post(long id, String title, String content, String nickname, Member member) {
         this();
         this.id = id;
         this.title = title;
         this.content = content;
-        this.author = author;
+        this.nickname = nickname;
         this.member = member;
     }
 
