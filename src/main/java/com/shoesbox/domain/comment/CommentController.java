@@ -16,7 +16,8 @@ public class CommentController {
 
     @GetMapping("/{postId}")
     public ResponseEntity<Object> readComment(@PathVariable long postId) {
-        return ResponseHandler.ok(commentService.readComment(postId));
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(commentService.readComment(postId, currentMemberId));
     }
 
     @PostMapping("/{postId}")

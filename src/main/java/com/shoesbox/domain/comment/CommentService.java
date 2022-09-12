@@ -23,16 +23,17 @@ public class CommentService {
     private final FriendService friendService;
 
     @Transactional(readOnly = true)
-    public List<CommentResponseDto> readComment(Long postId) {
+    public List<CommentResponseDto> readComment(Long postId, long currentMemberId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(
                         () -> new PostNotFoundException("해당 게시글이 존재하지 않습니다."));
 
-        long currentMemberId = SecurityUtil.getCurrentMemberId();
         long authorId = post.getMemberId();
 
-        if(!friendService.isFriend(authorId, currentMemberId)){
-            throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
+        if(authorId != currentMemberId){
+            if(!friendService.isFriend(authorId, currentMemberId)){
+                throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
+            }
         }
 
         var comments = post.getComments();
