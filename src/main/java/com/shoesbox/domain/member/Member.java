@@ -68,7 +68,10 @@ public class Member extends BaseTimeEntity {
     // 친구들
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "fromMember",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Friend> friends;
+    private List<Friend> fromMebers;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "toMember",
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Friend> toMembers;
 
     private int friendCount;
 
