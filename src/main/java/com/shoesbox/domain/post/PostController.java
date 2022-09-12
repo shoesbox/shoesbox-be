@@ -33,8 +33,15 @@ public class PostController {
             @RequestParam(value = "id", defaultValue = "0", required = false) long memberId,
             @RequestParam(value = "y", defaultValue = "0", required = false) int year,
             @RequestParam(value = "m", defaultValue = "0", required = false) int month) {
-        if (memberId == 0) {
-            memberId = SecurityUtil.getCurrentMemberId();
+
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        if (memberId == currentMemberId) {
+            memberId = currentMemberId;
+        } else {
+            if(!postService.isFriend(memberId, currentMemberId)){
+                throw new IllegalArgumentException("해당 회원과 친구 상태가 아닙니다.");
+            }
         }
 
         if (year == 0) {
