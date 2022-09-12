@@ -69,7 +69,9 @@ public class PostService {
                 () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
         );
         long memberId = post.getMemberId();
-        if (myMemberId == memberId || friendService.isFriend(myMemberId, memberId)) {
+        if (myMemberId == memberId){
+            return toPostResponseDto(post);
+        } else if (friendService.isFriend(myMemberId, memberId)) {
             return toPostResponseDto(post);
         } else {
             throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
