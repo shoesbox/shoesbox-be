@@ -22,7 +22,7 @@ public class CommentController {
     @PostMapping("/{postId}")
     public ResponseEntity<Object> createComment(@PathVariable long postId,
                                                 @Valid @RequestBody CommentRequestDto commentRequestDto) {
-        long currentMemberId = SecurityUtil.getCurrentMemberIdByLong();
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
         String currentMemberNickname = SecurityUtil.getCurrentMemberNickname();
         return ResponseHandler.ok(commentService.createComment(
                 currentMemberNickname, commentRequestDto.getContent(), currentMemberId, postId));
@@ -31,13 +31,13 @@ public class CommentController {
     @PutMapping("/{commentId}")
     public ResponseEntity<Object> updateComment(@PathVariable("commentId") long commentId,
                                                 @Valid @RequestBody CommentRequestDto commentRequestDto) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(commentService.updateComment(memberId, commentId, commentRequestDto));
     }
 
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Object> deleteComment(@PathVariable("commentId") long commentId) {
-        long memberId = SecurityUtil.getCurrentMemberIdByLong();
+        long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(commentService.deleteComment(memberId, commentId));
     }
 }
