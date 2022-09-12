@@ -3,8 +3,7 @@ package com.shoesbox.domain.post;
 import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.comment.CommentResponseDto;
 import com.shoesbox.domain.comment.CommentService;
-import com.shoesbox.domain.friend.FriendRepository;
-import com.shoesbox.domain.friend.FriendState;
+import com.shoesbox.domain.friend.FriendService;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.domain.photo.PhotoRepository;
@@ -28,7 +27,7 @@ import java.util.List;
 public class PostService {
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
-    private final FriendRepository friendRepository;
+    private final FriendService friendService;
     private final S3Service s3Service;
 
     // 생성
@@ -70,7 +69,7 @@ public class PostService {
                 () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
         );
         long memberId = post.getMemberId();
-        if (myMemberId == memberId || isFriend(myMemberId, memberId)) {
+        if (myMemberId == memberId || friendService.isFriend(myMemberId, memberId)) {
             return toPostResponseDto(post);
         } else {
             throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
@@ -186,10 +185,5 @@ public class PostService {
             post.getPhotos().clear();
             post.getPhotos().addAll(photos);
         }
-    }
-
-    public boolean isFriend(long memberId, long currentMemberId){
-        return friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(memberId, currentMemberId, FriendState.FRIEND) ||
-                friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(currentMemberId, memberId, FriendState.FRIEND);
     }
 }

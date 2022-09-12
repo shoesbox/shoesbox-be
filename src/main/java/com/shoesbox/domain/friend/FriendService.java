@@ -158,4 +158,9 @@ public class FriendService {
             throw new IllegalArgumentException("이미 친구 요청중입니다.");
         }
     }
+
+    public boolean isFriend(long memberId, long currentMemberId){
+        return friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(memberId, currentMemberId, FriendState.FRIEND) ||
+                friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(currentMemberId, memberId, FriendState.FRIEND);
+    }
 }
