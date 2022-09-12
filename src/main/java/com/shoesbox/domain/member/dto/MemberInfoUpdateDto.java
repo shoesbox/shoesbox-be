@@ -15,6 +15,5 @@ import org.springframework.web.multipart.MultipartFile;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class MemberInfoUpdateDto {
     String nickname;
-    String selfDescription;
     MultipartFile imageFile;
 }

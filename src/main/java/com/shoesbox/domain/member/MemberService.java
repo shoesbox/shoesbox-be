@@ -100,9 +100,9 @@ public class MemberService {
                     .orElseThrow(() -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다."));
 
             return MemberInfoResponseDto.builder()
+                    .memberId(targetId)
                     .nickname(targetMember.getNickname())
                     .profileImageUrl(targetMember.getProfileImageUrl())
-                    .selfDescription(targetMember.getSelfDescription())
                     .build();
         }
 
@@ -110,10 +110,10 @@ public class MemberService {
                 .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
         return MemberInfoResponseDto.builder()
+                .memberId(memberId)
                 .nickname(currentMember.getNickname())
                 .email(currentMember.getEmail())
                 .profileImageUrl(currentMember.getProfileImageUrl())
-                .selfDescription(currentMember.getSelfDescription())
                 .build();
     }
 
@@ -122,18 +122,18 @@ public class MemberService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
-        String savedUrl = null;
-        if (!memberInfoUpdateDto.getImageFile().isEmpty()) {
+        String savedUrl = member.getProfileImageUrl();
+        if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile().isEmpty()) {
             savedUrl = s3Service.uploadImage(memberInfoUpdateDto.getImageFile());
         }
 
-        member.updateInfo(memberInfoUpdateDto.getNickname(), savedUrl, memberInfoUpdateDto.getSelfDescription());
+        member.updateInfo(memberInfoUpdateDto.getNickname(), savedUrl);
 
         return MemberInfoResponseDto.builder()
+                .memberId(memberId)
                 .nickname(member.getNickname())
                 .email(member.getEmail())
                 .profileImageUrl(member.getProfileImageUrl())
-                .selfDescription(member.getSelfDescription())
                 .build();
     }
 
@@ -214,7 +214,6 @@ public class MemberService {
                 .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
                 .nickname(signDto.getEmail().split("@")[0])
                 .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
-                .selfDescription("안녕하세요.")
                 .build();
     }
 }

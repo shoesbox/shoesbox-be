@@ -48,8 +48,8 @@ public class MemberController {
 
     // 회원 정보 수정
     @PatchMapping("/info")
-    public ResponseEntity<Object> updateMemberInfo(@RequestParam(value = "m",
-            defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
+    public ResponseEntity<Object> updateMemberInfo(
+            @RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
         long memberId = SecurityUtil.getCurrentMemberId();
         if (memberId != targetId) {
             throw new UnAuthorizedException("수정 권한이 없습니다.");
