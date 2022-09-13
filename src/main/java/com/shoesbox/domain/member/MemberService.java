@@ -33,12 +33,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class MemberService {
+    private static final String BASE_PROFILE_IMAGE_URL = "https://i.ibb.co/N27FwdP/image.png";
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final TokenProvider tokenProvider;
-
     private final S3Service s3Service;
 
     @Transactional
@@ -192,6 +192,21 @@ public class MemberService {
         refreshTokenRepository.delete(token);
 
         return tokenProvider.createEmptyTokenDto();
+    }
+
+    @Transactional
+    public MemberInfoResponseDto resetProfileImage(long currentMemberId) {
+        var currentMember = memberRepository.findById(currentMemberId)
+                .orElseThrow(() -> new UsernameNotFoundException("memberId: " + currentMemberId + "는 존재하지 않습니다."));
+
+        currentMember.updateInfo(currentMember.getNickname(), BASE_PROFILE_IMAGE_URL);
+
+        return MemberInfoResponseDto.builder()
+                .memberId(currentMemberId)
+                .nickname(currentMember.getNickname())
+                .email(currentMember.getEmail())
+                .profileImageUrl(currentMember.getProfileImageUrl())
+                .build();
     }
 
     public long deleteAccount(long targetId) {

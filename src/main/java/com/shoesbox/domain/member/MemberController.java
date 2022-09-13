@@ -73,4 +73,11 @@ public class MemberController {
         }
         return ResponseHandler.ok(memberService.deleteAccount(targetId));
     }
+
+    // 프로필 사진 초기화
+    @GetMapping("/reset")
+    public ResponseEntity<Object> resetProfileImage() {
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(memberService.resetProfileImage(currentMemberId));
+    }
 }
