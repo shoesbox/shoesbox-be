@@ -1,6 +1,7 @@
 package com.shoesbox.domain.member;
 
 import com.shoesbox.domain.auth.TokenRequestDto;
+import com.shoesbox.domain.friend.FriendService;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.global.common.ResponseHandler;
@@ -17,6 +18,7 @@ import javax.validation.Valid;
 @RequestMapping(("/api/members"))
 public class MemberController {
     private final MemberService memberService;
+    private final FriendService friendService;
 
     // 회원 가입
     @PostMapping("/auth/signup")
@@ -39,11 +41,15 @@ public class MemberController {
     // 회원 정보 가져오기(기본값: 현재 로그인한 사용자의 정보 반환)
     @GetMapping("/info")
     public ResponseEntity<Object> getMemberInfo(@RequestParam(value = "m", defaultValue = "0") long targetId) {
-        long memberId = SecurityUtil.getCurrentMemberId();
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
         if (targetId == 0L) {
-            return ResponseEntity.ok(memberService.getMemberInfo(memberId, memberId));
+            targetId = currentMemberId;
         }
-        return ResponseHandler.ok(memberService.getMemberInfo(memberId, targetId));
+        if (targetId != currentMemberId && !friendService.isFriend(targetId, currentMemberId)) {
+            throw new UnAuthorizedException("접근 권한이 없습니다.");
+        }
+
+        return ResponseHandler.ok(memberService.getMemberInfo(targetId));
     }
 
     // 회원 정보 수정
@@ -51,10 +57,10 @@ public class MemberController {
     public ResponseEntity<Object> updateMemberInfo(
             @RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
         long memberId = SecurityUtil.getCurrentMemberId();
-        if (memberId != targetId) {
-            throw new UnAuthorizedException("수정 권한이 없습니다.");
+        if (targetId == 0L || targetId == memberId) {
+            return ResponseEntity.ok(memberService.updateMemberInfo(memberId, memberInfoUpdateDto));
         }
-        return ResponseEntity.ok(memberService.updateMemberInfo(memberId, memberInfoUpdateDto));
+        throw new UnAuthorizedException("수정 권한이 없습니다.");
     }
 
     // 로그아웃

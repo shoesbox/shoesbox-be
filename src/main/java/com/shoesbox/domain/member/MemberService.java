@@ -90,30 +90,15 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public MemberInfoResponseDto getMemberInfo(long memberId, long targetId) {
-        if (memberId != targetId) {
-            if (!memberRepository.existsById(memberId)) {
-                throw new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다.");
-            }
-
-            Member targetMember = memberRepository.findById(targetId)
-                    .orElseThrow(() -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다."));
-
-            return MemberInfoResponseDto.builder()
-                    .memberId(targetId)
-                    .nickname(targetMember.getNickname())
-                    .profileImageUrl(targetMember.getProfileImageUrl())
-                    .build();
-        }
-
-        Member currentMember = memberRepository.findById(memberId)
+    public MemberInfoResponseDto getMemberInfo(long memberId) {
+        Member targetMember = memberRepository.findById(memberId)
                 .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
         return MemberInfoResponseDto.builder()
                 .memberId(memberId)
-                .nickname(currentMember.getNickname())
-                .email(currentMember.getEmail())
-                .profileImageUrl(currentMember.getProfileImageUrl())
+                .nickname(targetMember.getNickname())
+                .email(targetMember.getEmail())
+                .profileImageUrl(targetMember.getProfileImageUrl())
                 .build();
     }
 
