@@ -10,4 +10,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Post> findById(Long postId);
 
     Page<Post> findByMemberIdAndCreatedYearAndCreatedMonth(Pageable pageable, Long memberId, int year, int month);
+
+    boolean existsByMemberIdAndCreatedYearAndCreatedMonthAndCreatedDay(long memberId, int year, int month, int day);
 }

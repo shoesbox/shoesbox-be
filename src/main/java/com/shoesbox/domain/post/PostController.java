@@ -25,6 +25,11 @@ public class PostController {
     public ResponseEntity<Object> createPost(PostRequestDto postRequestDto) {
         long memberId = SecurityUtil.getCurrentMemberId();
         String nickname = SecurityUtil.getCurrentMemberNickname();
+
+        int year = LocalDate.now().getYear();
+        int month = LocalDate.now().getMonthValue();
+        int day = LocalDate.now().getDayOfMonth();
+        postService.postCreateCheck(postRequestDto, memberId, year, month, day);
         return ResponseHandler.ok(postService.createPost(nickname, memberId, postRequestDto));
     }
 

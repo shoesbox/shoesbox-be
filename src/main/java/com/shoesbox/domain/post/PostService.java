@@ -33,12 +33,10 @@ public class PostService {
     // 생성
     @Transactional
     public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
-        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
-        }
 
         Member member = Member.builder()
                 .id(memberId)
+                .nickname(nickname)
                 .build();
 
         // 게시글 생성
@@ -199,5 +197,16 @@ public class PostService {
             s3Service.deleteObjectByImageUrl(photo.getUrl());
         }
         post.getPhotos().clear();
+    }
+
+    public void postCreateCheck(PostRequestDto postRequestDto, long memberId, int year, int month, int day){
+        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
+            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+        }
+
+        if(postRepository.existsByMemberIdAndCreatedYearAndCreatedMonthAndCreatedDay(memberId, year, month, day)){
+            throw new IllegalArgumentException("오늘의 일기를 이미 작성하였습니다.");
+        }
+
     }
 }
