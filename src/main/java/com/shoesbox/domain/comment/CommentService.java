@@ -1,10 +1,12 @@
 package com.shoesbox.domain.comment;
 
+import com.shoesbox.domain.friend.FriendService;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
 import com.shoesbox.global.exception.runtime.PostNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
+import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,11 +20,21 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
 
+    private final FriendService friendService;
+
     @Transactional(readOnly = true)
-    public List<CommentResponseDto> readComment(Long postId) {
+    public List<CommentResponseDto> readComment(Long postId, long currentMemberId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(
                         () -> new PostNotFoundException("해당 게시글이 존재하지 않습니다."));
+
+        long authorId = post.getMemberId();
+
+        if(authorId != currentMemberId){
+            if(!friendService.isFriend(authorId, currentMemberId)){
+                throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
+            }
+        }
 
         var comments = post.getComments();
         List<CommentResponseDto> commentList = new ArrayList<>();
@@ -43,10 +55,15 @@ public class CommentService {
                 .id(currentMemberId)
                 .build();
 
-        Post post = Post.builder()
-                .id(postId)
-                .member(member)
-                .build();
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new IllegalArgumentException("해당 게시물을 찾을 수 없습니다."));
+
+        long authorId = post.getMember().getId();
+        if(authorId != currentMemberId){
+            if(!friendService.isFriend(authorId, currentMemberId)){
+                throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
+            }
+        }
 
         Comment comment = Comment.builder()
                 .nickname(currentMemberNickname)

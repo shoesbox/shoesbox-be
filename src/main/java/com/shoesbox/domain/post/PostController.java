@@ -1,5 +1,6 @@
 package com.shoesbox.domain.post;
 
+import com.shoesbox.domain.friend.FriendService;
 import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.util.SecurityUtil;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 @RequestMapping("/api/posts")
 public class PostController {
     private final PostService postService;
+    private final FriendService friendService;
 
     // 생성
     @PostMapping
@@ -33,8 +35,15 @@ public class PostController {
             @RequestParam(value = "id", defaultValue = "0", required = false) long memberId,
             @RequestParam(value = "y", defaultValue = "0", required = false) int year,
             @RequestParam(value = "m", defaultValue = "0", required = false) int month) {
-        if (memberId == 0) {
-            memberId = SecurityUtil.getCurrentMemberId();
+
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        if (memberId == 0 || memberId == currentMemberId) {
+            memberId = currentMemberId;
+        } else {
+            if(!friendService.isFriend(memberId, currentMemberId)){
+                throw new IllegalArgumentException("해당 회원과 친구 상태가 아닙니다.");
+            }
         }
 
         if (year == 0) {
