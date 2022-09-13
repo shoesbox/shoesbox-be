@@ -31,7 +31,7 @@ public class PostService {
     // 생성
     @Transactional
     public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
-        if (postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
+        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
             throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
         }
 
@@ -102,8 +102,8 @@ public class PostService {
     @Transactional
     public String deletePost(long myMemberId, long postId) {
         Post post = postRepository.findById(postId).orElseThrow(
-                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다.")
-        );
+                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
+
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
             deletePhoto(post);
@@ -167,7 +167,7 @@ public class PostService {
     }
 
     private void createPhoto(List<MultipartFile> imageFiles, Post post, Member member) {
-        if (imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
+        if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
             throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
         }
 
@@ -189,16 +189,11 @@ public class PostService {
         }
     }
 
-
     private void deletePhoto(Post post) {
         // s3 버킷에서 기존 이미지 삭제
         for (var photo : post.getPhotos()) {
             s3Service.deleteObjectByImageUrl(photo.getUrl());
         }
-
         post.getPhotos().clear();
-
     }
-
-
 }

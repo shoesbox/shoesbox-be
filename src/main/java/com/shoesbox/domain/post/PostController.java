@@ -68,5 +68,4 @@ public class PostController {
         long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(postService.deletePost(memberId, postId));
     }
-
 }
