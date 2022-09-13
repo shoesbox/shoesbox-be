@@ -33,12 +33,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class MemberService {
+    private static final String BASE_PROFILE_IMAGE_URL = "https://i.ibb.co/N27FwdP/image.png";
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final TokenProvider tokenProvider;
-
     private final S3Service s3Service;
 
     @Transactional
@@ -90,30 +90,15 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public MemberInfoResponseDto getMemberInfo(long memberId, long targetId) {
-        if (memberId != targetId) {
-            if (!memberRepository.existsById(memberId)) {
-                throw new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다.");
-            }
-
-            Member targetMember = memberRepository.findById(targetId)
-                    .orElseThrow(() -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다."));
-
-            return MemberInfoResponseDto.builder()
-                    .memberId(targetId)
-                    .nickname(targetMember.getNickname())
-                    .profileImageUrl(targetMember.getProfileImageUrl())
-                    .build();
-        }
-
-        Member currentMember = memberRepository.findById(memberId)
+    public MemberInfoResponseDto getMemberInfo(long memberId) {
+        Member targetMember = memberRepository.findById(memberId)
                 .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
         return MemberInfoResponseDto.builder()
                 .memberId(memberId)
-                .nickname(currentMember.getNickname())
-                .email(currentMember.getEmail())
-                .profileImageUrl(currentMember.getProfileImageUrl())
+                .nickname(targetMember.getNickname())
+                .email(targetMember.getEmail())
+                .profileImageUrl(targetMember.getProfileImageUrl())
                 .build();
     }
 
@@ -192,6 +177,21 @@ public class MemberService {
         refreshTokenRepository.delete(token);
 
         return tokenProvider.createEmptyTokenDto();
+    }
+
+    @Transactional
+    public MemberInfoResponseDto resetProfileImage(long currentMemberId) {
+        var currentMember = memberRepository.findById(currentMemberId)
+                .orElseThrow(() -> new UsernameNotFoundException("memberId: " + currentMemberId + "는 존재하지 않습니다."));
+
+        currentMember.updateInfo(currentMember.getNickname(), BASE_PROFILE_IMAGE_URL);
+
+        return MemberInfoResponseDto.builder()
+                .memberId(currentMemberId)
+                .nickname(currentMember.getNickname())
+                .email(currentMember.getEmail())
+                .profileImageUrl(currentMember.getProfileImageUrl())
+                .build();
     }
 
     public long deleteAccount(long targetId) {
