@@ -48,6 +48,8 @@ public class S3Service {
                 .build();
     }
 
+
+    // 이미지 업로드
     public String uploadImage(MultipartFile file) {
         // 파일 이름 받아오기
         String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
@@ -80,4 +82,14 @@ public class S3Service {
 
         return s3Client.getUrl(bucket, fileName).toString();    ///url string 리턴
     }
+
+    // 파일 삭제
+    public void deleteObjectByImageUrl(String imageUrl) {
+        // split을 통해 나누고 나눈 length에서 1을 빼서 마지막 값(파일명)을 사용함.
+        String sourceKey = imageUrl.split("/")[imageUrl.split("/").length - 1];
+        // 소스키로 s3에서 삭제
+        s3Client.deleteObject(bucket, sourceKey);
+    }
+
+
 }

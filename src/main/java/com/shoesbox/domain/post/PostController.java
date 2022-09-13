@@ -66,7 +66,7 @@ public class PostController {
 
     // 수정
     @PutMapping("/{postId}")
-    public ResponseEntity<Object> updatePost(@PathVariable long postId, @RequestBody PostRequestDto postRequestDto) {
+    public ResponseEntity<Object> updatePost(@PathVariable long postId, PostRequestDto postRequestDto) {
         long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(postService.updatePost(memberId, postId, postRequestDto));
     }
@@ -77,5 +77,4 @@ public class PostController {
         long memberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(postService.deletePost(memberId, postId));
     }
-
 }
