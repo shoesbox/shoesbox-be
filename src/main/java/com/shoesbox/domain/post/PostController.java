@@ -38,7 +38,7 @@ public class PostController {
 
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        if (memberId == 0) {
+        if (memberId == 0 || memberId == currentMemberId) {
             memberId = currentMemberId;
         } else {
             if(!friendService.isFriend(memberId, currentMemberId)){
