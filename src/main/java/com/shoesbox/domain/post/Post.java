@@ -33,18 +33,6 @@ public class Post extends BaseTimeEntity {
     @Column(nullable = false)
     private String nickname;
 
-    // @Column(nullable = false)
-    // private final LocalDate createdDate;
-    //
-    // @Column(nullable = false)
-    // private final int createdYear;
-    //
-    // @Column(nullable = false)
-    // private final int createdMonth;
-    //
-    // @Column(nullable = false)
-    // private final int createdDay;
-
     @Column(nullable = false)
     private LocalDate createdDate;
 
