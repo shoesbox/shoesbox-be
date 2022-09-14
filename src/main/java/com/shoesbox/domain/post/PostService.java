@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +34,6 @@ public class PostService {
     // 생성
     @Transactional
     public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
-
         Member member = Member.builder()
                 .id(memberId)
                 .nickname(nickname)
@@ -67,7 +67,7 @@ public class PostService {
                 () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
         );
         long memberId = post.getMemberId();
-        if (myMemberId == memberId){
+        if (myMemberId == memberId) {
             return toPostResponseDto(post);
         } else if (friendService.isFriend(myMemberId, memberId)) {
             return toPostResponseDto(post);
@@ -79,9 +79,7 @@ public class PostService {
     // 수정
     @Transactional
     public PostResponseDto updatePost(long myMemberId, long postId, PostRequestDto postRequestDto) {
-        if (postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
-        }
+        validateImageFiles(postRequestDto.getImageFiles());
 
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
@@ -93,7 +91,6 @@ public class PostService {
             deletePhoto(post);
             createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
 
-            postRepository.save(post);
             return toPostResponseDto(post);
         } else {
             throw new IllegalArgumentException("해당 게시물의 수정 권한이 없습니다.");
@@ -199,14 +196,17 @@ public class PostService {
         post.getPhotos().clear();
     }
 
-    public void postCreateCheck(PostRequestDto postRequestDto, long memberId, int year, int month, int day){
-        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
-        }
+    public void validatePostRequest(PostRequestDto postRequestDto, long memberId) {
+        validateImageFiles(postRequestDto.getImageFiles());
 
-        if(postRepository.existsByMemberIdAndCreatedYearAndCreatedMonthAndCreatedDay(memberId, year, month, day)){
+        if (postRepository.existsByMemberIdAndCreatedDate(memberId, LocalDate.now())) {
             throw new IllegalArgumentException("오늘의 일기를 이미 작성하였습니다.");
         }
+    }
 
+    private void validateImageFiles(List<MultipartFile> imageFiles) {
+        if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
+            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+        }
     }
 }

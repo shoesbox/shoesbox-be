@@ -26,10 +26,7 @@ public class PostController {
         long memberId = SecurityUtil.getCurrentMemberId();
         String nickname = SecurityUtil.getCurrentMemberNickname();
 
-        int year = LocalDate.now().getYear();
-        int month = LocalDate.now().getMonthValue();
-        int day = LocalDate.now().getDayOfMonth();
-        postService.postCreateCheck(postRequestDto, memberId, year, month, day);
+        postService.validatePostRequest(postRequestDto, memberId);
         return ResponseHandler.ok(postService.createPost(nickname, memberId, postRequestDto));
     }
 
