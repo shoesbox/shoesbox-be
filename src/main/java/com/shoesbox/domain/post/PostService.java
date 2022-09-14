@@ -13,14 +13,13 @@ import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
 import com.shoesbox.global.exception.runtime.PostNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -56,8 +55,38 @@ public class PostService {
 
     // 전체 조회
     @Transactional(readOnly = true)
-    public Page<PostListResponseDto> getPosts(Pageable pageable, long memberId, int year, int month) {
-        return postRepository.findByMemberIdAndCreatedYearAndCreatedMonth(pageable, memberId, year, month).map(PostService::toPostListResponseDto);
+    public List<PostListResponseDto> getPosts(long memberId, LocalDate firstDay, LocalDate lastDay, int weeks) {
+        // 작성자의 memberId가 일치하고, firstDay와 lastDay 사이에 작성된 글을 검색한다.
+        var foundPosts = postRepository.findAllByMemberIdAndCreatedDateBetween(memberId, firstDay, lastDay)
+                .stream()
+                // PostListResponseDto의 배열로 변환한다.
+                .map(PostService::toPostListResponseDto)
+                .toArray(PostListResponseDto[]::new);
+
+        // 달력 일자의 개수와 같은 크기의 배열 생성
+        var posts = new PostListResponseDto[weeks * 7];
+        var index = 0;
+        for (int i = 0; i < posts.length; i++) {
+            // 달력 첫날부터 하루하루 증가
+            var today = firstDay.plusDays(i).getDayOfMonth();
+            if (index < foundPosts.length) {
+                // 게시글의 작성일이 오늘과 일치할 경우 반환할 posts 배열에 대입
+                if (foundPosts[index].getCreatedDay() == today) {
+                    posts[i] = foundPosts[index];
+                    ++index;
+                    continue;
+                }
+            }
+            // 작성일이 일치하는 날이 없다면 일기를 쓰지 않은 날이다.
+            // 빈 객체를 생성해서 넣어준다.
+            posts[i] = PostListResponseDto.builder()
+                    .postId(0)
+                    .thumbnailUrl(null)
+                    .createdDay(today)
+                    .build();
+        }
+
+        return Arrays.asList(posts);
     }
 
     // 상세 조회
@@ -141,9 +170,6 @@ public class PostService {
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
-                .createdYear(post.getCreatedYear())
-                .createdMonth(post.getCreatedMonth())
-                .createdDay(post.getCreatedDay())
                 .build();
     }
 
@@ -154,14 +180,10 @@ public class PostService {
         }
         return PostListResponseDto.builder()
                 .postId(post.getId())
-                .title(post.getTitle())
                 // TODO: 썸네일 최적화 필요
                 .thumbnailUrl(url)
-                .createdAt(post.getCreatedAt())
-                .modifiedAt(post.getModifiedAt())
-                .createdYear(post.getCreatedYear())
-                .createdMonth(post.getCreatedMonth())
-                .createdDay(post.getCreatedDay())
+                .createdDate(post.getCreatedDate())
+                .createdDay(post.getCreatedDate().getDayOfMonth())
                 .build();
     }
 

@@ -15,13 +15,10 @@ public class PostResponseDto {
     Long postId;
     String title;
     String content;
-    String nickname;
     long memberId;
-    List<CommentResponseDto> comments;
-    List<String> images;
+    String nickname;
     String createdAt;
     String modifiedAt;
-    int createdYear;
-    int createdMonth;
-    int createdDay;
+    List<String> images;
+    List<CommentResponseDto> comments;
 }

@@ -1,15 +1,12 @@
 package com.shoesbox.domain.post;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
-    Optional<Post> findById(Long postId);
+    boolean existsByMemberIdAndCreatedDate(long memberId, LocalDate createdDate);
 
-    Page<Post> findByMemberIdAndCreatedYearAndCreatedMonth(Pageable pageable, Long memberId, int year, int month);
-
-    boolean existsByMemberIdAndCreatedYearAndCreatedMonthAndCreatedDay(long memberId, int year, int month, int day);
+    List<Post> findAllByMemberIdAndCreatedDateBetween(Long memberId, LocalDate firstDay, LocalDate lastDay);
 }

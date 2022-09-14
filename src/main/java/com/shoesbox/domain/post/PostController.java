@@ -5,13 +5,14 @@ import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalField;
+import java.time.temporal.WeekFields;
+import java.util.Locale;
 
 @RequiredArgsConstructor
 @RestController
@@ -19,6 +20,7 @@ import java.time.LocalDate;
 public class PostController {
     private final PostService postService;
     private final FriendService friendService;
+    private final TemporalField fieldISO = WeekFields.of(Locale.KOREA).dayOfWeek();
 
     // 생성
     @PostMapping
@@ -33,17 +35,16 @@ public class PostController {
     // 전체 조회
     @GetMapping
     public ResponseEntity<Object> getPosts(
-            @PageableDefault(size = 31, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(value = "id", defaultValue = "0", required = false) long memberId,
             @RequestParam(value = "y", defaultValue = "0", required = false) int year,
             @RequestParam(value = "m", defaultValue = "0", required = false) int month) {
-
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
-        if (memberId == 0 || memberId == currentMemberId) {
+        // 0이면 자기 자신
+        if (memberId == 0) {
             memberId = currentMemberId;
         } else {
-            if(!friendService.isFriend(memberId, currentMemberId)){
+            // 아니면 친구인지 확인
+            if (memberId != currentMemberId && !friendService.isFriend(memberId, currentMemberId)) {
                 throw new IllegalArgumentException("해당 회원과 친구 상태가 아닙니다.");
             }
         }
@@ -56,7 +57,18 @@ public class PostController {
             month = LocalDate.now().getMonthValue();
         }
 
-        return ResponseHandler.ok(postService.getPosts(pageable, memberId, year, month));
+        // 찾으려는 달의 첫 번째 일요일의 날짜를 구한다
+        LocalDate firstDay = LocalDate.of(year, month, 1);
+        LocalDate firstMonday = firstDay.with(fieldISO, 1);
+
+        // 찾으려는 달의 마지막 토요일의 날짜를 구한다
+        LocalDate lastDay = LocalDate.of(year, month, LocalDate.now().getMonth().maxLength());
+        LocalDate lastSaturday = lastDay.with(fieldISO, 7);
+
+        // 총 몇 주를 표시해야 하는지 계산한다.
+        int weeks = (int) ChronoUnit.WEEKS.between(firstMonday, lastSaturday) + 1;
+
+        return ResponseHandler.ok(postService.getPosts(memberId, firstMonday, lastSaturday, weeks));
     }
 
     // 상세 조회
