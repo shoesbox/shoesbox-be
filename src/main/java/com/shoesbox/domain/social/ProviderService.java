@@ -4,9 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.shoesbox.domain.auth.RefreshToken;
-import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
+import com.shoesbox.domain.auth.redis.RedisService;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.social.dto.GoogleProfile;
@@ -38,13 +37,13 @@ import java.util.stream.Collectors;
 @Service
 public class ProviderService {
     private final MemberRepository memberRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
 
     private final OAuthRequestFactory oAuthRequestFactory;
     private final TokenProvider tokenProvider;
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final Gson gson;
+    private final RedisService redisService;
 
     @Transactional
     public TokenDto SocialLogin(String code, String provider) throws JsonProcessingException {
@@ -92,14 +91,11 @@ public class ProviderService {
         // 토큰 생성
         TokenDto tokenDto = tokenProvider.createTokenDto(principal);
 
-        // db에 refreshToken 저장
-        RefreshToken refreshToken = RefreshToken.builder()
-                .memberId(member.getId())
-                .tokenValue(tokenDto.getRefreshToken())
-                .build();
-        refreshTokenRepository.save(refreshToken);
+        // Reids에 Refresh Token 저장
+        String refreshToken = tokenDto.getRefreshToken();
+        redisService.setDataWithExpiration("RT:"+member.getEmail(), refreshToken, tokenDto.getRefreshTokenLifetimeInMs());
 
-        // 6. 토큰 발급
+        // 토큰 발급
         return tokenDto;
     }
 

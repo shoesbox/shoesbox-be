@@ -1,9 +1,8 @@
 package com.shoesbox.domain.member;
 
-import com.shoesbox.domain.auth.RefreshToken;
-import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
 import com.shoesbox.domain.auth.TokenRequestDto;
+import com.shoesbox.domain.auth.redis.RedisService;
 import com.shoesbox.domain.member.dto.MemberInfoResponseDto;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
@@ -19,6 +18,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -35,11 +35,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
     private static final String BASE_PROFILE_IMAGE_URL = "https://i.ibb.co/N27FwdP/image.png";
     private final MemberRepository memberRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final TokenProvider tokenProvider;
     private final S3Service s3Service;
+    private final RedisService redisService;
+    private final RedisTemplate redisTemplate;
 
     @Transactional
     public String signUp(SignDto signDto) {
@@ -78,14 +79,11 @@ public class MemberService {
         // 3. 인증 정보를 사용해 JWT 토큰 생성
         TokenDto tokenDto = tokenProvider.createTokenDto(userDetails);
 
-        // 5. RefreshToken 저장
-        RefreshToken refreshToken = RefreshToken.builder()
-                .memberId(memberId)
-                .tokenValue(tokenDto.getRefreshToken())
-                .build();
-        refreshTokenRepository.save(refreshToken);
+        // 4. RefreshToken 저장
+        String refreshToken = tokenDto.getRefreshToken();
+        redisService.setDataWithExpiration("RT:"+authentication.getName(), refreshToken, tokenDto.getRefreshTokenLifetimeInMs());
 
-        // 6. 토큰 발급
+        // 5. 토큰 발급
         return tokenDto;
     }
 
@@ -148,33 +146,30 @@ public class MemberService {
         Authentication authentication = tokenProvider.getAuthentication(tokenRequestDto.getAccessToken());
         var userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        // 3. 리프레쉬 토큰 저장소에서 memberId(PK) 를 기반으로 토큰 가져옴
-        RefreshToken savedRefreshToken =
-                refreshTokenRepository.findById(userDetails.getMemberId())
-                        .orElseThrow(() -> new RefreshTokenNotFoundException("로그아웃 된 사용자입니다."));
+        // 3. (수정) Redis 저장소에서 토큰 가져오는것으로 대체
+        String savedRefreshToken = (String) redisTemplate.opsForValue().get("RT:"+authentication.getName());
 
-        // 4. Refresh Token 일치하는지 검사
-        if (!savedRefreshToken.getTokenValue().equals(tokenRequestDto.getRefreshToken())) {
+        // 4. Refresh Token 일치하는지 검사 (추가) 로그아웃 사용자 검증)
+        if (!savedRefreshToken.equals(tokenRequestDto.getRefreshToken())) {
             throw new InvalidJWTException("토큰의 유저 정보가 일치하지 않습니다.");
+        } else if (savedRefreshToken == null){
+            throw new RefreshTokenNotFoundException("로그아웃 된 사용자입니다.");
         }
 
         // 5. Access Token 에서 가져온 memberId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성
         TokenDto refreshedTokenDto = tokenProvider.createTokenDto(userDetails);
-
-        // 6. db의 리프레쉬 토큰 정보 업데이트
-        refreshTokenRepository.save(savedRefreshToken.withTokenValue(refreshedTokenDto.getRefreshToken()));
+        
+        // 6. db의 리프레쉬 토큰 정보 업데이트 -> Redis에 Refresh 업데이트
+        redisService.setDataWithExpiration("RT:"+authentication.getName(), refreshedTokenDto.getRefreshToken(), refreshedTokenDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return refreshedTokenDto;
     }
 
     @Transactional
-    public TokenDto logout(long memberId) {
-        var token = refreshTokenRepository.findById(memberId)
-                .orElseThrow(
-                        () -> new RefreshTokenNotFoundException("memberId: " + memberId + "의 리프레쉬 토큰을 찾을 수 없습니다.")
-                );
-        refreshTokenRepository.delete(token);
+    public TokenDto logout(TokenRequestDto tokenRequestDto) {
+        Authentication authentication = tokenProvider.getAuthentication(tokenRequestDto.getAccessToken());
+        redisTemplate.delete("RT:" + authentication.getName());
 
         return tokenProvider.createEmptyTokenDto();
     }

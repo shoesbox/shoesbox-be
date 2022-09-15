@@ -65,9 +65,9 @@ public class MemberController {
 
     // 로그아웃
     @GetMapping("/logout")
-    public ResponseEntity<Object> logout() {
-        long memberId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(memberService.logout(memberId));
+    public ResponseEntity<Object> logout(@RequestBody TokenRequestDto tokenRequestDto) {
+//        long memberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(memberService.logout(tokenRequestDto));
     }
 
     // 회원 탈퇴
