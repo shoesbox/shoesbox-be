@@ -17,6 +17,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -91,5 +93,11 @@ public class S3Service {
         s3Client.deleteObject(bucket, sourceKey);
     }
 
+    // MultipartFile -> File 변환
+    public File multipartToFile(MultipartFile mfile) throws IllegalStateException, IOException {
+        File file = new File(mfile.getOriginalFilename());
+        mfile.transferTo(file);
+        return file;
+    }
 
 }
