@@ -13,7 +13,8 @@ import javax.validation.constraints.NotBlank;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Entity(name = "comment")
+@Entity
+@Table(name = "comment")
 public class Comment extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,6 +27,10 @@ public class Comment extends BaseTimeEntity {
     @NotBlank
     @Column(nullable = false)
     private String content;
+
+    @NotBlank
+    @Column(nullable = false)
+    private String profileImageUrl;
 
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
@@ -43,11 +48,12 @@ public class Comment extends BaseTimeEntity {
     private Long postId;
 
     @Builder
-    private Comment(String nickname, String content, Member member, Post post) {
+    private Comment(String nickname, String content, Member member, Post post, String profileImageUrl) {
         this.nickname = nickname;
         this.content = content;
         this.member = member;
         this.post = post;
+        this.profileImageUrl = profileImageUrl;
     }
 
     public void update(CommentRequestDto commentRequestDto) {
