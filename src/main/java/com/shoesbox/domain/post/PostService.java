@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +50,7 @@ public class PostService {
         post = postRepository.save(post);
 
         // 이미지 업로드
+        createThumbnail(postRequestDto.getImageFiles().get(0), post, member);
         createPhoto(postRequestDto.getImageFiles(), post, member);
 
         return post.getId();
@@ -67,7 +69,7 @@ public class PostService {
                 () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
         );
         long memberId = post.getMemberId();
-        if (myMemberId == memberId){
+        if (myMemberId == memberId) {
             return toPostResponseDto(post);
         } else if (friendService.isFriend(myMemberId, memberId)) {
             return toPostResponseDto(post);
@@ -168,6 +170,26 @@ public class PostService {
                 .build();
     }
 
+
+    private void createThumbnail(MultipartFile multipartFile, Post post, Member member) throws RuntimeException {
+
+        // 썸네일 업로드 및 맵핑
+        String thumbnailUrl = null;
+        try {
+            thumbnailUrl = s3Service.uploadThumbnail(multipartFile);
+        } catch (IOException e) {
+            throw new RuntimeException("썸네일을 생성할 수 없습니다.");
+        }
+
+        Photo photo = Photo.builder()
+                .url(thumbnailUrl)
+                .post(post)
+                .member((member == null) ? post.getMember() : member)
+                .build();
+        photoRepository.save(photo);
+
+    }
+
     private void createPhoto(List<MultipartFile> imageFiles, Post post, Member member) {
         if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
             throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
@@ -199,12 +221,12 @@ public class PostService {
         post.getPhotos().clear();
     }
 
-    public void postCreateCheck(PostRequestDto postRequestDto, long memberId, int year, int month, int day){
+    public void postCreateCheck(PostRequestDto postRequestDto, long memberId, int year, int month, int day) {
         if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
             throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
         }
 
-        if(postRepository.existsByMemberIdAndCreatedYearAndCreatedMonthAndCreatedDay(memberId, year, month, day)){
+        if (postRepository.existsByMemberIdAndCreatedYearAndCreatedMonthAndCreatedDay(memberId, year, month, day)) {
             throw new IllegalArgumentException("오늘의 일기를 이미 작성하였습니다.");
         }
 

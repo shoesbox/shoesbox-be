@@ -8,7 +8,6 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.util.IOUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,11 +15,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import java.io.ByteArrayInputStream;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Objects;
 import java.util.UUID;
+
 
 @Slf4j
 @NoArgsConstructor
@@ -53,6 +57,7 @@ public class S3Service {
 
     // 이미지 업로드
     public String uploadImage(MultipartFile file) {
+
         // 파일 이름 받아오기
         String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
 
@@ -66,18 +71,15 @@ public class S3Service {
         // 파일이름을 무작위 값으로 변경
         fileName = UUID.randomUUID() + fileExtension;
 
-        try {
-            // 파일 업로드
-            ObjectMetadata objMeta = new ObjectMetadata();
-            byte[] bytes = IOUtils.toByteArray(file.getInputStream());
-            objMeta.setContentLength(bytes.length);
-            ByteArrayInputStream byteArrayIs = new ByteArrayInputStream(bytes);
-            PutObjectRequest putObjReq = new PutObjectRequest(bucket, fileName, byteArrayIs, objMeta).withCannedAcl(CannedAccessControlList.PublicRead);
-            s3Client.putObject(putObjReq);
 
-            // // 파일 업로드
-            // s3Client.putObject(new PutObjectRequest(bucket, fileName, file.getInputStream(), null)
-            //         .withCannedAcl(CannedAccessControlList.PublicRead));
+        ObjectMetadata objMeta = new ObjectMetadata();
+        objMeta.setContentLength(file.getSize());
+        objMeta.setContentType(file.getContentType());
+
+        try (InputStream inputStream = file.getInputStream()) {
+            // 파일 업로드
+            s3Client.putObject(new PutObjectRequest(bucket, fileName, inputStream, objMeta)
+                    .withCannedAcl(CannedAccessControlList.PublicRead));
         } catch (java.io.IOException e) {
             throw new IllegalArgumentException("S3 Bucket 객체 업로드 실패.");
         }
@@ -93,11 +95,43 @@ public class S3Service {
         s3Client.deleteObject(bucket, sourceKey);
     }
 
-    // MultipartFile -> File 변환
-    public File multipartToFile(MultipartFile mfile) throws IllegalStateException, IOException {
-        File file = new File(mfile.getOriginalFilename());
-        mfile.transferTo(file);
-        return file;
-    }
+    public String uploadThumbnail(MultipartFile mfile) throws IOException {
 
+        // 파일 이름 받아오기
+        String originalName = Objects.requireNonNull(mfile.getOriginalFilename()).toLowerCase();
+        String fileName = originalName.substring(originalName.lastIndexOf("\\") + 1);
+        String uuid = UUID.randomUUID().toString();
+        String fileExtension = fileName.substring(fileName.length() - 4);
+        String saveName = "s_" + uuid + fileExtension;
+
+        // 리사이징 할 파일 크기
+        int targetWidth = 100;
+        int targetHeight = 100;
+
+        // Graphics2D 로 리사이징
+        BufferedImage originalImage = ImageIO.read(mfile.getInputStream());
+        BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, originalImage.getType()); //BufferedImage.TYPE_INT_RGB
+        Graphics2D graphics2D = resizedImage.createGraphics();
+        graphics2D.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
+        graphics2D.dispose();
+
+        // byte array를 File로 전환
+        File outFile = new File(saveName);
+        ImageIO.write(resizedImage, "jpg", outFile);
+
+        ObjectMetadata objMeta = new ObjectMetadata();
+        objMeta.setContentLength(outFile.length());
+        objMeta.setContentType(mfile.getContentType());
+
+        try (InputStream inputStream = new FileInputStream(outFile)) {
+            // 파일 업로드
+            s3Client.putObject(new PutObjectRequest(bucket, saveName, inputStream, objMeta)
+                    .withCannedAcl(CannedAccessControlList.PublicRead));
+        } catch (java.io.IOException e) {
+            throw new IllegalArgumentException("S3 Bucket 객체 업로드 실패.");
+        }
+
+        return s3Client.getUrl(bucket, saveName).toString();    ///url string 리턴
+
+    }
 }
