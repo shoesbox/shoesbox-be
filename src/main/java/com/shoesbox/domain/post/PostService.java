@@ -13,13 +13,13 @@ import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
 import com.shoesbox.global.exception.runtime.PostNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -33,7 +33,6 @@ public class PostService {
     // 생성
     @Transactional
     public long createPost(String nickname, long memberId, PostRequestDto postRequestDto) {
-
         Member member = Member.builder()
                 .id(memberId)
                 .nickname(nickname)
@@ -56,8 +55,38 @@ public class PostService {
 
     // 전체 조회
     @Transactional(readOnly = true)
-    public Page<PostListResponseDto> getPosts(Pageable pageable, long memberId, int year, int month) {
-        return postRepository.findByMemberIdAndCreatedYearAndCreatedMonth(pageable, memberId, year, month).map(PostService::toPostListResponseDto);
+    public List<PostListResponseDto> getPosts(long memberId, LocalDate firstDay, LocalDate lastDay, int weeks) {
+        // 작성자의 memberId가 일치하고, firstDay와 lastDay 사이에 작성된 글을 검색한다.
+        var foundPosts = postRepository.findAllByMemberIdAndCreatedDateBetween(memberId, firstDay, lastDay)
+                .stream()
+                // PostListResponseDto의 배열로 변환한다.
+                .map(PostService::toPostListResponseDto)
+                .toArray(PostListResponseDto[]::new);
+
+        // 달력 일자의 개수와 같은 크기의 배열 생성
+        var posts = new PostListResponseDto[weeks * 7];
+        var index = 0;
+        for (int i = 0; i < posts.length; i++) {
+            // 달력 첫날부터 하루하루 증가
+            var today = firstDay.plusDays(i).getDayOfMonth();
+            if (index < foundPosts.length) {
+                // 게시글의 작성일이 오늘과 일치할 경우 반환할 posts 배열에 대입
+                if (foundPosts[index].getCreatedDay() == today) {
+                    posts[i] = foundPosts[index];
+                    ++index;
+                    continue;
+                }
+            }
+            // 작성일이 일치하는 날이 없다면 일기를 쓰지 않은 날이다.
+            // 빈 객체를 생성해서 넣어준다.
+            posts[i] = PostListResponseDto.builder()
+                    .postId(0)
+                    .thumbnailUrl(null)
+                    .createdDay(today)
+                    .build();
+        }
+
+        return Arrays.asList(posts);
     }
 
     // 상세 조회
@@ -67,7 +96,7 @@ public class PostService {
                 () -> new PostNotFoundException("해당 게시물을 찾을 수 없습니다.")
         );
         long memberId = post.getMemberId();
-        if (myMemberId == memberId){
+        if (myMemberId == memberId) {
             return toPostResponseDto(post);
         } else if (friendService.isFriend(myMemberId, memberId)) {
             return toPostResponseDto(post);
@@ -79,9 +108,7 @@ public class PostService {
     // 수정
     @Transactional
     public PostResponseDto updatePost(long myMemberId, long postId, PostRequestDto postRequestDto) {
-        if (postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
-        }
+        validateImageFiles(postRequestDto.getImageFiles());
 
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
@@ -93,7 +120,6 @@ public class PostService {
             deletePhoto(post);
             createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
 
-            postRepository.save(post);
             return toPostResponseDto(post);
         } else {
             throw new IllegalArgumentException("해당 게시물의 수정 권한이 없습니다.");
@@ -144,9 +170,6 @@ public class PostService {
                 .comments(getCommentList(post))
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
-                .createdYear(post.getCreatedYear())
-                .createdMonth(post.getCreatedMonth())
-                .createdDay(post.getCreatedDay())
                 .build();
     }
 
@@ -157,14 +180,10 @@ public class PostService {
         }
         return PostListResponseDto.builder()
                 .postId(post.getId())
-                .title(post.getTitle())
                 // TODO: 썸네일 최적화 필요
                 .thumbnailUrl(url)
-                .createdAt(post.getCreatedAt())
-                .modifiedAt(post.getModifiedAt())
-                .createdYear(post.getCreatedYear())
-                .createdMonth(post.getCreatedMonth())
-                .createdDay(post.getCreatedDay())
+                .createdDate(post.getCreatedDate())
+                .createdDay(post.getCreatedDate().getDayOfMonth())
                 .build();
     }
 
@@ -199,14 +218,17 @@ public class PostService {
         post.getPhotos().clear();
     }
 
-    public void postCreateCheck(PostRequestDto postRequestDto, long memberId, int year, int month, int day){
-        if (postRequestDto.getImageFiles() == null || postRequestDto.getImageFiles().isEmpty() || postRequestDto.getImageFiles().get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
-        }
+    public void validatePostRequest(PostRequestDto postRequestDto, long memberId) {
+        validateImageFiles(postRequestDto.getImageFiles());
 
-        if(postRepository.existsByMemberIdAndCreatedYearAndCreatedMonthAndCreatedDay(memberId, year, month, day)){
+        if (postRepository.existsByMemberIdAndCreatedDate(memberId, LocalDate.now())) {
             throw new IllegalArgumentException("오늘의 일기를 이미 작성하였습니다.");
         }
+    }
 
+    private void validateImageFiles(List<MultipartFile> imageFiles) {
+        if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
+            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+        }
     }
 }

@@ -16,6 +16,7 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
 
     private final String email;
     private String password;
+    private final String nickname;
     private final long memberId;
     private final Set<GrantedAuthority> authorities;
 
@@ -23,10 +24,12 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
     private CustomUserDetails(
             String email,
             String password,
+            String nickname,
             long memberId,
             Collection<? extends GrantedAuthority> authorities) {
         this.email = email;
         this.password = (password == null) ? "" : password;
+        this.nickname = nickname;
         this.memberId = memberId;
         this.authorities = Collections.unmodifiableSet(sortAuthorities(authorities));
     }
@@ -76,7 +79,7 @@ public class CustomUserDetails implements UserDetails, CredentialsContainer {
     }
 
     public String getNickname() {
-        return this.email.split("@")[0];
+        return this.nickname;
     }
 
     @Override

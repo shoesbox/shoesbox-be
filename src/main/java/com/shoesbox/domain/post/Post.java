@@ -16,6 +16,8 @@ import java.util.List;
 @Getter
 @Entity
 @Table(name = "post")
+// TODO: 임시로  넣은 것. 제거해야 함!!
+@Setter
 public class Post extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
@@ -32,13 +34,7 @@ public class Post extends BaseTimeEntity {
     private String nickname;
 
     @Column(nullable = false)
-    private final int createdYear;
-
-    @Column(nullable = false)
-    private final int createdMonth;
-
-    @Column(nullable = false)
-    private final int createdDay;
+    private LocalDate createdDate;
 
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
@@ -58,11 +54,8 @@ public class Post extends BaseTimeEntity {
             cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Photo> photos;
 
-
     protected Post() {
-        this.createdYear = LocalDate.now().getYear();
-        this.createdMonth = LocalDate.now().getMonthValue();
-        this.createdDay = LocalDate.now().getDayOfMonth();
+        this.createdDate = LocalDate.now();
     }
 
     @Builder
@@ -79,5 +72,4 @@ public class Post extends BaseTimeEntity {
         this.title = title;
         this.content = content;
     }
-
 }

@@ -2,6 +2,8 @@ package com.shoesbox.global.security.jwt;
 
 import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
+import com.shoesbox.domain.member.Member;
+import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.global.exception.runtime.InvalidJWTException;
 import com.shoesbox.global.security.CustomUserDetails;
 import io.jsonwebtoken.Claims;
@@ -17,7 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -31,19 +33,20 @@ import java.util.stream.Collectors;
 public class TokenProvider {
     private static final String AUTHORITIES_KEY = "auth";
     private static final String BEARER_TYPE = "bearer";
-    private static final String EMAIL = "email";
     private static final String USER_ID = "uid";
     private final long ACCESS_TOKEN_LIFETIME_IN_MS;
     private final long REFRESH_TOKEN_LIFETIME_IN_MS;
     private final Key key;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final MemberRepository memberRepository;
 
     // yml에 저장한 secret key와 토큰 지속시간 가져오기
     public TokenProvider(
             @Value("${jwt.secret-key}") String secretKey,
             @Value("${jwt.access-token-lifetime-in-seconds}") long accessTokenLifetimeInSeconds,
             @Value("${jwt.refresh-token-lifetime-in-seconds}") long refreshTokenLifetimeInSeconds,
-            RefreshTokenRepository refreshTokenRepository) {
+            RefreshTokenRepository refreshTokenRepository,
+            MemberRepository memberRepository) {
 
         // second -> millisecond로 변환
         this.ACCESS_TOKEN_LIFETIME_IN_MS =
@@ -57,6 +60,7 @@ public class TokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
 
         this.refreshTokenRepository = refreshTokenRepository;
+        this.memberRepository = memberRepository;
     }
 
     // 토큰 생성
@@ -76,8 +80,6 @@ public class TokenProvider {
         var accessToken = Jwts.builder()
                 // payload "sub": "name"
                 .setSubject("Access Token")
-                // 클레임에 username 저장
-                .claim(EMAIL, userDetails.getEmail())
                 // 클레임에 userId(PK) 저장
                 .claim(USER_ID, String.valueOf(userDetails.getMemberId()))
                 // payload "auth": "ROLE_USER"
@@ -87,7 +89,7 @@ public class TokenProvider {
                 // header "alg": "HS512"
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
-        User user;
+
         // 리프레쉬 토큰 생성
         var refreshToken = Jwts.builder()
                 .setSubject("Refresh Token")
@@ -124,10 +126,12 @@ public class TokenProvider {
         // 토큰 복호화
         Claims claims = parseClaims(accessToken);
 
-        // 클레임에서 email 가져오기
-        String email = (String) claims.get(EMAIL);
         // 클레임에서 memberId 가져오기
         long memberId = Long.parseLong((String) claims.get(USER_ID));
+        // 존재하는 회원인지 확인
+        Member member = memberRepository.findById(memberId).orElseThrow(
+                () -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
+
         // db에서 리프레쉬 토큰이 존재하는지(로그인 여부) 확인
         if (!refreshTokenRepository.existsById(memberId)) {
             throw new InvalidJWTException("로그아웃한 유저입니다.");
@@ -144,8 +148,9 @@ public class TokenProvider {
 
         // CustomUserDetails 객체를 생성해서
         CustomUserDetails principal = CustomUserDetails.builder()
-                .email(email)
                 .memberId(memberId)
+                .email(member.getEmail())
+                .nickname(member.getNickname())
                 .authorities(authorities)
                 .build();
 
