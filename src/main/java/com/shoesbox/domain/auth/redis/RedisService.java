@@ -14,7 +14,6 @@ public class RedisService {
 
     private final RedisTemplate redisTemplate;
 
-    // key를 통해 value를 읽어들임
     public String getData(String key){
         return (String) redisTemplate.opsForValue().get(key);
     }

@@ -51,8 +51,7 @@ public class ProviderService {
 
         ProfileDto profileDto = getProfile(accessToken, provider);
 
-        Member member = memberRepository.findByEmail(profileDto.getEmail()).orElseThrow(
-                () -> new IllegalArgumentException("해당 유저 정보가 없습니다"));
+        Member member = memberRepository.findByEmail(profileDto.getEmail()).orElse(null);
         if (member == null) {
             // db에 없을 경우 등록 후 토큰 생성
             String password = UUID.randomUUID().toString(); // 랜덤 password 생성

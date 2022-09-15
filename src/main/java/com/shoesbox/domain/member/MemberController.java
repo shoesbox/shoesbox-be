@@ -9,6 +9,8 @@ import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -65,9 +67,9 @@ public class MemberController {
 
     // 로그아웃
     @GetMapping("/logout")
-    public ResponseEntity<Object> logout(@RequestBody TokenRequestDto tokenRequestDto) {
-//        long memberId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(memberService.logout(tokenRequestDto));
+    public ResponseEntity<Object> logout() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return ResponseHandler.ok(memberService.logout(authentication.getName()));
     }
 
     // 회원 탈퇴

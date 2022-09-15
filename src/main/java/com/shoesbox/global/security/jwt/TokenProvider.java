@@ -1,6 +1,5 @@
 package com.shoesbox.global.security.jwt;
 
-import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;

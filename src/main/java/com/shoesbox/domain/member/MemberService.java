@@ -167,10 +167,8 @@ public class MemberService {
     }
 
     @Transactional
-    public TokenDto logout(TokenRequestDto tokenRequestDto) {
-        Authentication authentication = tokenProvider.getAuthentication(tokenRequestDto.getAccessToken());
-        redisTemplate.delete("RT:" + authentication.getName());
-
+    public TokenDto logout(String email) {
+        redisTemplate.delete("RT:" + email);
         return tokenProvider.createEmptyTokenDto();
     }
 
