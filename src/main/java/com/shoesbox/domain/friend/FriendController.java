@@ -42,7 +42,7 @@ public class FriendController {
     @GetMapping("/request")
     public ResponseEntity<Object> getFriendRequestList(){
         long currnetMemberId = SecurityUtil.getCurrentMemberId();
-        return ResponseEntity.ok(friendService.getFriendRequestList(currnetMemberId, FriendState.REQUEST));
+        return ResponseHandler.ok(friendService.getFriendRequestList(currnetMemberId, FriendState.REQUEST));
     }
 
     // 요청받은 건 수락
