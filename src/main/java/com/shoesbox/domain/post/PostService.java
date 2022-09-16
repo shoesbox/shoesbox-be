@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +49,7 @@ public class PostService {
         post = postRepository.save(post);
 
         // 이미지 업로드
+        createThumbnail(postRequestDto.getImageFiles().get(0), post, member);
         createPhoto(postRequestDto.getImageFiles(), post, member);
 
         return post.getId();
@@ -181,6 +183,26 @@ public class PostService {
                 .createdDate(post.getCreatedDate())
                 .createdDay(post.getCreatedDate().getDayOfMonth())
                 .build();
+    }
+
+
+    private void createThumbnail(MultipartFile multipartFile, Post post, Member member) throws RuntimeException {
+
+        // 썸네일 업로드 및 맵핑
+        String thumbnailUrl = null;
+        try {
+            thumbnailUrl = s3Service.uploadThumbnail(multipartFile);
+        } catch (IOException e) {
+            throw new RuntimeException("썸네일을 생성할 수 없습니다.");
+        }
+
+        Photo photo = Photo.builder()
+                .url(thumbnailUrl)
+                .post(post)
+                .member((member == null) ? post.getMember() : member)
+                .build();
+        photoRepository.save(photo);
+
     }
 
     private void createPhoto(List<MultipartFile> imageFiles, Post post, Member member) {
