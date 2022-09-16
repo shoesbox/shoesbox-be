@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,17 +39,19 @@ public class PostService {
                 .nickname(nickname)
                 .build();
 
+        String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+
         // 게시글 생성
         Post post = Post.builder()
                 .title(postRequestDto.getTitle())
                 .content(postRequestDto.getContent())
                 .nickname(nickname)
                 .member(member)
+                .thumbnailUrl(thumbnailUrl)
                 .build();
         post = postRepository.save(post);
 
         // 이미지 업로드
-        createThumbnail(postRequestDto.getImageFiles().get(0), post, member);
         createPhoto(postRequestDto.getImageFiles(), post, member);
 
         return post.getId();
@@ -117,9 +119,14 @@ public class PostService {
 
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
-            post.update(postRequestDto.getTitle(), postRequestDto.getContent());
-
+            // 기존 썸네일, 사진 삭제
+            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
             deletePhoto(post);
+
+            // 썸네일 생성
+            String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+            post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
+
             createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
 
             return toPostResponseDto(post);
@@ -137,6 +144,7 @@ public class PostService {
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
             deletePhoto(post);
+            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
             postRepository.deleteById(postId);
             return "게시물 삭제 성공";
         } else {
@@ -172,37 +180,27 @@ public class PostService {
     }
 
     private static PostListResponseDto toPostListResponseDto(Post post) {
-        String url = null;
-        if (post.getPhotos() != null && !post.getPhotos().isEmpty()) {
-            url = post.getPhotos().get(0).getUrl();
-        }
         return PostListResponseDto.builder()
                 .postId(post.getId())
-                // TODO: 썸네일 최적화 필요
-                .thumbnailUrl(url)
+                .thumbnailUrl(post.getThumbnailUrl())
                 .createdDate(post.getCreatedDate())
                 .createdDay(post.getCreatedDate().getDayOfMonth())
                 .build();
     }
 
 
-    private void createThumbnail(MultipartFile multipartFile, Post post, Member member) throws RuntimeException {
+    private String createThumbnail(MultipartFile multipartFile) {
 
         // 썸네일 업로드 및 맵핑
         String thumbnailUrl = null;
         try {
             thumbnailUrl = s3Service.uploadThumbnail(multipartFile);
         } catch (IOException e) {
+            // TODO: 2022-09-16 기본 썸네일로 대체해 업로드
             throw new RuntimeException("썸네일을 생성할 수 없습니다.");
         }
 
-        Photo photo = Photo.builder()
-                .url(thumbnailUrl)
-                .post(post)
-                .member((member == null) ? post.getMember() : member)
-                .build();
-        photoRepository.save(photo);
-
+        return thumbnailUrl;
     }
 
     private void createPhoto(List<MultipartFile> imageFiles, Post post, Member member) {

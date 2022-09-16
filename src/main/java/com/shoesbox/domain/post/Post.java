@@ -36,6 +36,9 @@ public class Post extends BaseTimeEntity {
     @Column(nullable = false)
     private LocalDate createdDate;
 
+    @Column(nullable = false)
+    private String thumbnailUrl;
+
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -59,17 +62,19 @@ public class Post extends BaseTimeEntity {
     }
 
     @Builder
-    private Post(long id, String title, String content, String nickname, Member member) {
+    private Post(long id, String title, String content, String nickname, Member member, String thumbnailUrl) {
         this();
         this.id = id;
         this.title = title;
         this.content = content;
         this.nickname = nickname;
         this.member = member;
+        this.thumbnailUrl = thumbnailUrl;
     }
 
-    protected void update(String title, String content) {
+    protected void update(String title, String content, String thumbnailUrl) {
         this.title = title;
         this.content = content;
+        this.thumbnailUrl = thumbnailUrl;
     }
 }
