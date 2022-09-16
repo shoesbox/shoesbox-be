@@ -72,8 +72,9 @@ public class Post extends BaseTimeEntity {
         this.thumbnailUrl = thumbnailUrl;
     }
 
-    protected void update(String title, String content) {
+    protected void update(String title, String content, String thumbnailUrl) {
         this.title = title;
         this.content = content;
+        this.thumbnailUrl = thumbnailUrl;
     }
 }

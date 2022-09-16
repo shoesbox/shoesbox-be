@@ -112,17 +112,7 @@ public class S3Service {
         Thumbnails.of(mfile.getInputStream())
                 .size(targetWidth, targetHeight)
                 .toFile(outPutStream);
-
-//        // Graphics2D 로 리사이징
-//        BufferedImage originalImage = ImageIO.read(mfile.getInputStream());
-//        BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, originalImage.getType()); //BufferedImage.TYPE_INT_RGB
-//        Graphics2D graphics2D = resizedImage.createGraphics();
-//        graphics2D.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
-//        graphics2D.dispose();
-//        // byte array를 File로 전환
-//        File outFile = new File(saveName);
-//        ImageIO.write(resizedImage, "jpg", outFile);
-
+        
         ObjectMetadata objMeta = new ObjectMetadata();
         objMeta.setContentLength(outPutStream.length());
         objMeta.setContentType(mfile.getContentType());

@@ -119,9 +119,14 @@ public class PostService {
 
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
-            post.update(postRequestDto.getTitle(), postRequestDto.getContent());
-
+            // 기존 썸네일, 사진 삭제
+            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
             deletePhoto(post);
+
+            // 썸네일 생성
+            String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+            post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
+
             createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
 
             return toPostResponseDto(post);
@@ -139,6 +144,7 @@ public class PostService {
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
             deletePhoto(post);
+            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
             postRepository.deleteById(postId);
             return "게시물 삭제 성공";
         } else {
