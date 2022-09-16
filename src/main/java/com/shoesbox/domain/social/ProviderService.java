@@ -37,10 +37,8 @@ import java.util.stream.Collectors;
 @Service
 public class ProviderService {
     private final MemberRepository memberRepository;
-
     private final OAuthRequestFactory oAuthRequestFactory;
     private final TokenProvider tokenProvider;
-
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final Gson gson;
     private final RedisService redisService;
@@ -62,16 +60,14 @@ public class ProviderService {
                     .profileImageUrl(profileDto.getProfileImage())
                     .build();
             memberRepository.save(member);
-
         }
-        
+
         // db에 있을 시 그냥 토큰 생성
         return getTokenInfo(member);
     }
 
     @Transactional
     public TokenDto getTokenInfo(Member member) {
-
         // 강제 로그인 처리
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(member.getAuthority().split(","))
@@ -92,7 +88,8 @@ public class ProviderService {
 
         // Reids에 Refresh Token 저장
         String refreshToken = tokenDto.getRefreshToken();
-        redisService.setDataWithExpiration("RT:"+member.getEmail(), refreshToken, tokenDto.getRefreshTokenLifetimeInMs());
+        redisService.setDataWithExpiration("RT:" + member.getEmail(), refreshToken,
+                tokenDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return tokenDto;
