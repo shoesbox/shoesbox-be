@@ -77,22 +77,29 @@ public class FriendService {
         return friendList;
     }
 
-    @Transactional
-    public FriendResponseDto acceptFriend(long fromMemberId, long currentMemberId, FriendState friendState){
-        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentMemberId, friendState).orElseThrow(
-                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+    @Transactional(readOnly = true)
+    public List<FriendListResponseDto> getFriendRequestList(long currentMemberId, FriendState friendState) {
+        // 친구 요청을 한 리스트
+        List<Friend> fromFriends = friendRepository.findAllByFromMemberIdAndFriendState(currentMemberId, friendState);
+        List<FriendListResponseDto> friendList = new ArrayList<>();
+        for (Friend friend : fromFriends) {
+            friendList.add(toToFriendListResponseDto(friend));
+        }
 
-        requestedFriend.updateFriendState(FriendState.FRIEND);
-
-        return toFriendResponseDto(requestedFriend);
+        return friendList;
     }
 
-    public FriendResponseDto refuseFriend(long fromMemberId, long currentMemberId, FriendState friendState){
-        Friend requestedFriend = friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, currentMemberId, friendState).orElseThrow(
-                () -> new IllegalArgumentException("요청 목록에 없는 회원입니다."));
+    // 친구 수락
+    @Transactional
+    public FriendResponseDto acceptFriendRequest(Friend fromFriend){
+        fromFriend.updateFriendState(FriendState.FRIEND);
+        return toFriendResponseDto(fromFriend);
+    }
 
-        friendRepository.delete(requestedFriend);
-        return toFriendResponseDto(requestedFriend);
+    // 친구 거절
+    public FriendResponseDto deleteFriendRequest(Friend fromFriend){
+        friendRepository.delete(fromFriend);
+        return toFriendResponseDto(fromFriend);
     }
 
     @Transactional
@@ -157,6 +164,12 @@ public class FriendService {
         } else if(friendState == FriendState.REQUEST){
             throw new IllegalArgumentException("이미 친구 요청중입니다.");
         }
+    }
+
+
+    public Friend findRelationship(long fromMemberId, long toMemberId, FriendState friendState){
+        return friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, toMemberId, friendState).orElseThrow(
+                () -> new IllegalArgumentException("목록에 없는 회원입니다."));
     }
 
     public boolean isFriend(long memberId, long currentMemberId){
