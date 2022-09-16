@@ -1,6 +1,5 @@
 package com.shoesbox.domain.post;
 
-import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.comment.CommentResponseDto;
 import com.shoesbox.domain.comment.CommentService;
 import com.shoesbox.domain.friend.FriendService;
@@ -21,6 +20,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -148,11 +148,7 @@ public class PostService {
             return new ArrayList<>();
         }
 
-        List<CommentResponseDto> commentList = new ArrayList<>();
-        for (Comment comment : post.getComments()) {
-            commentList.add(CommentService.toCommentResponseDto(comment, post.getMemberId(), post.getId()));
-        }
-        return commentList;
+        return post.getComments().stream().map(CommentService::toCommentResponseDto).collect(Collectors.toList());
     }
 
     private static PostResponseDto toPostResponseDto(Post post) {
