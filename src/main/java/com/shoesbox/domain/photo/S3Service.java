@@ -23,22 +23,17 @@ import java.io.InputStream;
 import java.util.Objects;
 import java.util.UUID;
 
-
 @Slf4j
 @NoArgsConstructor
 @Service
 public class S3Service {
     private AmazonS3 s3Client;
-
     @Value("${cloud.aws.credentials.accessKey}")
     private String accessKey;
-
     @Value("${cloud.aws.credentials.secretkey}")
     private String secretKey;
-
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
-
     @Value("${cloud.aws.region.static}")
     private String region;
 
@@ -52,10 +47,8 @@ public class S3Service {
                 .build();
     }
 
-
     // 이미지 업로드
     public String uploadImage(MultipartFile file) {
-
         // 파일 이름 받아오기
         String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
 
@@ -68,7 +61,6 @@ public class S3Service {
 
         // 파일이름을 무작위 값으로 변경
         fileName = UUID.randomUUID() + fileExtension;
-
 
         ObjectMetadata objMeta = new ObjectMetadata();
         objMeta.setContentLength(file.getSize());
@@ -89,12 +81,12 @@ public class S3Service {
     public void deleteObjectByImageUrl(String imageUrl) {
         // split을 통해 나누고 나눈 length에서 1을 빼서 마지막 값(파일명)을 사용함.
         String sourceKey = imageUrl.split("/")[imageUrl.split("/").length - 1];
+
         // 소스키로 s3에서 삭제
         s3Client.deleteObject(bucket, sourceKey);
     }
 
     public String uploadThumbnail(MultipartFile mfile) throws IOException {
-
         // 파일 이름 받아오기
         String originalName = Objects.requireNonNull(mfile.getOriginalFilename()).toLowerCase();
         String fileName = originalName.substring(originalName.lastIndexOf("\\") + 1);
@@ -127,6 +119,5 @@ public class S3Service {
 
         outPutStream.delete();
         return s3Client.getUrl(bucket, saveName).toString();    ///url string 리턴
-
     }
 }
