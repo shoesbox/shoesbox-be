@@ -40,7 +40,7 @@ public class MemberService {
     private final TokenProvider tokenProvider;
     private final S3Service s3Service;
     private final RedisService redisService;
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Transactional
     public String signUp(SignDto signDto) {
@@ -144,13 +144,14 @@ public class MemberService {
         var userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         // 3. (수정) Redis 저장소에서 토큰 가져오는것으로 대체
-        String savedRefreshToken = (String) redisTemplate.opsForValue().get("RT:"+authentication.getName());
+        String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + authentication.getName());
+        if (savedRefreshToken == null) {
+            throw new RefreshTokenNotFoundException("로그아웃 된 사용자입니다.");
+        }
 
         // 4. Refresh Token 일치하는지 검사 (추가) 로그아웃 사용자 검증)
         if (!savedRefreshToken.equals(tokenRequestDto.getRefreshToken())) {
             throw new InvalidJWTException("토큰의 유저 정보가 일치하지 않습니다.");
-        } else if (savedRefreshToken == null){
-            throw new RefreshTokenNotFoundException("로그아웃 된 사용자입니다.");
         }
 
         // 5. Access Token 에서 가져온 memberId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성

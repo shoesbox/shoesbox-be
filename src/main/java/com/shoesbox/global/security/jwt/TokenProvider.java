@@ -37,7 +37,7 @@ public class TokenProvider {
     private final long ACCESS_TOKEN_LIFETIME_IN_MS;
     private final long REFRESH_TOKEN_LIFETIME_IN_MS;
     private final Key key;
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
     private final MemberRepository memberRepository;
 
     // yml에 저장한 secret key와 토큰 지속시간 가져오기
@@ -45,7 +45,7 @@ public class TokenProvider {
             @Value("${jwt.secret-key}") String secretKey,
             @Value("${jwt.access-token-lifetime-in-seconds}") long accessTokenLifetimeInSeconds,
             @Value("${jwt.refresh-token-lifetime-in-seconds}") long refreshTokenLifetimeInSeconds,
-            RedisTemplate redisTemplate,
+            RedisTemplate<String, String> redisTemplate,
             MemberRepository memberRepository) {
 
         // second -> millisecond로 변환
@@ -132,7 +132,7 @@ public class TokenProvider {
         Member member = memberRepository.findById(memberId).orElseThrow(
                 () -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
-        String savedRefreshToken = (String) redisTemplate.opsForValue().get("RT:"+member.getEmail());
+        String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + member.getEmail());
 
         // db에서 리프레쉬 토큰이 존재하는지(로그인 여부) 확인
         if (savedRefreshToken == null) {
