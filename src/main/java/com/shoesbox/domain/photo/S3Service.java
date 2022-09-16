@@ -112,7 +112,7 @@ public class S3Service {
         Thumbnails.of(mfile.getInputStream())
                 .size(targetWidth, targetHeight)
                 .toFile(outPutStream);
-        
+
         ObjectMetadata objMeta = new ObjectMetadata();
         objMeta.setContentLength(outPutStream.length());
         objMeta.setContentType(mfile.getContentType());
@@ -125,6 +125,7 @@ public class S3Service {
             throw new IllegalArgumentException("S3 Bucket 객체 업로드 실패.");
         }
 
+        outPutStream.delete();
         return s3Client.getUrl(bucket, saveName).toString();    ///url string 리턴
 
     }
