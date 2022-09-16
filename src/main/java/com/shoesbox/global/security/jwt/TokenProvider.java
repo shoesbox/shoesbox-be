@@ -1,6 +1,5 @@
 package com.shoesbox.global.security.jwt;
 
-import com.shoesbox.domain.auth.RefreshTokenRepository;
 import com.shoesbox.domain.auth.TokenDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
@@ -15,6 +14,7 @@ import io.jsonwebtoken.security.InvalidKeyException;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -37,7 +37,7 @@ public class TokenProvider {
     private final long ACCESS_TOKEN_LIFETIME_IN_MS;
     private final long REFRESH_TOKEN_LIFETIME_IN_MS;
     private final Key key;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisTemplate<String, String> redisTemplate;
     private final MemberRepository memberRepository;
 
     // yml에 저장한 secret key와 토큰 지속시간 가져오기
@@ -45,7 +45,7 @@ public class TokenProvider {
             @Value("${jwt.secret-key}") String secretKey,
             @Value("${jwt.access-token-lifetime-in-seconds}") long accessTokenLifetimeInSeconds,
             @Value("${jwt.refresh-token-lifetime-in-seconds}") long refreshTokenLifetimeInSeconds,
-            RefreshTokenRepository refreshTokenRepository,
+            RedisTemplate<String, String> redisTemplate,
             MemberRepository memberRepository) {
 
         // second -> millisecond로 변환
@@ -59,7 +59,7 @@ public class TokenProvider {
         // 키의 자리수 검증 및 SecretKey 객체 생성
         this.key = Keys.hmacShaKeyFor(keyBytes);
 
-        this.refreshTokenRepository = refreshTokenRepository;
+        this.redisTemplate = redisTemplate;
         this.memberRepository = memberRepository;
     }
 
@@ -80,7 +80,7 @@ public class TokenProvider {
         var accessToken = Jwts.builder()
                 // payload "sub": "name"
                 .setSubject("Access Token")
-                // 클레임에 userId(PK) 저장
+                // 클레임에 memberId(PK) 저장
                 .claim(USER_ID, String.valueOf(userDetails.getMemberId()))
                 // payload "auth": "ROLE_USER"
                 .claim(AUTHORITIES_KEY, authorities)
@@ -132,8 +132,10 @@ public class TokenProvider {
         Member member = memberRepository.findById(memberId).orElseThrow(
                 () -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
 
+        String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + member.getEmail());
+
         // db에서 리프레쉬 토큰이 존재하는지(로그인 여부) 확인
-        if (!refreshTokenRepository.existsById(memberId)) {
+        if (savedRefreshToken == null) {
             throw new InvalidJWTException("로그아웃한 유저입니다.");
         }
 

@@ -17,6 +17,7 @@ public class SocialController {
 
     @GetMapping("/oauth2/authorization/{provider}")
     public ResponseEntity<Object> socialLogin(@RequestParam String code, @PathVariable String provider) throws JsonProcessingException {
+        System.out.println("code: " + code + " / provider: " + provider);
         return ResponseHandler.ok(providerService.SocialLogin(code, provider));
     }
 }
