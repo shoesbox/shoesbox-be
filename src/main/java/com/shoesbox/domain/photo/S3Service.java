@@ -66,7 +66,7 @@ public class S3Service {
             throw new IllegalArgumentException("bmp,jpg,jpeg,png 형식의 이미지 파일이 요구됨.");
         }
 
-        String fileExtension = fileName.substring(fileName.length() - 4);
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
 
         // 파일이름을 무작위 값으로 변경
         fileName = UUID.randomUUID() + fileExtension;
@@ -101,7 +101,7 @@ public class S3Service {
         String originalName = Objects.requireNonNull(mfile.getOriginalFilename()).toLowerCase();
         String fileName = originalName.substring(originalName.lastIndexOf("\\") + 1);
         String uuid = UUID.randomUUID().toString();
-        String fileExtension = fileName.substring(fileName.length() - 4);
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
         String saveName = "s_" + uuid + fileExtension;
 
         // 리사이징 할 파일 크기
