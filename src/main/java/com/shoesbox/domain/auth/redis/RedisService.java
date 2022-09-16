@@ -14,12 +14,12 @@ public class RedisService {
 
     private final RedisTemplate redisTemplate;
 
-    public String getData(String key){
+    public String getData(String key) {
         return (String) redisTemplate.opsForValue().get(key);
     }
 
-    public void setDataWithExpiration(String key, String value, Long time){
-        if(this.getData(key) != null){
+    public void setDataWithExpiration(String key, String value, Long time) {
+        if (this.getData(key) != null) {
             redisTemplate.delete(key);
         }
         Duration expireDuration = Duration.ofSeconds(time);

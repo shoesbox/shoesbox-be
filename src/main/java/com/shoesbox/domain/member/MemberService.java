@@ -55,12 +55,12 @@ public class MemberService {
 
     @Transactional
     public TokenDto login(SignDto signDto) {
-        // 1. Login 화면에서 입력 받은 username/pw 를 기반으로 AuthenticationToken 생성
+        // Login 화면에서 입력 받은 username/pw 를 기반으로 AuthenticationToken 생성
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(signDto.getEmail(), signDto.getPassword());
 
-        // 2. 실제로 검증 (사용자 비밀번호 체크) 이 이루어지는 부분
-        //    authenticate 메서드가 실행이 될 때 CustomUserDetailsService 에서 만들었던 loadUserByUsername 메서드가 실행됨
+        // 실제로 검증 (사용자 비밀번호 체크) 이 이루어지는 부분
+        // authenticate 메서드가 실행이 될 때 CustomUserDetailsService 에서 만들었던 loadUserByUsername 메서드가 실행됨
         Authentication authentication;
         try {
             authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
@@ -68,22 +68,19 @@ public class MemberService {
             log.info("아이디, 혹은 비밀번호가 잘못되었습니다.");
             throw new BadCredentialsException("아이디, 혹은 비밀번호가 잘못되었습니다.");
         }
-        long memberId = memberRepository.findByEmail(authentication.getName())
-                .map(Member::getId)
-                .orElseThrow(
-                        () -> new UsernameNotFoundException(
-                                "email: " + authentication.getName() + "은 존재하지 않는 계정입니다."));
+
         // CustomUserDetails 생성
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        // 3. 인증 정보를 사용해 JWT 토큰 생성
+        // 인증 정보를 사용해 JWT 토큰 생성
         TokenDto tokenDto = tokenProvider.createTokenDto(userDetails);
 
-        // 4. RefreshToken 저장
+        // RefreshToken 저장
         String refreshToken = tokenDto.getRefreshToken();
-        redisService.setDataWithExpiration("RT:"+authentication.getName(), refreshToken, tokenDto.getRefreshTokenLifetimeInMs());
+        redisService.setDataWithExpiration("RT:" + authentication.getName(), refreshToken,
+                tokenDto.getRefreshTokenLifetimeInMs());
 
-        // 5. 토큰 발급
+        // 토큰 발급
         return tokenDto;
     }
 
@@ -158,9 +155,12 @@ public class MemberService {
 
         // 5. Access Token 에서 가져온 memberId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성
         TokenDto refreshedTokenDto = tokenProvider.createTokenDto(userDetails);
-        
+
         // 6. db의 리프레쉬 토큰 정보 업데이트 -> Redis에 Refresh 업데이트
-        redisService.setDataWithExpiration("RT:"+authentication.getName(), refreshedTokenDto.getRefreshToken(), refreshedTokenDto.getRefreshTokenLifetimeInMs());
+        redisService.setDataWithExpiration(
+                "RT:" + authentication.getName(),
+                refreshedTokenDto.getRefreshToken(),
+                refreshedTokenDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return refreshedTokenDto;

@@ -80,7 +80,7 @@ public class TokenProvider {
         var accessToken = Jwts.builder()
                 // payload "sub": "name"
                 .setSubject("Access Token")
-                // 클레임에 userId(PK) 저장
+                // 클레임에 memberId(PK) 저장
                 .claim(USER_ID, String.valueOf(userDetails.getMemberId()))
                 // payload "auth": "ROLE_USER"
                 .claim(AUTHORITIES_KEY, authorities)
