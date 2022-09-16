@@ -10,14 +10,12 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -66,7 +64,7 @@ public class S3Service {
             throw new IllegalArgumentException("bmp,jpg,jpeg,png 형식의 이미지 파일이 요구됨.");
         }
 
-        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+        String fileExtension = fileName.substring(fileName.lastIndexOf("."));
 
         // 파일이름을 무작위 값으로 변경
         fileName = UUID.randomUUID() + fileExtension;
@@ -101,29 +99,35 @@ public class S3Service {
         String originalName = Objects.requireNonNull(mfile.getOriginalFilename()).toLowerCase();
         String fileName = originalName.substring(originalName.lastIndexOf("\\") + 1);
         String uuid = UUID.randomUUID().toString();
-        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+        String fileExtension = fileName.substring(fileName.lastIndexOf("."));
         String saveName = "s_" + uuid + fileExtension;
 
         // 리사이징 할 파일 크기
-        int targetWidth = 100;
-        int targetHeight = 100;
+        int targetWidth = 200;
+        int targetHeight = 200;
 
-        // Graphics2D 로 리사이징
-        BufferedImage originalImage = ImageIO.read(mfile.getInputStream());
-        BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, originalImage.getType()); //BufferedImage.TYPE_INT_RGB
-        Graphics2D graphics2D = resizedImage.createGraphics();
-        graphics2D.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
-        graphics2D.dispose();
+        File outPutStream = new File(saveName);
 
-        // byte array를 File로 전환
-        File outFile = new File(saveName);
-        ImageIO.write(resizedImage, "jpg", outFile);
+        // Thumbnailator로 리사이징
+        Thumbnails.of(mfile.getInputStream())
+                .size(targetWidth, targetHeight)
+                .toFile(outPutStream);
+
+//        // Graphics2D 로 리사이징
+//        BufferedImage originalImage = ImageIO.read(mfile.getInputStream());
+//        BufferedImage resizedImage = new BufferedImage(targetWidth, targetHeight, originalImage.getType()); //BufferedImage.TYPE_INT_RGB
+//        Graphics2D graphics2D = resizedImage.createGraphics();
+//        graphics2D.drawImage(originalImage, 0, 0, targetWidth, targetHeight, null);
+//        graphics2D.dispose();
+//        // byte array를 File로 전환
+//        File outFile = new File(saveName);
+//        ImageIO.write(resizedImage, "jpg", outFile);
 
         ObjectMetadata objMeta = new ObjectMetadata();
-        objMeta.setContentLength(outFile.length());
+        objMeta.setContentLength(outPutStream.length());
         objMeta.setContentType(mfile.getContentType());
 
-        try (InputStream inputStream = new FileInputStream(outFile)) {
+        try (InputStream inputStream = new FileInputStream(outPutStream)) {
             // 파일 업로드
             s3Client.putObject(new PutObjectRequest(bucket, saveName, inputStream, objMeta)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
