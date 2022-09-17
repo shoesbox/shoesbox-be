@@ -62,7 +62,7 @@ public class PostController {
         LocalDate firstMonday = firstDay.with(fieldISO, 1);
 
         // 찾으려는 달의 마지막 토요일의 날짜를 구한다
-        LocalDate lastDay = LocalDate.of(year, month, LocalDate.now().getMonth().maxLength());
+        LocalDate lastDay = LocalDate.of(year, month, firstDay.getMonth().maxLength());
         LocalDate lastSaturday = lastDay.with(fieldISO, 7);
 
         // 총 몇 주를 표시해야 하는지 계산한다.
