@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Service
 public class PostService {
+
+    private final String defaultThumbnailImageAddress = "https://shoesbox-sparta.s3.ap-northeast-2.amazonaws.com/_________.jpg";
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendService friendService;
@@ -39,7 +41,13 @@ public class PostService {
                 .nickname(nickname)
                 .build();
 
-        String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+        List<MultipartFile> imageFiles = postRequestDto.getImageFiles(); // 이미지 여부 확인용
+        String thumbnailUrl = defaultThumbnailImageAddress; // 기본 이미지 주소
+
+        // 썸네일 생성
+        if (isPhoto(imageFiles)) {
+            thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+        }
 
         // 게시글 생성
         Post post = Post.builder()
@@ -49,10 +57,13 @@ public class PostService {
                 .member(member)
                 .thumbnailUrl(thumbnailUrl)
                 .build();
+
         post = postRepository.save(post);
 
-        // 이미지 업로드
-        createPhoto(postRequestDto.getImageFiles(), post, member);
+        // dto에 이미지가 있는 경우에만 게시글 맵핑
+        if (isPhoto(imageFiles)) { // 이미지가 존재할 경우에만 s3 업로드 및 Photo 객체와 Post 객체 맵핑
+            createPhoto(postRequestDto.getImageFiles(), post, member);
+        }
 
         return post.getId();
     }
@@ -112,22 +123,27 @@ public class PostService {
     // 수정
     @Transactional
     public PostResponseDto updatePost(long myMemberId, long postId, PostRequestDto postRequestDto) {
-        validateImageFiles(postRequestDto.getImageFiles());
 
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
 
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
-            // 기존 썸네일, 사진 삭제
-            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
-            deletePhoto(post);
 
-            // 썸네일 생성
-            String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
-            post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
+            if (post.getPhotos().size() == 0) { // post와 맵핑이 된 사진 entity가 없을 경우
+                String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+                post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
+                createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
+            } else { // 0개가 아닌 경우
+                // 기존 썸네일, 사진 삭제
+                s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+                deletePhoto(post);
 
-            createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
+                // 썸네일 생성, 업로드, post와 맵핑
+                String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+                post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
+                createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
+            }
 
             return toPostResponseDto(post);
         } else {
@@ -143,8 +159,10 @@ public class PostService {
 
         long memberId = post.getMemberId();
         if (myMemberId == memberId) {
-            deletePhoto(post);
-            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+            if (post.getPhotos().size() > 0) { // 맵핑된 사진 게시물이 있는 경우에만 s3에서 삭제
+                deletePhoto(post);
+                s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+            }
             postRepository.deleteById(postId);
             return "게시물 삭제 성공";
         } else {
@@ -162,10 +180,19 @@ public class PostService {
     }
 
     private static PostResponseDto toPostResponseDto(Post post) {
-        var urls = new ArrayList<String>();
-        for (var photo : post.getPhotos()) {
-            urls.add(photo.getUrl());
+        ArrayList<String> urls = new ArrayList<String>();
+        // post와 맵핑이 된 photo가 null 인 경우 null이 담긴 배열 달
+
+        if (post.getPhotos().size() == 0) {
+            // null 값을 담아 전달
+            urls.add(null);
+        } else {
+            for (var photo : post.getPhotos()) {
+                String url = photo.getUrl();
+                urls.add(url);
+            }
         }
+
         return PostResponseDto.builder()
                 .postId(post.getId())
                 .title(post.getTitle())
@@ -196,18 +223,14 @@ public class PostService {
         try {
             thumbnailUrl = s3Service.uploadThumbnail(multipartFile);
         } catch (IOException e) {
-            // TODO: 2022-09-16 기본 썸네일로 대체해 업로드
-            throw new RuntimeException("썸네일을 생성할 수 없습니다.");
+            throw new RuntimeException("썸네일 업로드 실패");
         }
 
         return thumbnailUrl;
     }
 
     private void createPhoto(List<MultipartFile> imageFiles, Post post, Member member) {
-        if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
-        }
-
+        // 사진 db 반영
         var photos = new ArrayList<Photo>();
         for (var imageFile : imageFiles) {
             var uploadedImageUrl = s3Service.uploadImage(imageFile);
@@ -219,7 +242,6 @@ public class PostService {
             photoRepository.save(photo);
             photos.add(photo);
         }
-
         if (post.getPhotos() != null) {
             post.getPhotos().clear();
             post.getPhotos().addAll(photos);
@@ -245,6 +267,14 @@ public class PostService {
     private void validateImageFiles(List<MultipartFile> imageFiles) {
         if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
             throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+        }
+    }
+
+    private boolean isPhoto(List<MultipartFile> imageFiles) {
+        if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
+            return false;
+        } else {
+            return true;
         }
     }
 }
