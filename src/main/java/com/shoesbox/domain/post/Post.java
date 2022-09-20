@@ -4,19 +4,19 @@ import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.global.common.BaseTimeEntity;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 
 @Getter
 @Entity
 @Table(name = "post")
-// TODO: 임시로  넣은 것. 제거해야 함!!
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+// TODO: Setter는 임시로  넣은 것. 제거해야 함!!
 @Setter
 public class Post extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,24 +57,28 @@ public class Post extends BaseTimeEntity {
             cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Photo> photos;
 
-    protected Post() {
-        this.createdDate = LocalDate.now();
-    }
-
     @Builder
     private Post(long id, String title, String content, String nickname, Member member, String thumbnailUrl) {
-        this();
         this.id = id;
         this.title = title;
         this.content = content;
         this.nickname = nickname;
         this.member = member;
         this.thumbnailUrl = thumbnailUrl;
+        this.createdDate = LocalDate.now();
+        this.comments = new ArrayList<>();
+        this.photos = new ArrayList<>();
     }
 
     protected void update(String title, String content, String thumbnailUrl) {
-        this.title = title;
-        this.content = content;
-        this.thumbnailUrl = thumbnailUrl;
+        if (title != null && !title.isBlank()) {
+            this.title = title;
+        }
+        if (content != null && !content.isBlank()) {
+            this.content = content;
+        }
+        if (thumbnailUrl != null && !thumbnailUrl.isBlank()) {
+            this.thumbnailUrl = thumbnailUrl;
+        }
     }
 }

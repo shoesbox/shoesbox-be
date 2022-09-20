@@ -111,45 +111,59 @@ public class PostService {
 
     // 수정
     @Transactional
-    public PostResponseDto updatePost(long myMemberId, long postId, PostRequestDto postRequestDto) {
-        validateImageFiles(postRequestDto.getImageFiles());
-
-        Post post = postRepository.findById(postId).orElseThrow(
-                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
+    public PostResponseDto updatePost(long currentMemberId, long postId, PostRequestDto postRequestDto) {
+        Post post = getPost(postId);
 
         long memberId = post.getMemberId();
-        if (myMemberId == memberId) {
-            // 기존 썸네일, 사진 삭제
-            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
-            deletePhoto(post);
-
-            // 썸네일 생성
-            String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
-            post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
-
-            createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
-
-            return toPostResponseDto(post);
-        } else {
+        if (currentMemberId != memberId) {
             throw new IllegalArgumentException("해당 게시물의 수정 권한이 없습니다.");
         }
+        // 첨부 이미지를 수정하는지 검사
+        try {
+            validateImageFiles(postRequestDto.getImageFiles());
+        } catch (IllegalArgumentException e) {
+            // 첨부 이미지가 없으면 기존 썸네일 재활용
+            post.update(postRequestDto.getTitle(), postRequestDto.getContent(), post.getThumbnailUrl());
+            return toPostResponseDto(post);
+        }
+
+        // 기존 썸네일, 사진 삭제
+        s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+        deletePhotosInPost(post);
+
+        // 썸네일 생성
+        String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+        createPhoto(postRequestDto.getImageFiles(), post);
+        post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
+        return toPostResponseDto(post);
     }
 
     // 삭제
     @Transactional
-    public String deletePost(long myMemberId, long postId) {
-        Post post = postRepository.findById(postId).orElseThrow(
-                () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
+    public long deletePost(long myMemberId, long postId) {
+        Post post = getPost(postId);
 
         long memberId = post.getMemberId();
-        if (myMemberId == memberId) {
-            deletePhoto(post);
-            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
-            postRepository.deleteById(postId);
-            return "게시물 삭제 성공";
-        } else {
+        if (myMemberId != memberId) {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
+
+        deletePhotosInPost(post);
+        s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+        postRepository.deleteById(postId);
+        return postId;
+    }
+
+    private Post getPost(long postId) {
+        return postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
+    }
+
+    private PostListResponseDto[] getPostsByDate(long memberId, LocalDate firstDay, LocalDate lastDay) {
+        return postRepository.findAllByMemberIdAndCreatedDateBetween(memberId, firstDay, lastDay)
+                             .stream()
+                             // PostListResponseDto의 배열로 변환한다.
+                             .map(this::toPostListResponseDto)
+                             .toArray(PostListResponseDto[]::new);
     }
 
     // 댓글 목록 보기
@@ -226,12 +240,14 @@ public class PostService {
         }
     }
 
-    private void deletePhoto(Post post) {
-        // s3 버킷에서 기존 이미지 삭제
-        for (var photo : post.getPhotos()) {
-            s3Service.deleteObjectByImageUrl(photo.getUrl());
+    private void deletePhotosInPost(Post post) {
+        if (post.getPhotos() != null) {
+            // s3 버킷에서 기존 이미지 삭제
+            for (var photo : post.getPhotos()) {
+                s3Service.deleteObjectByImageUrl(photo.getUrl());
+            }
+            post.getPhotos().clear();
         }
-        post.getPhotos().clear();
     }
 
     public void validatePostRequest(PostRequestDto postRequestDto, long memberId) {

@@ -66,7 +66,7 @@ public class PostController {
         LocalDate lastSaturday = lastDay.with(fieldISO, 7);
 
         // 총 몇 주를 표시해야 하는지 계산한다.
-        int weeks = (int) ChronoUnit.WEEKS.between(firstMonday, lastSaturday) + 1;
+        int weeks = (int) (ChronoUnit.WEEKS.between(firstMonday, lastSaturday) + 1) * 7;
 
         return ResponseHandler.ok(postService.getPosts(memberId, firstMonday, lastSaturday, weeks));
     }
