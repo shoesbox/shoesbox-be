@@ -1,6 +1,8 @@
 package com.shoesbox.domain.comment;
 
 import com.shoesbox.domain.friend.FriendService;
+import com.shoesbox.domain.member.Member;
+import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
 import com.shoesbox.global.exception.runtime.PostNotFoundException;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final MemberRepository memberRepository;
     private final FriendService friendService;
 
     @Transactional(readOnly = true)
@@ -51,12 +54,15 @@ public class CommentService {
             }
         }
 
+        Member currentMember = memberRepository.findById(currentMemberId).orElseThrow(
+                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
         Comment comment = Comment.builder()
                 .nickname(currentMemberNickname)
                 .content(content)
-                .member(post.getMember())
+                .member(currentMember)
                 .post(post)
-                .profileImageUrl(post.getMember().getProfileImageUrl())
+                .profileImageUrl(currentMember.getProfileImageUrl())
                 .build();
         commentRepository.save(comment);
 
