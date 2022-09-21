@@ -28,7 +28,7 @@ public class CommentService {
     @Transactional
     public CommentResponseDto createComment(String content, long currentMemberId, long postId) {
         Post post = getPost(postId);
-        checkAuthorization(currentMemberId, post.getMemberId());
+        checkSelfAuthorization(currentMemberId, post.getMemberId());
         Member currentMember = memberRepository.findById(currentMemberId)
                                                .orElseThrow(() -> new EntityNotFoundException(
                                                        Member.class.getPackageName()));
@@ -101,9 +101,10 @@ public class CommentService {
     }
 
     private boolean isFriend(long currentMemberId, long targetId) {
-        return friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
-                targetId, currentMemberId, FriendState.FRIEND) ||
-                friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
-                        currentMemberId, targetId, FriendState.FRIEND);
+        return currentMemberId == targetId
+                || friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(targetId, currentMemberId,
+                                                                                    FriendState.FRIEND)
+                || friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(currentMemberId, targetId,
+                                                                                    FriendState.FRIEND);
     }
 }
