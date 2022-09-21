@@ -128,22 +128,32 @@ public class PostService {
                 () -> new PostNotFoundException("해당 게시물이 존재하지 않습니다."));
 
         long memberId = post.getMemberId();
+        String thumbnailUrl = defaultThumbnailImageAddress;
+
         if (myMemberId == memberId) {
+            if (isPhoto(postRequestDto.getImageFiles())) { // 수정할 이미지가 있는 경우
+                if (post.getPhotos().size() == 0) { // post와 맵핑이 된 사진 entity가 없을 경우
+                    thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+                    createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
+                } else { // 0개가 아닌 경우
+                    // 기존 썸네일, 사진 삭제
+                    s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+                    deletePhoto(post);
 
-            if (post.getPhotos().size() == 0) { // post와 맵핑이 된 사진 entity가 없을 경우
-                String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
-                post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
-                createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
-            } else { // 0개가 아닌 경우
-                // 기존 썸네일, 사진 삭제
-                s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
-                deletePhoto(post);
-
-                // 썸네일 생성, 업로드, post와 맵핑
-                String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
-                post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
-                createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
+                    // 썸네일 생성, 업로드, post와 맵핑
+                    thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+                    createPhoto(postRequestDto.getImageFiles(), post, post.getMember());
+                }
+            } else { // 수정할 이미지가 없는 경우
+                if (post.getPhotos().size() != 0) { // 기존 이미지 맵핑이 있는 경우에만
+                    // 기존 썸네일, 사진 삭제
+                    s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+                    deletePhoto(post);
+                }
             }
+
+            post.update(postRequestDto.getTitle(), postRequestDto.getContent(), thumbnailUrl);
+
 
             return toPostResponseDto(post);
         } else {
@@ -257,16 +267,9 @@ public class PostService {
     }
 
     public void validatePostRequest(PostRequestDto postRequestDto, long memberId) {
-        validateImageFiles(postRequestDto.getImageFiles());
 
         if (postRepository.existsByMemberIdAndCreatedDate(memberId, LocalDate.now())) {
             throw new IllegalArgumentException("오늘의 일기를 이미 작성하였습니다.");
-        }
-    }
-
-    private void validateImageFiles(List<MultipartFile> imageFiles) {
-        if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
         }
     }
 
