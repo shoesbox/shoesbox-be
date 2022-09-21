@@ -1,8 +1,13 @@
 package com.shoesbox.global.exception;
 
+import com.shoesbox.domain.friend.exception.DuplicateFriendRequestException;
+import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.exception.apierror.ApiError;
-import com.shoesbox.global.exception.runtime.*;
+import com.shoesbox.global.exception.runtime.EntityNotFoundException;
+import com.shoesbox.global.exception.runtime.InvalidJwtException;
+import com.shoesbox.global.exception.runtime.RefreshTokenNotFoundException;
+import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -12,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -48,12 +52,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
             HttpMediaTypeNotAcceptableException ex, HttpHeaders headers,
             HttpStatus status, WebRequest request) {
         String error =
-                ex.getMessage() + ", " + ex.getSupportedMediaTypes().stream().map(String::valueOf) + ", " + Arrays.toString(ex.getStackTrace());
+                ex.getMessage() + ", " + ex.getSupportedMediaTypes().stream()
+                                           .map(String::valueOf) + ", " + Arrays.toString(ex.getStackTrace());
         var apiError = ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(error)
-                .ex(ex)
-                .build();
+                               .status(BAD_REQUEST)
+                               .message(error)
+                               .ex(ex)
+                               .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -74,10 +79,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 "Missing request parameter '%s'",
                 ex.getParameterName());
         var apiError = ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(error)
-                .ex(ex)
-                .build();
+                               .status(BAD_REQUEST)
+                               .message(error)
+                               .ex(ex)
+                               .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -102,10 +107,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         ex.getSupportedMediaTypes().forEach(t -> builder.append(t).append(", "));
         builder.append("을 사용해 주십시오.  ");
         var apiError = ApiError.builder()
-                .status(UNSUPPORTED_MEDIA_TYPE)
-                .message(builder.substring(0, builder.length() - 2))
-                .ex(ex)
-                .build();
+                               .status(UNSUPPORTED_MEDIA_TYPE)
+                               .message(builder.substring(0, builder.length() - 2))
+                               .ex(ex)
+                               .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -125,10 +130,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatus status,
             WebRequest request) {
         var apiError = ApiError.builder()
-                .status(BAD_REQUEST)
-                .message("Validation error. 값이 올바르지 않습니다.")
-                .ex(ex)
-                .build();
+                               .status(BAD_REQUEST)
+                               .message("Validation error. 값이 올바르지 않습니다.")
+                               .ex(ex)
+                               .build();
         apiError.addValidationErrors(ex.getBindingResult().getFieldErrors());
         apiError.addValidationError(ex.getBindingResult().getGlobalErrors());
         return ResponseHandler.fail(apiError);
@@ -144,18 +149,19 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
-                                                                  HttpHeaders headers, HttpStatus status,
-                                                                  WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex,
+            HttpHeaders headers, HttpStatus status,
+            WebRequest request) {
         var servletWebRequest = (ServletWebRequest) request;
         log.info("{} to {}", servletWebRequest.getHttpMethod(), servletWebRequest.getRequest().getServletPath());
         var error = "Malformed JSON request." +
                 "정상적인 JSON 요청이 아닙니다. 형식이 올바른지 확인하십시오.";
         var apiError = ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(error)
-                .ex(ex)
-                .build();
+                               .status(BAD_REQUEST)
+                               .message(error)
+                               .ex(ex)
+                               .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -169,16 +175,17 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @return the ApiError object
      */
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotWritable(HttpMessageNotWritableException ex,
-                                                                  HttpHeaders headers, HttpStatus status,
-                                                                  WebRequest request) {
+    protected ResponseEntity<Object> handleHttpMessageNotWritable(
+            HttpMessageNotWritableException ex,
+            HttpHeaders headers, HttpStatus status,
+            WebRequest request) {
         var error = "Error writing JSON output. " +
                 "기본 생성자, Getters, Jackson 의존성이 있는지 확인하십시오.";
         var apiError = ApiError.builder()
-                .status(INTERNAL_SERVER_ERROR)
-                .message(error)
-                .ex(ex)
-                .build();
+                               .status(INTERNAL_SERVER_ERROR)
+                               .message(error)
+                               .ex(ex)
+                               .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -199,146 +206,61 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 ex.getRequestURL(),
                 ex.getHttpMethod());
         var apiError = ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(error)
-                .ex(ex)
-                .build();
+                               .status(BAD_REQUEST)
+                               .message(error)
+                               .ex(ex)
+                               .build();
         return ResponseHandler.fail(apiError);
     }
 
     /**
-     * 인자값에 오류가 있을 때 발생
+     * HttpStatus.BAD_REQUEST를 발생시키는 예외 모음
      *
      * @param ex the Exception
      * @return the ApiError object
      */
-    @ExceptionHandler(IllegalArgumentException.class)
-    protected ResponseEntity<Object> IllegalArgument(IllegalArgumentException ex) {
+    @ExceptionHandler(
+            {IllegalArgumentException.class,
+                    DuplicateUserInfoException.class,
+                    BadCredentialsException.class,
+                    ConstraintViolationException.class,
+                    DuplicateFriendRequestException.class})
+    protected ResponseEntity<Object> handleBadRequest(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
+                                           .status(BAD_REQUEST)
+                                           .message(ex.getMessage())
+                                           .ex(ex)
+                                           .build());
     }
 
     /**
-     * 회원가입 시 DB에 중복된 username, email, nickname이 이미 존재할 경우 발생
+     * HttpStatus.NOT_FOUND를 발생시키는 예외 모음
      *
      * @param ex the Exception
      * @return the ApiError object
      */
-    @ExceptionHandler(DuplicateUserInfoException.class)
-    protected ResponseEntity<Object> handleDuplicateUser(DuplicateUserInfoException ex) {
+    @ExceptionHandler({RefreshTokenNotFoundException.class, EntityNotFoundException.class})
+    protected ResponseEntity<Object> handleNotFound(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
+                                           .status(NOT_FOUND)
+                                           .message(ex.getMessage())
+                                           .ex(ex)
+                                           .build());
     }
 
     /**
-     * DB에서 리프레쉬 토큰을 찾을 수 없을 때 발생
+     * HttpStatus.FORBIDDEN 발생시키는 예외 모음
      *
      * @param ex the Exception
      * @return the ApiError object
      */
-    @ExceptionHandler(RefreshTokenNotFoundException.class)
-    protected ResponseEntity<Object> handleRefreshTokenNotFound(RefreshTokenNotFoundException ex) {
+    @ExceptionHandler({InvalidJwtException.class, UnAuthorizedException.class})
+    protected ResponseEntity<Object> handleJWTVerification(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
-                .status(NOT_FOUND)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
-    }
-
-    /**
-     * JWT 토큰 유효성 검증에 실패했을 때 발생
-     *
-     * @param ex the Exception
-     * @return the ApiError object
-     */
-    @ExceptionHandler(InvalidJWTException.class)
-    protected ResponseEntity<Object> handleJWTVerification(InvalidJWTException ex) {
-        return buildResponseEntity(ApiError.builder()
-                .status(UNAUTHORIZED)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
-    }
-
-    /**
-     * 로그인 아이디, 혹은 비밀번호가 틀렸을 때 발생
-     *
-     * @param ex the Exception
-     * @return the ApiError object
-     */
-    @ExceptionHandler(BadCredentialsException.class)
-    protected ResponseEntity<Object> handleBadCredentials(BadCredentialsException ex) {
-        return buildResponseEntity(ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
-    }
-
-    /**
-     * DB에서 유저 정보를 찾을 수 없을 때 발생
-     *
-     * @param ex the Exception
-     * @return the ApiError object
-     */
-    @ExceptionHandler(UsernameNotFoundException.class)
-    protected ResponseEntity<Object> handleUsernameNotFound(UsernameNotFoundException ex) {
-        return buildResponseEntity(ApiError.builder()
-                .status(NOT_FOUND)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
-    }
-
-    /**
-     * DB에서 Post를 찾을 수 없을 때 발생
-     *
-     * @param ex the Exception
-     * @return the ApiError object
-     */
-    @ExceptionHandler(PostNotFoundException.class)
-    protected ResponseEntity<Object> handlePostNotFound(PostNotFoundException ex) {
-        return buildResponseEntity(ApiError.builder()
-                .status(NOT_FOUND)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
-    }
-
-    /**
-     * 수정, 삭제 권한 등이 없을 때 발생
-     *
-     * @param ex the Exception
-     * @return the ApiError object
-     */
-    @ExceptionHandler(UnAuthorizedException.class)
-    protected ResponseEntity<Object> handleUnAuthorized(UnAuthorizedException ex) {
-        return buildResponseEntity(ApiError.builder()
-                .status(FORBIDDEN)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
-    }
-
-    /**
-     * validation을 통과하지 못했을 때 발생
-     *
-     * @param ex the Exception
-     * @return the ApiError object
-     */
-    @ExceptionHandler(ConstraintViolationException.class)
-    protected ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
-        return buildResponseEntity(ApiError.builder()
-                .status(BAD_REQUEST)
-                .message(ex.getMessage())
-                .ex(ex)
-                .build());
+                                           .status(FORBIDDEN)
+                                           .message(ex.getMessage())
+                                           .ex(ex)
+                                           .build());
     }
 
     private ResponseEntity<Object> buildResponseEntity(ApiError apiError) {

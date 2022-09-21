@@ -1,4 +1,4 @@
-package com.shoesbox.domain.auth;
+package com.shoesbox.domain.comment.dto;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,11 +12,9 @@ import javax.validation.constraints.NotBlank;
 @Jacksonized
 @Getter
 @Builder
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldDefaults(makeFinal = true, level = AccessLevel.PROTECTED)
-public class TokenRequestDto {
-    @NotBlank
-    String accessToken;
-    @NotBlank
-    String refreshToken;
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+public class CommentRequestDto {
+    @NotBlank(message = "내용 입력하지 않음")
+    String content;
 }

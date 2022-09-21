@@ -1,4 +1,4 @@
-package com.shoesbox.global.security;
+package com.shoesbox.domain.auth;
 
 import lombok.Builder;
 import lombok.Getter;
