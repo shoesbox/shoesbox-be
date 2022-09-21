@@ -1,7 +1,6 @@
 package com.shoesbox.domain.member;
 
-import com.shoesbox.domain.auth.TokenRequestDto;
-import com.shoesbox.domain.friend.FriendService;
+import com.shoesbox.domain.auth.dto.TokenRequestDto;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.global.common.ResponseHandler;
@@ -20,7 +19,6 @@ import javax.validation.Valid;
 @RequestMapping(("/api/members"))
 public class MemberController {
     private final MemberService memberService;
-    private final FriendService friendService;
 
     // 회원 가입
     @PostMapping("/auth/signup")
@@ -47,22 +45,18 @@ public class MemberController {
         if (targetId == 0L) {
             targetId = currentMemberId;
         }
-        if (targetId != currentMemberId && !friendService.isFriend(targetId, currentMemberId)) {
-            throw new UnAuthorizedException("접근 권한이 없습니다.");
-        }
-
-        return ResponseHandler.ok(memberService.getMemberInfo(targetId));
+        return ResponseHandler.ok(memberService.getMemberInfo(currentMemberId, targetId));
     }
 
     // 회원 정보 수정
     @PatchMapping("/info")
     public ResponseEntity<Object> updateMemberInfo(
             @RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
-        long memberId = SecurityUtil.getCurrentMemberId();
-        if (targetId == 0L || targetId == memberId) {
-            return ResponseEntity.ok(memberService.updateMemberInfo(memberId, memberInfoUpdateDto));
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
+        if (targetId == 0L) {
+            targetId = currentMemberId;
         }
-        throw new UnAuthorizedException("수정 권한이 없습니다.");
+        return ResponseHandler.ok(memberService.updateMemberInfo(currentMemberId, targetId, memberInfoUpdateDto));
     }
 
     // 로그아웃

@@ -1,4 +1,4 @@
-package com.shoesbox.domain.comment;
+package com.shoesbox.domain.comment.dto;
 
 import lombok.AccessLevel;
 import lombok.Builder;

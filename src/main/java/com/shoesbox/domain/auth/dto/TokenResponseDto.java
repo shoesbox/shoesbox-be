@@ -1,4 +1,4 @@
-package com.shoesbox.domain.auth;
+package com.shoesbox.domain.auth.dto;
 
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -16,7 +16,7 @@ import java.util.Date;
 
 @Getter
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-public class TokenDto {
+public class TokenResponseDto {
     @NotBlank
     String grantType;
     @NotBlank
@@ -44,7 +44,7 @@ public class TokenDto {
 
     @Jacksonized
     @Builder
-    public TokenDto(
+    public TokenResponseDto(
             String grantType,
             String accessToken,
             String refreshToken,

@@ -16,7 +16,10 @@ import java.util.List;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class PostRequestDto {
-    private String title;
-    private String content;
-    private List<MultipartFile> imageFiles;
+    String title;
+    String content;
+    List<MultipartFile> imageFiles;
+    int year;
+    int month;
+    int day;
 }

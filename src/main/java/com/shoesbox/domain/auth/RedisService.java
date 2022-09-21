@@ -1,4 +1,4 @@
-package com.shoesbox.domain.auth.redis;
+package com.shoesbox.domain.auth;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;

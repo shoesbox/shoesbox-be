@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
-    boolean existsByMemberIdAndCreatedDate(long memberId, LocalDate createdDate);
+    boolean existsByMemberIdAndDate(long memberId, LocalDate createdDate);
 
-    List<Post> findAllByMemberIdAndCreatedDateBetween(Long memberId, LocalDate firstDay, LocalDate lastDay);
+    List<Post> findAllByMemberIdAndDateBetween(Long memberId, LocalDate firstDay, LocalDate lastDay);
 }

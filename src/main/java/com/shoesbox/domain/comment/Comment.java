@@ -3,18 +3,17 @@ package com.shoesbox.domain.comment;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.global.common.BaseTimeEntity;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
 @Table(name = "comment")
+@Builder
 public class Comment extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,15 +21,7 @@ public class Comment extends BaseTimeEntity {
 
     @NotBlank
     @Column(nullable = false)
-    private String nickname;
-
-    @NotBlank
-    @Column(nullable = false)
     private String content;
-
-    @NotBlank
-    @Column(nullable = false)
-    private String profileImageUrl;
 
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
@@ -47,16 +38,7 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "post_id", updatable = false, insertable = false)
     private Long postId;
 
-    @Builder
-    private Comment(String nickname, String content, Member member, Post post, String profileImageUrl) {
-        this.nickname = nickname;
+    public void update(String content) {
         this.content = content;
-        this.member = member;
-        this.post = post;
-        this.profileImageUrl = profileImageUrl;
-    }
-
-    public void update(CommentRequestDto commentRequestDto) {
-        this.content = commentRequestDto.getContent();
     }
 }

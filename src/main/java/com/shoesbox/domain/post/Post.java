@@ -16,6 +16,8 @@ import java.util.List;
 @Entity
 @Table(name = "post")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 // TODO: Setter는 임시로  넣은 것. 제거해야 함!!
 @Setter
 public class Post extends BaseTimeEntity {
@@ -34,7 +36,7 @@ public class Post extends BaseTimeEntity {
     private String nickname;
 
     @Column(nullable = false)
-    private LocalDate createdDate;
+    private LocalDate date;
 
     @Column(nullable = false)
     private String thumbnailUrl;
@@ -50,25 +52,14 @@ public class Post extends BaseTimeEntity {
     // 댓글
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "post",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments;
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
 
     // 이미지
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "post",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Photo> photos;
-
-    @Builder
-    private Post(long id, String title, String content, String nickname, Member member, String thumbnailUrl) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-        this.nickname = nickname;
-        this.member = member;
-        this.thumbnailUrl = thumbnailUrl;
-        this.createdDate = LocalDate.now();
-        this.comments = new ArrayList<>();
-        this.photos = new ArrayList<>();
-    }
+    @Builder.Default
+    private List<Photo> photos = new ArrayList<>();
 
     protected void update(String title, String content, String thumbnailUrl) {
         if (title != null && !title.isBlank()) {

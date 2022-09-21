@@ -1,9 +1,9 @@
 package com.shoesbox.global.config;
 
-import com.shoesbox.global.security.jwt.JwtAccessDeniedHandler;
-import com.shoesbox.global.security.jwt.JwtAuthenticationEntryPoint;
-import com.shoesbox.global.security.jwt.JwtFilter;
-import com.shoesbox.global.security.jwt.TokenProvider;
+import com.shoesbox.global.config.jwt.JwtAccessDeniedHandler;
+import com.shoesbox.global.config.jwt.JwtAuthenticationEntryPoint;
+import com.shoesbox.global.config.jwt.JwtFilter;
+import com.shoesbox.global.config.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +27,7 @@ import java.util.List;
 @EnableWebSecurity
 @Configuration
 public class SecurityConfig {
-    private final TokenProvider tokenProvider;
+    private final JwtProvider jwtProvider;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
@@ -95,7 +95,7 @@ public class SecurityConfig {
 
                 // JwtFilter 를 addFilterBefore 로 등록했던 JwtSecurityConfig 클래스를 적용
                 .and()
-                .addFilterBefore(new JwtFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class);
         // .apply(new JwtSecurityConfig(tokenProvider));
 
         return httpSecurity.build();

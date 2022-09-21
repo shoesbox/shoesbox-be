@@ -3,12 +3,12 @@ package com.shoesbox.global.exception.runtime;
 /**
  * JWT 토큰 유효성 검증에 실패했을 때 발생
  */
-public class InvalidJWTException extends RuntimeException {
-    public InvalidJWTException(String message) {
+public class InvalidJwtException extends RuntimeException {
+    public InvalidJwtException(String message) {
         this(message, null);
     }
 
-    public InvalidJWTException(String message, Throwable cause) {
+    public InvalidJwtException(String message, Throwable cause) {
         super(message, cause);
     }
 }

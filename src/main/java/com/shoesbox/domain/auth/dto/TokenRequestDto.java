@@ -1,4 +1,4 @@
-package com.shoesbox.domain.friend.dto;
+package com.shoesbox.domain.auth.dto;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,9 +12,11 @@ import javax.validation.constraints.NotBlank;
 @Jacksonized
 @Getter
 @Builder
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-public class FriendRequestDto {
-    @NotBlank(message = "email이 공란입니다")
-    private String email;
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@FieldDefaults(makeFinal = true, level = AccessLevel.PROTECTED)
+public class TokenRequestDto {
+    @NotBlank
+    String accessToken;
+    @NotBlank
+    String refreshToken;
 }

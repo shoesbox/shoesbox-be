@@ -1,7 +1,7 @@
 package com.shoesbox.global.util;
 
+import com.shoesbox.domain.auth.CustomUserDetails;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
-import com.shoesbox.global.security.CustomUserDetails;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;

@@ -1,5 +1,6 @@
 package com.shoesbox.domain.comment;
 
+import com.shoesbox.domain.comment.dto.CommentRequestDto;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -15,23 +16,22 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping("/{postId}")
-    public ResponseEntity<Object> readComment(@PathVariable long postId) {
+    public ResponseEntity<Object> readComments(@PathVariable long postId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(commentService.readComment(postId, currentMemberId));
+        return ResponseHandler.ok(commentService.readComments(postId, currentMemberId));
     }
 
     @PostMapping("/{postId}")
-    public ResponseEntity<Object> createComment(@PathVariable long postId,
-                                                @Valid @RequestBody CommentRequestDto commentRequestDto) {
+    public ResponseEntity<Object> createComment(
+            @PathVariable long postId, @Valid @RequestBody CommentRequestDto commentRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-        String currentMemberNickname = SecurityUtil.getCurrentMemberNickname();
         return ResponseHandler.ok(commentService.createComment(
-                currentMemberNickname, commentRequestDto.getContent(), currentMemberId, postId));
+                commentRequestDto.getContent(), currentMemberId, postId));
     }
 
     @PutMapping("/{commentId}")
-    public ResponseEntity<Object> updateComment(@PathVariable("commentId") long commentId,
-                                                @Valid @RequestBody CommentRequestDto commentRequestDto) {
+    public ResponseEntity<Object> updateComment(
+            @PathVariable("commentId") long commentId, @Valid @RequestBody CommentRequestDto commentRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         return ResponseHandler.ok(commentService.updateComment(currentMemberId, commentId, commentRequestDto));
     }

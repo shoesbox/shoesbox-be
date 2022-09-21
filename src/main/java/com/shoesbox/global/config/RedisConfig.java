@@ -1,4 +1,4 @@
-package com.shoesbox.domain.auth.redis;
+package com.shoesbox.global.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
