@@ -1,11 +1,14 @@
 package com.shoesbox.domain.comment;
 
-import com.shoesbox.domain.friend.FriendService;
+import com.shoesbox.domain.comment.dto.CommentRequestDto;
+import com.shoesbox.domain.comment.dto.CommentResponseDto;
+import com.shoesbox.domain.friend.FriendRepository;
+import com.shoesbox.domain.friend.FriendState;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
-import com.shoesbox.global.exception.runtime.PostNotFoundException;
+import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,93 +23,87 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
-    private final FriendService friendService;
-
-    @Transactional(readOnly = true)
-    public List<CommentResponseDto> readComment(Long postId, long currentMemberId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(
-                        () -> new PostNotFoundException("해당 게시글이 존재하지 않습니다."));
-
-        long authorId = post.getMemberId();
-        if (authorId != currentMemberId) {
-            if (!friendService.isFriend(authorId, currentMemberId)) {
-                throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
-            }
-        }
-
-        return post.getComments().stream().map(CommentService::toCommentResponseDto).collect(Collectors.toList());
-    }
+    private final FriendRepository friendRepository;
 
     @Transactional
-    public CommentResponseDto createComment(
-            String currentMemberNickname,
-            String content,
-            long currentMemberId,
-            long postId) {
-        Post post = postRepository.findById(postId).orElseThrow(
-                () -> new IllegalArgumentException("해당 게시물을 찾을 수 없습니다."));
-
-        long authorId = post.getMemberId();
-        if (authorId != currentMemberId) {
-            if (!friendService.isFriend(authorId, currentMemberId)) {
-                throw new IllegalArgumentException("해당 게시물에 접근할 수 없습니다.");
-            }
-        }
-
-        Member currentMember = memberRepository.findById(currentMemberId).orElseThrow(
-                () -> new IllegalArgumentException("존재하지 않는 회원입니다."));
-
+    public CommentResponseDto createComment(String content, long currentMemberId, long postId) {
+        Post post = getPost(postId);
+        checkAuthorization(currentMemberId, post.getMemberId());
+        Member currentMember = memberRepository.findById(currentMemberId)
+                                               .orElseThrow(() -> new EntityNotFoundException(
+                                                       Member.class.getPackageName()));
         Comment comment = Comment.builder()
-                .nickname(currentMemberNickname)
-                .content(content)
-                .member(currentMember)
-                .post(post)
-                .profileImageUrl(currentMember.getProfileImageUrl())
-                .build();
+                                 .content(content)
+                                 .member(currentMember)
+                                 .post(post)
+                                 .build();
         commentRepository.save(comment);
-
         return toCommentResponseDto(comment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentResponseDto> readComments(long postId, long currentMemberId) {
+        Post post = getPost(postId);
+        checkAuthorization(currentMemberId, post.getMemberId());
+        return post.getComments().stream().map(this::toCommentResponseDto).collect(Collectors.toList());
     }
 
     @Transactional
     public CommentResponseDto updateComment(long currentMemberId, long commentId, CommentRequestDto commentRequestDto) {
-        Comment comment = commentRepository.findById(commentId).orElseThrow(
-                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
-
-        if (comment.getMemberId() != currentMemberId) {
-            throw new UnAuthorizedException("본인이 작성한 댓글만 수정 가능합니다.");
-        }
-
-        comment.update(commentRequestDto);
-
+        Comment comment = getComment(commentId);
+        checkSelfAuthorization(currentMemberId, comment.getMemberId());
+        comment.update(commentRequestDto.getContent());
         return toCommentResponseDto(comment);
     }
 
     @Transactional
     public String deleteComment(long currentMemberId, long commentId) {
-        Comment comment = commentRepository.findById(commentId).orElseThrow(
-                () -> new IllegalArgumentException("해당 댓글이 존재하지 않습니다."));
-
-        if (comment.getMemberId() != currentMemberId) {
-            throw new UnAuthorizedException("본인이 작성한 댓글만 삭제 가능합니다.");
-        }
-
+        Comment comment = getComment(commentId);
+        checkSelfAuthorization(currentMemberId, comment.getMemberId());
         commentRepository.delete(comment);
-
         return "commentId: " + commentId + "삭제 성공";
     }
 
-    public static CommentResponseDto toCommentResponseDto(Comment comment) {
+    private Comment getComment(long commentId) {
+        return commentRepository.findById(commentId)
+                                .orElseThrow(() -> new EntityNotFoundException(Comment.class.getPackageName()));
+    }
+
+    private Post getPost(long postId) {
+        return postRepository.findById(postId)
+                             .orElseThrow(() -> new EntityNotFoundException(Post.class.getPackageName()));
+    }
+
+    private CommentResponseDto toCommentResponseDto(Comment comment) {
         return CommentResponseDto.builder()
-                .commentId(comment.getId())
-                .content(comment.getContent())
-                .profileImageUrl(comment.getProfileImageUrl())
-                .nickname(comment.getNickname())
-                .memberId(comment.getMember().getId())
-                .postId(comment.getPost().getId())
-                .createdAt(comment.getCreatedAt())
-                .modifiedAt(comment.getModifiedAt())
-                .build();
+                                 .commentId(comment.getId())
+                                 .content(comment.getContent())
+                                 .profileImageUrl(comment.getMember().getProfileImageUrl())
+                                 .nickname(comment.getMember().getNickname())
+                                 .memberId(comment.getMember().getId())
+                                 .postId(comment.getPost().getId())
+                                 .createdAt(comment.getCreatedAt())
+                                 .modifiedAt(comment.getModifiedAt())
+                                 .build();
+    }
+
+    private void checkAuthorization(long currentMemberId, long targetId) {
+        checkSelfAuthorization(currentMemberId, targetId);
+        if (!isFriend(currentMemberId, targetId)) {
+            throw new UnAuthorizedException("접근 권한이 없습니다.");
+        }
+    }
+
+    private void checkSelfAuthorization(long currentMemberId, long targetId) {
+        if (currentMemberId != targetId) {
+            throw new UnAuthorizedException("접근 권한이 없습니다.");
+        }
+    }
+
+    private boolean isFriend(long currentMemberId, long targetId) {
+        return friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
+                targetId, currentMemberId, FriendState.FRIEND) ||
+                friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
+                        currentMemberId, targetId, FriendState.FRIEND);
     }
 }
