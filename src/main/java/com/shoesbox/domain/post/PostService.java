@@ -27,6 +27,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Service
 public class PostService {
+    private final static String defaultThumbnailImageAddress =
+            "https://shoesbox-sparta.s3.ap-northeast-2.amazonaws.com/_________.jpg";
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
@@ -37,18 +39,21 @@ public class PostService {
     // 글 작성
     @Transactional
     public long createPost(long memberId, String currentMemberNickname, PostRequestDto postRequestDto) {
-        if (postRequestDto.getYear() != LocalDate.now().getYear()) {
-            throw new IllegalArgumentException("연도를 잘못 입력하였습니다.");
+        // 날짜 검사
+        LocalDate targetDate = validatePostRequest(memberId, postRequestDto);
+        String thumbnailUrl;
+        // 새로운 이미지가 없으면
+        if (!validateImageFiles(postRequestDto.getImageFiles())) {
+            // 기본값 사용
+            thumbnailUrl = defaultThumbnailImageAddress;
+        } else {
+            // 새로운 이미지가 있으면 썸네일 업로드
+            thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
         }
-        LocalDate targetDate = LocalDate.of(postRequestDto.getYear(), postRequestDto.getMonth(),
-                                            postRequestDto.getDay());
-        validatePostRequest(postRequestDto, memberId, targetDate);
         Member member = Member.builder()
                               .id(memberId)
                               .build();
-
         // 게시글 생성
-        String thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
         Post post = Post.builder()
                         .title(postRequestDto.getTitle())
                         .content(postRequestDto.getContent())
@@ -59,8 +64,11 @@ public class PostService {
                         .build();
         post = postRepository.save(post);
 
-        // 이미지 업로드
-        createPhoto(postRequestDto.getImageFiles(), post);
+        // 썸네일이 기본값이 아니면
+        // photo 생성
+        if (!thumbnailUrl.equals(defaultThumbnailImageAddress)) {
+            createPhoto(postRequestDto.getImageFiles(), post);
+        }
         return post.getId();
     }
 
@@ -134,21 +142,24 @@ public class PostService {
         // 수정 권한이 있는지 검사
         checkSelfAuthorization(currentMemberId, post.getMemberId());
 
-        // 첨부 이미지를 수정하는지 검사
-        try {
-            validateImageFiles(postUpdateDto.getImageFiles());
-        } catch (IllegalArgumentException e) {
-            // 첨부 이미지가 없으면 기존 썸네일 재활용
+        // 새로운 이미지가 없으면
+        if (!validateImageFiles(postUpdateDto.getImageFiles())) {
+            // 기존 썸네일 재활용
             post.update(postUpdateDto.getTitle(), postUpdateDto.getContent(), post.getThumbnailUrl());
             return toPostResponseDto(post);
+        } else {
+            // 새로운 이미지가 있는데
+            // 기존 이미지가 있으면
+            if (!post.getPhotos().isEmpty()) {
+                // 기존 썸네일, 사진 삭제
+                s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+                deletePhotosInPost(post);
+            }
         }
-
-        // 기존 썸네일, 사진 삭제
-        s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
-        deletePhotosInPost(post);
 
         // 썸네일 생성
         String thumbnailUrl = createThumbnail(postUpdateDto.getImageFiles().get(0));
+        // 첨부 이미지 저장
         createPhoto(postUpdateDto.getImageFiles(), post);
         post.update(postUpdateDto.getTitle(), postUpdateDto.getContent(), thumbnailUrl);
         return toPostResponseDto(post);
@@ -160,8 +171,11 @@ public class PostService {
         Post post = getPost(postId);
         checkSelfAuthorization(currentMemberId, post.getMemberId());
 
-        deletePhotosInPost(post);
-        s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+        // 첨부 이미지가 있으면 삭제
+        if (!post.getPhotos().isEmpty()) {
+            deletePhotosInPost(post);
+            s3Service.deleteObjectByImageUrl(post.getThumbnailUrl());
+        }
         postRepository.deleteById(postId);
         return postId;
     }
@@ -213,8 +227,7 @@ public class PostService {
         try {
             thumbnailUrl = s3Service.uploadThumbnail(multipartFile);
         } catch (IOException e) {
-            // TODO: 2022-09-16 기본 썸네일로 대체해 업로드
-            throw new RuntimeException("썸네일을 생성할 수 없습니다.");
+            throw new RuntimeException("썸네일 업로드 실패");
         }
 
         return thumbnailUrl;
@@ -222,7 +235,6 @@ public class PostService {
 
     private void createPhoto(List<MultipartFile> imageFiles, Post post) {
         validateImageFiles(imageFiles);
-
         var photos = new ArrayList<Photo>();
         for (var imageFile : imageFiles) {
             var uploadedImageUrl = s3Service.uploadImage(imageFile);
@@ -234,7 +246,6 @@ public class PostService {
             photoRepository.save(photo);
             photos.add(photo);
         }
-
         if (post.getPhotos() != null) {
             post.getPhotos().clear();
             post.getPhotos().addAll(photos);
@@ -251,19 +262,19 @@ public class PostService {
         }
     }
 
-    private void validatePostRequest(PostRequestDto postRequestDto, long memberId, LocalDate targetDate) {
-        validateImageFiles(postRequestDto.getImageFiles());
-        validateCreateDate(targetDate);
-        checkDuplicatePost(memberId, targetDate);
+    // 이미지가 있으면 true
+    private boolean validateImageFiles(List<MultipartFile> imageFiles) {
+        return (imageFiles != null && !imageFiles.isEmpty() && !imageFiles.get(0).isEmpty());
     }
 
-    private void validateImageFiles(List<MultipartFile> imageFiles) {
-        if (imageFiles == null || imageFiles.isEmpty() || imageFiles.get(0).isEmpty()) {
-            throw new IllegalArgumentException("이미지를 최소 1장 이상 첨부해야 합니다.");
+    private LocalDate validatePostRequest(long memberId, PostRequestDto postRequestDto) {
+        LocalDate targetDate = LocalDate.of(postRequestDto.getYear(), postRequestDto.getMonth(),
+                                            postRequestDto.getDay());
+        // 연도 검사
+        if (targetDate.getYear() != LocalDate.now().getYear()) {
+            throw new IllegalArgumentException("연도를 잘못 입력하였습니다.");
         }
-    }
-
-    private void validateCreateDate(LocalDate targetDate) {
+        // 작성 기한 검사
         LocalDate aMonthBefore = LocalDate.of(
                 LocalDate.now().getYear(), LocalDate.now().getMonthValue() - 1, LocalDate.now().getDayOfMonth());
         if (targetDate.isBefore(aMonthBefore)) {
@@ -271,6 +282,10 @@ public class PostService {
         } else if (targetDate.isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("미래의 일기를 미리 작성할 수 없습니다.");
         }
+        // 중복 검사
+        checkDuplicatePost(memberId, targetDate);
+
+        return targetDate;
     }
 
     private void checkDuplicatePost(long memberId, LocalDate targetDate) {
