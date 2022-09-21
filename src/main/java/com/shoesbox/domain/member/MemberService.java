@@ -1,18 +1,22 @@
 package com.shoesbox.domain.member;
 
-import com.shoesbox.domain.auth.TokenDto;
-import com.shoesbox.domain.auth.TokenRequestDto;
-import com.shoesbox.domain.auth.redis.RedisService;
+import com.shoesbox.domain.auth.CustomUserDetails;
+import com.shoesbox.domain.auth.RedisService;
+import com.shoesbox.domain.auth.dto.TokenRequestDto;
+import com.shoesbox.domain.auth.dto.TokenResponseDto;
+import com.shoesbox.domain.friend.FriendRepository;
+import com.shoesbox.domain.friend.FriendState;
 import com.shoesbox.domain.member.dto.MemberInfoResponseDto;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
+import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
 import com.shoesbox.domain.photo.S3Service;
-import com.shoesbox.global.exception.runtime.DuplicateUserInfoException;
-import com.shoesbox.global.exception.runtime.InvalidJWTException;
+import com.shoesbox.global.config.jwt.JwtExceptionCode;
+import com.shoesbox.global.config.jwt.JwtProvider;
+import com.shoesbox.global.exception.runtime.EntityNotFoundException;
+import com.shoesbox.global.exception.runtime.InvalidJwtException;
 import com.shoesbox.global.exception.runtime.RefreshTokenNotFoundException;
-import com.shoesbox.global.security.CustomUserDetails;
-import com.shoesbox.global.security.jwt.ExceptionCode;
-import com.shoesbox.global.security.jwt.TokenProvider;
+import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
@@ -24,7 +28,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,27 +38,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
     private static final String BASE_PROFILE_IMAGE_URL = "https://i.ibb.co/N27FwdP/image.png";
     private final MemberRepository memberRepository;
+    private final FriendRepository friendRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
-    private final TokenProvider tokenProvider;
+    private final JwtProvider jwtProvider;
     private final S3Service s3Service;
     private final RedisService redisService;
     private final RedisTemplate<String, String> redisTemplate;
 
     @Transactional
     public String signUp(SignDto signDto) {
-        if (!checkEmail(signDto.getEmail())) {
-            log.info("사용중인 이메일입니다. 로그인 해주세요.");
-            throw new DuplicateUserInfoException("사용중인 이메일입니다. 로그인 해주세요.");
-        }
-        Member createdMember = memberRepository.save(toMember(signDto));
-
-        return createdMember.getNickname();
+        checkEmail(signDto.getEmail());
+        return memberRepository.save(toMember(signDto)).getNickname();
     }
 
     @Transactional
-    public TokenDto login(SignDto signDto) {
-        // Login 화면에서 입력 받은 username/pw 를 기반으로 AuthenticationToken 생성
+    public TokenResponseDto login(SignDto signDto) {
+        // Login 화면에서 입력 받은 email/pw 를 기반으로 AuthenticationToken 생성
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(signDto.getEmail(), signDto.getPassword());
 
@@ -65,82 +64,79 @@ public class MemberService {
         try {
             authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
         } catch (AuthenticationException e) {
-            log.info("아이디, 혹은 비밀번호가 잘못되었습니다.");
             throw new BadCredentialsException("아이디, 혹은 비밀번호가 잘못되었습니다.");
         }
 
-        // CustomUserDetails 생성
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
         // 인증 정보를 사용해 JWT 토큰 생성
-        TokenDto tokenDto = tokenProvider.createTokenDto(userDetails);
+        TokenResponseDto tokenResponseDto = jwtProvider.createTokenDto(
+                (CustomUserDetails) authentication.getPrincipal());
 
         // RefreshToken 저장
-        String refreshToken = tokenDto.getRefreshToken();
+        String refreshToken = tokenResponseDto.getRefreshToken();
         redisService.setDataWithExpiration("RT:" + authentication.getName(), refreshToken,
-                tokenDto.getRefreshTokenLifetimeInMs());
+                                           tokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
-        return tokenDto;
+        return tokenResponseDto;
     }
 
     @Transactional(readOnly = true)
-    public MemberInfoResponseDto getMemberInfo(long memberId) {
-        Member targetMember = memberRepository.findById(memberId)
-                .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
-
-        return MemberInfoResponseDto.builder()
-                .memberId(memberId)
-                .nickname(targetMember.getNickname())
-                .email(targetMember.getEmail())
-                .profileImageUrl(targetMember.getProfileImageUrl())
-                .build();
-    }
-
-    @Transactional
-    public MemberInfoResponseDto updateMemberInfo(long memberId, MemberInfoUpdateDto memberInfoUpdateDto) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
-
-        String savedUrl = member.getProfileImageUrl();
-        if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile().isEmpty()) {
-            savedUrl = s3Service.uploadImage(memberInfoUpdateDto.getImageFile());
+    public MemberInfoResponseDto getMemberInfo(long currentMemberId, long targetId) {
+        if (currentMemberId != targetId) {
+            checkAuthorization(currentMemberId, targetId);
+        } else {
+            checkSelfAuthorization(currentMemberId, targetId);
         }
-
-        member.updateInfo(memberInfoUpdateDto.getNickname(), savedUrl);
-
+        Member member = getMember(targetId);
         return MemberInfoResponseDto.builder()
-                .memberId(memberId)
-                .nickname(member.getNickname())
-                .email(member.getEmail())
-                .profileImageUrl(member.getProfileImageUrl())
-                .build();
+                                    .memberId(targetId)
+                                    .nickname(member.getNickname())
+                                    .email(member.getEmail())
+                                    .profileImageUrl(member.getProfileImageUrl())
+                                    .build();
     }
 
     @Transactional
-    public TokenDto refreshToken(TokenRequestDto tokenRequestDto) {
+    public long updateMemberInfo(long currentMemberId, long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
+        checkSelfAuthorization(currentMemberId, targetId);
+        Member member = getMember(currentMemberId);
+        String profileImageUrl = member.getProfileImageUrl();
+        // 변경할 프로필 이미지가 있으면
+        if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile().isEmpty()) {
+            // 기존 이미지 삭제하고
+            s3Service.deleteObjectByImageUrl(member.getProfileImageUrl());
+            // 새로운 이미지 업로드
+            profileImageUrl = s3Service.uploadImage(memberInfoUpdateDto.getImageFile());
+        }
+        member.updateInfo(memberInfoUpdateDto.getNickname(), profileImageUrl);
+
+        return currentMemberId;
+    }
+
+    @Transactional
+    public TokenResponseDto refreshToken(TokenRequestDto tokenRequestDto) {
         // 1. Refresh Token 검증
         try {
-            tokenProvider.validateToken(tokenRequestDto.getRefreshToken());
+            jwtProvider.validateToken(tokenRequestDto.getRefreshToken());
         } catch (SecurityException | MalformedJwtException e) {
-            log.info(ExceptionCode.INVALID_SIGNATURE_TOKEN.getMessage());
-            throw new InvalidJWTException(ExceptionCode.INVALID_SIGNATURE_TOKEN.getMessage());
+            log.info(JwtExceptionCode.INVALID_SIGNATURE_TOKEN.getMessage());
+            throw new InvalidJwtException(JwtExceptionCode.INVALID_SIGNATURE_TOKEN.getMessage());
         } catch (ExpiredJwtException e) {
-            log.info(ExceptionCode.EXPIRED_TOKEN.getMessage());
-            throw new InvalidJWTException(ExceptionCode.EXPIRED_TOKEN.getMessage());
+            log.info(JwtExceptionCode.EXPIRED_TOKEN.getMessage());
+            throw new InvalidJwtException(JwtExceptionCode.EXPIRED_TOKEN.getMessage());
         } catch (UnsupportedJwtException e) {
-            log.info(ExceptionCode.UNSUPPORTED_TOKEN.getMessage());
-            throw new InvalidJWTException(ExceptionCode.UNSUPPORTED_TOKEN.getMessage());
+            log.info(JwtExceptionCode.UNSUPPORTED_TOKEN.getMessage());
+            throw new InvalidJwtException(JwtExceptionCode.UNSUPPORTED_TOKEN.getMessage());
         } catch (IllegalArgumentException e) {
-            log.info(ExceptionCode.WRONG_TOKEN.getMessage());
-            throw new InvalidJWTException(ExceptionCode.WRONG_TOKEN.getMessage());
+            log.info(JwtExceptionCode.WRONG_TOKEN.getMessage());
+            throw new InvalidJwtException(JwtExceptionCode.WRONG_TOKEN.getMessage());
         } catch (Exception e) {
-            log.info(ExceptionCode.UNKNOWN_ERROR.getMessage());
-            throw new InvalidJWTException(ExceptionCode.UNKNOWN_ERROR.getMessage());
+            log.info(JwtExceptionCode.UNKNOWN_ERROR.getMessage());
+            throw new InvalidJwtException(JwtExceptionCode.UNKNOWN_ERROR.getMessage());
         }
 
         // 2. Access Token 에서 memberId(PK) 가져오기
-        Authentication authentication = tokenProvider.getAuthentication(tokenRequestDto.getAccessToken());
+        Authentication authentication = jwtProvider.getAuthentication(tokenRequestDto.getAccessToken());
         var userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         // 3. (수정) Redis 저장소에서 토큰 가져오는것으로 대체
@@ -151,63 +147,86 @@ public class MemberService {
 
         // 4. Refresh Token 일치하는지 검사 (추가) 로그아웃 사용자 검증)
         if (!savedRefreshToken.equals(tokenRequestDto.getRefreshToken())) {
-            throw new InvalidJWTException("토큰의 유저 정보가 일치하지 않습니다.");
+            throw new InvalidJwtException("토큰의 유저 정보가 일치하지 않습니다.");
         }
 
         // 5. Access Token 에서 가져온 memberId(PK)를 다시 새로운 토큰의 클레임에 넣고 토큰 생성
-        TokenDto refreshedTokenDto = tokenProvider.createTokenDto(userDetails);
+        TokenResponseDto refreshedTokenResponseDto = jwtProvider.createTokenDto(userDetails);
 
         // 6. db의 리프레쉬 토큰 정보 업데이트 -> Redis에 Refresh 업데이트
         redisService.setDataWithExpiration(
                 "RT:" + authentication.getName(),
-                refreshedTokenDto.getRefreshToken(),
-                refreshedTokenDto.getRefreshTokenLifetimeInMs());
+                refreshedTokenResponseDto.getRefreshToken(),
+                refreshedTokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
-        return refreshedTokenDto;
+        return refreshedTokenResponseDto;
     }
 
     @Transactional
-    public TokenDto logout(String email) {
-        redisTemplate.delete("RT:" + email);
-        return tokenProvider.createEmptyTokenDto();
+    public Boolean logout(String email) {
+        return redisTemplate.delete("RT:" + email);
     }
 
     @Transactional
     public MemberInfoResponseDto resetProfileImage(long currentMemberId) {
-        var currentMember = memberRepository.findById(currentMemberId)
-                .orElseThrow(() -> new UsernameNotFoundException("memberId: " + currentMemberId + "는 존재하지 않습니다."));
-
-        currentMember.updateInfo(currentMember.getNickname(), BASE_PROFILE_IMAGE_URL);
-
+        var member = getMember(currentMemberId);
+        member.updateInfo(member.getNickname(), BASE_PROFILE_IMAGE_URL);
         return MemberInfoResponseDto.builder()
-                .memberId(currentMemberId)
-                .nickname(currentMember.getNickname())
-                .email(currentMember.getEmail())
-                .profileImageUrl(currentMember.getProfileImageUrl())
-                .build();
+                                    .memberId(currentMemberId)
+                                    .nickname(member.getNickname())
+                                    .email(member.getEmail())
+                                    .profileImageUrl(member.getProfileImageUrl())
+                                    .build();
     }
 
+    @Transactional
     public long deleteAccount(long targetId) {
-        var member = memberRepository.findById(targetId)
-                .orElseThrow(
-                        () -> new UsernameNotFoundException("memberId: " + targetId + "는 존재하지 않습니다.")
-                );
+        var member = getMember(targetId);
         memberRepository.delete(member);
-
         return targetId;
     }
 
-    private boolean checkEmail(String email) {
-        return !memberRepository.existsByEmail(email);
+    private Member getMember(long memberId) {
+        return memberRepository.findById(memberId)
+                               .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
+    }
+
+    private void checkEmail(String email) {
+        if (memberRepository.existsByEmail(email)) {
+            throw new DuplicateUserInfoException("사용중인 이메일입니다. 로그인 해주세요.");
+        }
     }
 
     private Member toMember(SignDto signDto) {
         return Member.builder()
-                .email(signDto.getEmail())
-                .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
-                .nickname(signDto.getEmail().split("@")[0])
-                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
-                .build();
+                     .email(signDto.getEmail())
+                     .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
+                     .nickname(signDto.getEmail().split("@")[0])
+                     .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
+                     .build();
+    }
+
+    // 자기 자신, 혹은 친구 관계인지 검증
+    private void checkAuthorization(long currentMemberId, long targetId) {
+        checkSelfAuthorization(currentMemberId, targetId);
+        if (!isFriend(currentMemberId, targetId)) {
+            throw new UnAuthorizedException("접근 권한이 없습니다.");
+        }
+    }
+
+    // 요청한 memberId(targetId)와 현재 로그인 한 사용자의 memberId가 동일한지 검증
+    private void checkSelfAuthorization(long currentMemberId, long targetId) {
+        if (currentMemberId != targetId) {
+            throw new UnAuthorizedException("접근 권한이 없습니다.");
+        }
+    }
+
+    // 두 memberId가 서로 친구 관계인지 검증
+    private boolean isFriend(long currentMemberId, long targetId) {
+        return friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
+                targetId, currentMemberId, FriendState.FRIEND) ||
+                friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
+                        currentMemberId, targetId, FriendState.FRIEND);
     }
 }

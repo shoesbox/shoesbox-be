@@ -11,25 +11,23 @@ import lombok.*;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "member")
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
+@Builder
 public class Member extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column
     private Long id;
-    // @Column(unique = true)
-    // @NotBlank
-    // private String uniqueId;
-    @Column(unique = true)
     @NotBlank
     @Email
+    @Column(unique = true)
     private String email;
     @Column
     @NotBlank
@@ -37,7 +35,6 @@ public class Member extends BaseTimeEntity {
     private String nickname;
     @Column
     @NotBlank
-    // @Size(min = 8, max = 20)
     @JsonIgnore
     private String password;
     @Column
@@ -51,65 +48,40 @@ public class Member extends BaseTimeEntity {
     // 작성글 리스트
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "member",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Post> posts;
-
+    @Builder.Default
+    private List<Post> posts = new ArrayList<>();
     private int postCount;
 
     // 댓글 리스트
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "member",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments;
-
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
     private int commentCount;
 
     // 친구들
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "fromMember",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Friend> fromMebers;
+    @Builder.Default
+    private List<Friend> fromMembers = new ArrayList<>();
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "toMember",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Friend> toMembers;
-
+    @Builder.Default
+    private List<Friend> toMembers = new ArrayList<>();
     private int friendCount;
 
     // 사진
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "member",
             cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Photo> photos;
+    @Builder.Default
+    private List<Photo> photos = new ArrayList<>();
 
-    public void updateInfo(
-            String nickname,
-            String profileImageUrl) {
+    public void updateInfo(String nickname, String profileImageUrl) {
         if (nickname != null) {
             this.nickname = nickname;
         }
-
         if (profileImageUrl != null) {
             this.profileImageUrl = profileImageUrl;
         }
-    }
-
-    public int addPostCount() {
-        return ++postCount;
-    }
-
-    public int minusPostCount() {
-        return --postCount;
-    }
-
-    public int addCommentCount() {
-        return ++commentCount;
-    }
-
-    public int minusCommentCount() {
-        return --commentCount;
-    }
-
-    public int addFriendCount() {
-        return ++friendCount;
-    }
-
-    public int minusFriendCount() {
-        return --friendCount;
     }
 }
