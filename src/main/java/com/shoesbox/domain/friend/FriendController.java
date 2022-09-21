@@ -63,8 +63,8 @@ public class FriendController {
     }
 
     // 요청한 건 취소
-    @DeleteMapping("/{toMemberId}/cancle")
-    public ResponseEntity<Object> cancleFriendRequest(@PathVariable long toMemberId) {
+    @DeleteMapping("/{toMemberId}/cancel")
+    public ResponseEntity<Object> cancelFriendRequest(@PathVariable long toMemberId) {
         long currnetMemberId = SecurityUtil.getCurrentMemberId();
         Friend toFriend = friendService.findRelationship(currnetMemberId, toMemberId, FriendState.REQUEST);
         return ResponseHandler.ok(friendService.deleteFriendRequest(toFriend));
