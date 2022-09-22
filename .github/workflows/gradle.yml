@@ -24,6 +24,11 @@ jobs:
   # 스크립트 실행 환경 (OS)
   build:
     runs-on: ubuntu-18.04
+    env:
+      KEYS: ${{ secrets.KEYS }}
+      SPRING: ${{ secrets.SPRING }}
+      JWT: ${{ secrets.JWT }}
+      CLOUD: ${{ secrets.CLOUD }}
     # 실제 실행 스크립트
     steps:
       # uses는 github actions에서 제공하는 플러그인을 실행
@@ -56,15 +61,9 @@ jobs:
           pwd
           ls -a .
           echo "copy keys"
-          echo $SPRING >> ./application-keys.yml
-          echo $JWT >> ./application-keys.yml
-          echo $CLOUD >> ./application-keys.yml
+          echo $KEYS >> ./application-keys.yml
           cat application-keys.yml
         shell: bash
-        env:
-          SPRING: ${{ secrets.SPRING }}
-          JWT: ${{ secrets.JWT }}
-          CLOUD: ${{ secrets.CLOUD }}
 
       # gradle 사용. arguments가 실행할 명령
       - name: Build with Gradle
