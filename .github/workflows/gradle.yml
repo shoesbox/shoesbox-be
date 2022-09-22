@@ -39,7 +39,6 @@ jobs:
 
       # create application-keys.yml
       - name: Create key files
-        if: contains(github.ref, 'main')
         run: |
           echo "ls -a . & pwd"
           pwd
