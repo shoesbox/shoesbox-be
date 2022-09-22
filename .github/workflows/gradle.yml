@@ -24,8 +24,6 @@ jobs:
   # 스크립트 실행 환경 (OS)
   build:
     runs-on: ubuntu-18.04
-    env:
-      KEYS: ${{ secrets.KEYS_PROPERTIES }}
     # 실제 실행 스크립트
     steps:
       # uses는 github actions에서 제공하는 플러그인을 실행
@@ -54,12 +52,12 @@ jobs:
           echo "mkdir & touch"
           mkdir -p ./src/main/resources
           cd ./src/main/resources
-          touch ./application-keys.yml
+          touch ./application-keys.properties
           pwd
           ls -a .
           echo "copy keys"
-          echo $KEYS >> ./application-keys.yml
-          cat application-keys.yml
+          echo "${{ secrets.KEYS_PROPERTIES }}" > ./application-keys.properties
+          cat application-keys.properties
         shell: bash
 
       # gradle 사용. arguments가 실행할 명령
