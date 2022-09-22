@@ -103,7 +103,8 @@ public class PostService {
             var today = firstMonday.plusDays(i);
             if (index < foundPosts.length) {
                 // 게시글의 작성일이 오늘과 일치할 경우 반환할 posts 배열에 대입
-                if (foundPosts[index].getCreatedDay() == today.getDayOfMonth()) {
+                if (foundPosts[index].getCreatedDay() == today.getDayOfMonth()
+                        && foundPosts[index].getCreatedMonth() == today.getMonthValue()) {
                     posts[i] = foundPosts[index];
                     ++index;
                     continue;
