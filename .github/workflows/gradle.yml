@@ -54,12 +54,12 @@ jobs:
           echo "mkdir & touch"
           mkdir -p ./src/main/resources
           cd ./src/main/resources
-          touch ./application-keys.properties
+          touch ./application-keys.yml
           pwd
           ls -a .
           echo "copy keys"
-          echo $KEYS >> ./application-keys.properties
-          cat application-keys.properties
+          echo $KEYS >> ./application-keys.yml
+          cat application-keys.yml
         shell: bash
 
       # gradle 사용. arguments가 실행할 명령
