@@ -50,9 +50,9 @@ jobs:
           pwd
           ls -a .
           echo "copy keys"
-          echo SPRING >> ./application-keys.yml
-          echo JWT_KEYS >> ./application-keys.yml
-          echo AWS_KEYS >> ./application-keys.yml
+          echo $SPRING >> ./application-keys.yml
+          echo $JWT_KEYS >> ./application-keys.yml
+          echo $AWS_KEYS >> ./application-keys.yml
           cat application-keys.yml
         shell: bash
         env:
