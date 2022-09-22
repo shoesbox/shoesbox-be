@@ -37,6 +37,12 @@ jobs:
           java-version: '11'
           distribution: 'zulu'
 
+      # 레디스 서버 실행
+      - name: Start Redis
+        uses: supercharge/redis-github-action@1.4.0
+        with:
+          redis-version: 6
+
       # create application-keys.yml
       - name: Create key files
         run: |
@@ -51,14 +57,14 @@ jobs:
           ls -a .
           echo "copy keys"
           echo $SPRING >> ./application-keys.yml
-          echo $JWT_KEYS >> ./application-keys.yml
-          echo $AWS_KEYS >> ./application-keys.yml
+          echo $JWT >> ./application-keys.yml
+          echo $CLOUD >> ./application-keys.yml
           cat application-keys.yml
         shell: bash
         env:
           SPRING: ${{ secrets.SPRING }}
-          JWT_KEYS: ${{ secrets.JWT }}
-          AWS_KEYS: ${{ secrets.CLOUD }}
+          JWT: ${{ secrets.JWT }}
+          CLOUD: ${{ secrets.CLOUD }}
 
       # gradle 사용. arguments가 실행할 명령
       - name: Build with Gradle
