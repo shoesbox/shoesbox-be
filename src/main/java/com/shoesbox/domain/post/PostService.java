@@ -103,8 +103,7 @@ public class PostService {
             var today = firstMonday.plusDays(i);
             if (index < foundPosts.length) {
                 // 게시글의 작성일이 오늘과 일치할 경우 반환할 posts 배열에 대입
-                if (foundPosts[index].getCreatedDay() == today.getDayOfMonth()
-                        && foundPosts[index].getCreatedMonth() == today.getMonthValue()) {
+                if (foundPosts[index].getDate().isEqual(today)) {
                     posts[i] = foundPosts[index];
                     ++index;
                     continue;
@@ -115,6 +114,7 @@ public class PostService {
             posts[i] = PostResponseListDto.builder()
                                           .postId(0)
                                           .thumbnailUrl(null)
+                                          .createdYear(today.getYear())
                                           .createdMonth(today.getMonthValue())
                                           .createdDay(today.getDayOfMonth())
                                           .build();
@@ -217,8 +217,10 @@ public class PostService {
         return PostResponseListDto.builder()
                                   .postId(post.getId())
                                   .thumbnailUrl(post.getThumbnailUrl())
+                                  .createdYear(post.getDate().getYear())
                                   .createdMonth(post.getDate().getMonthValue())
                                   .createdDay(post.getDate().getDayOfMonth())
+                                  .date(post.getDate())
                                   .build();
     }
 
