@@ -56,9 +56,9 @@ jobs:
           cat application-keys.yml
         shell: bash
         env:
-          AWS_KEYS: ${{ secrets.AWS_KEYS }}
-          JWT_KEYS: ${{ secrets.JWT_KEYS }}
           SPRING: ${{ secrets.SPRING }}
+          JWT_KEYS: ${{ secrets.JWT }}
+          AWS_KEYS: ${{ secrets.CLOUD }}
 
       # gradle 사용. arguments가 실행할 명령
       - name: Build with Gradle
