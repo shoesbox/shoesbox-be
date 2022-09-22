@@ -6,13 +6,17 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
+
 @Getter
 @Builder
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class PostResponseListDto {
     long postId;
     String thumbnailUrl;
-    @JsonIgnore
+    int createdYear;
     int createdMonth;
     int createdDay;
+    @JsonIgnore
+    LocalDate date;
 }
