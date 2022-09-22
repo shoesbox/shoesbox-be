@@ -75,11 +75,8 @@ public class PostService {
     // 전체 조회
     @Transactional(readOnly = true)
     public List<PostResponseListDto> getPosts(long currentMemberId, long targetId, int year, int month) {
-        if (currentMemberId != targetId) {
-            checkAuthorization(currentMemberId, targetId);
-        } else {
-            checkSelfAuthorization(currentMemberId, targetId);
-        }
+        checkAuthorization(currentMemberId, targetId);
+
         // 찾으려는 달의 첫 번째 일요일의 날짜를 구한다
         LocalDate firstDay = LocalDate.of(year, month, 1);
         LocalDate firstMonday = firstDay.with(fieldISO, 1);
@@ -127,11 +124,7 @@ public class PostService {
     public PostResponseDto getPost(long currentMemberId, long postId) {
         Post post = getPost(postId);
         long authorId = post.getMemberId();
-        if (currentMemberId != authorId) {
-            checkAuthorization(currentMemberId, authorId);
-        } else {
-            checkSelfAuthorization(currentMemberId, authorId);
-        }
+        checkAuthorization(currentMemberId, authorId);
         return toPostResponseDto(post);
     }
 
@@ -297,15 +290,14 @@ public class PostService {
         }
     }
 
-    private void checkAuthorization(long currentMemberId, long targetId) {
-        checkSelfAuthorization(currentMemberId, targetId);
-        if (!isFriend(currentMemberId, targetId)) {
+    private void checkSelfAuthorization(long currentMemberId, long targetId) {
+        if (currentMemberId != targetId) {
             throw new UnAuthorizedException("접근 권한이 없습니다.");
         }
     }
 
-    private void checkSelfAuthorization(long currentMemberId, long targetId) {
-        if (currentMemberId != targetId) {
+    private void checkAuthorization(long currentMemberId, long targetId) {
+        if (currentMemberId != targetId && !isFriend(currentMemberId, targetId)) {
             throw new UnAuthorizedException("접근 권한이 없습니다.");
         }
     }
