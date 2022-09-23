@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.shoesbox'
-version = '0.0.1-SNAPSHOT'
+version = 'v0.1a'
 sourceCompatibility = '11'
 
 configurations {
