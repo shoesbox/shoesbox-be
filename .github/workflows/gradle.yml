@@ -6,7 +6,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
 # GitHub에서 볼 수 있는 Action 이름
-name: Java CI with Gradle
+name: CI/CD with AWS
 
 # 이벤트 트리거.
 # 특정 이벤트(push, pull_request 등)가 명시한 브랜치에서 발생하면 이 Action이 수행된다.
@@ -22,7 +22,7 @@ permissions:
 # 실제 수행할 작업
 jobs:
   # 스크립트 실행 환경 (OS)
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     # 실제 실행 스크립트
     steps:
