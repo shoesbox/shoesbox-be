@@ -6,7 +6,7 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
 # GitHub에서 볼 수 있는 Action 이름
-name: Java CI with Gradle
+name: CI/CD with AWS
 
 # 이벤트 트리거.
 # 특정 이벤트(push, pull_request 등)가 명시한 브랜치에서 발생하면 이 Action이 수행된다.
@@ -22,8 +22,8 @@ permissions:
 # 실제 수행할 작업
 jobs:
   # 스크립트 실행 환경 (OS)
-  build:
-    runs-on: ubuntu-18.04
+  build-and-deploy:
+    runs-on: ubuntu-latest
     # 실제 실행 스크립트
     steps:
       # uses는 github actions에서 제공하는 플러그인을 실행
@@ -50,12 +50,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 레디스 서버 실행
-      - name: Start Redis
-        uses: supercharge/redis-github-action@1.4.0
-        with:
-          redis-version: 6
-
       # create application-keys.yml
       - name: Create key files
         run: |
@@ -69,7 +63,7 @@ jobs:
           pwd
           ls -a .
           echo "copy keys"
-          echo "${{ secrets.KEYS_PROPERTIES }}" > ./application-keys.properties
+          echo "${{ secrets.KEYS_PROPERTIES_CY }}" > ./application-keys.properties
           cat application-keys.properties
         shell: bash
 
@@ -78,3 +72,29 @@ jobs:
         uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
         with:
           arguments: clean build
+
+      # AWS 인증 (IAM 사용자 Access Key, Secret Key 활용)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 빌드 결과물을 S3 버킷에 업로드
+      - name: Upload to AWSS3
+        run: |
+          aws deploy push \
+          --application-name ${{ secrets.AWS_CODE_DEPLOY_APPLICATION_NAME }} \
+          --ignore-hidden-files \
+          --s3-location s3://${{ secrets.AWS_S3_BUCKET_NAME }}/$GITHUB_SHA.zip \
+          --source .
+
+      # S3 버킷에 있는 파일을 대상으로 CodeDeploy 실행
+      - name: Deploy to AWS EC2 from S3
+        run: |
+          aws deploy create-deployment \
+            --application-name ${{ secrets.AWS_CODE_DEPLOY_APPLICATION_NAME }} \
+            --deployment-config-name CodeDeployDefault.AllAtOnce \
+            --deployment-group-name ${{ secrets.AWS_CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
+            --s3-location bucket=${{ secrets.AWS_S3_BUCKET_NAME }},key=$GITHUB_SHA.zip,bundleType=zip
