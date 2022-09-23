@@ -50,12 +50,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 레디스 서버 실행
-      - name: Start Redis
-        uses: supercharge/redis-github-action@1.4.0
-        with:
-          redis-version: 6
-
       # create application-keys.yml
       - name: Create key files
         run: |
@@ -69,7 +63,7 @@ jobs:
           pwd
           ls -a .
           echo "copy keys"
-          echo "${{ secrets.KEYS_PROPERTIES }}" > ./application-keys.properties
+          echo "${{ secrets.KEYS_PROPERTIES_CY }}" > ./application-keys.properties
           cat application-keys.properties
         shell: bash
 
