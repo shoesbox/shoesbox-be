@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="Content-Type" content="text/event-stream; charset=utf-8"/>
     <title>Hello WebSocket</title>
     <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link href="/main.css" rel="stylesheet">
@@ -50,70 +49,29 @@
         </div>
     </div>
 </div>
+
+<hr>
+
+<div class="col-md-test1">
+    <form class="form-block">
+        <div class="form-group">
+            <label for="comment">Comment</label>
+            <input type="text" id="comment" class="form-control" placeholder="Insert Comment...">
+        </div>
+        <button id="send-comment" class="btn btn-default" type="submit">Send</button>
+    </form>
+</div>
+
+<hr>
+
+<div class="col-md-test2">
+    <form class="form-block">
+        <div class="form-group">
+            <label for="friend">Friend</label>
+            <input type="text" id="friend" class="form-control" placeholder="Insert Comment...">
+        </div>
+        <button id="send-friendRequest" class="btn btn-default" type="submit">Send</button>
+    </form>
+</div>
 </body>
 </html>
-
-<script>
-    var stompClient = null;
-
-    function setConnected(connected) {
-        $("#connect").prop("disabled", connected);
-        $("#disconnect").prop("disabled", !connected);
-        if (connected) {
-            $("#conversation").show();
-        } else {
-            $("#conversation").hide();
-        }
-        $("#greetings").html("");
-    }
-
-    function connect() {
-        let socket = new WebSocket('/ws-connection');
-        stompClient = Stomp.over(socket);
-        stompClient.connect({"token": "발급받은 토큰"}, function (frame) {
-            setConnected(true);
-            console.log('Connected: ' + frame);
-            stompClient.subscribe('/sub/1', function (msg) {
-                console.log('구독 중', msg);
-            });
-        });
-    }
-
-    function disconnect() {
-        if (stompClient !== null) {
-            stompClient.disconnect();
-        }
-        setConnected(false);
-        console.log("Disconnected");
-    }
-
-
-    // 메시지 전송 예씨
-    function sendName() {
-        stompClient.send("/pub/messages", {}, JSON.stringify({
-            'message': $("#name").val(),
-            'senderId': 7,
-            'receiverId': 14
-        }));
-    }
-
-    function showGreeting(message) {
-        $("#greetings").append("<tr><td>" + message + "</td></tr>");
-    }
-
-    $(function () {
-        $("form").on('submit', function (e) {
-            e.preventDefault();
-        });
-        $("#connect").click(function () {
-            connect();
-        });
-        $("#disconnect").click(function () {
-            disconnect();
-        });
-        $("#send").click(function () {
-            sendName();
-        });
-    });
-
-</script>
