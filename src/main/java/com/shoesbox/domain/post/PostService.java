@@ -28,7 +28,7 @@ import java.util.*;
 @Service
 public class PostService {
     private final static String defaultThumbnailImageAddress =
-            "https://shoesbox-sparta.s3.ap-northeast-2.amazonaws.com/_________.jpg";
+            "https://shoesbox-sparta.s3.ap-northeast-2.amazonaws.com/default_thumbnail.jpg";
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
