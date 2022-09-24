@@ -19,7 +19,6 @@ public class KakaoProfile {
 
     @Data
     public class Profile {
-        private String nickname;
         private String profile_image_url;
     }
 }
