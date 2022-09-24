@@ -11,6 +11,15 @@ name: CI/CD with AWS
 # 이벤트 트리거.
 # 특정 이벤트(push, pull_request 등)가 명시한 브랜치에서 발생하면 이 Action이 수행된다.
 on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+      tags:
+        required: false
+        description: 'Test scenario tags'
   push:
     branches: [ "main" ]
   pull_request:
