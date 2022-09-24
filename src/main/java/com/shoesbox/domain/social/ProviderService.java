@@ -4,17 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.shoesbox.domain.auth.dto.TokenResponseDto;
+import com.shoesbox.domain.auth.CustomUserDetails;
 import com.shoesbox.domain.auth.RedisService;
+import com.shoesbox.domain.auth.dto.TokenResponseDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.social.dto.GoogleProfile;
 import com.shoesbox.domain.social.dto.KakaoProfile;
 import com.shoesbox.domain.social.dto.NaverProfile;
 import com.shoesbox.domain.social.dto.ProfileDto;
-import com.shoesbox.domain.auth.CustomUserDetails;
 import com.shoesbox.global.config.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -33,9 +34,11 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class ProviderService {
+    private static final String BASE_PROFILE_IMAGE_URL = "https://i.ibb.co/N27FwdP/image.png";
     private final MemberRepository memberRepository;
     private final OAuthRequestFactory oAuthRequestFactory;
     private final JwtProvider jwtProvider;
@@ -48,17 +51,19 @@ public class ProviderService {
         String accessToken = getAccessToken(code, provider);
 
         ProfileDto profileDto = getProfile(accessToken, provider);
+        log.info(">>>>>>>>> user email : " + profileDto.getEmail());
+        log.info(">>>>>>>>> user photo : " + profileDto.getProfileImage());
 
         Member member = memberRepository.findByEmail(profileDto.getEmail()).orElse(null);
         if (member == null) {
             // db에 없을 경우 등록 후 토큰 생성
             String password = UUID.randomUUID().toString(); // 랜덤 password 생성
             member = Member.builder()
-                           .email(profileDto.getEmail())
-                           .password(bCryptPasswordEncoder.encode(password))
-                           .nickname(profileDto.getNickname())
-                           .profileImageUrl(profileDto.getProfileImage())
-                           .build();
+                    .email(profileDto.getEmail())
+                    .password(bCryptPasswordEncoder.encode(password))
+                    .nickname(profileDto.getEmail().split("@")[0])
+                    .profileImageUrl(profileDto.getProfileImage())
+                    .build();
             memberRepository.save(member);
         }
 
@@ -71,17 +76,18 @@ public class ProviderService {
         // 강제 로그인 처리
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(member.getAuthority().split(","))
-                      .map(SimpleGrantedAuthority::new)
-                      .collect(Collectors.toList());
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
 
         CustomUserDetails principal = CustomUserDetails.builder()
-                                                       .email(member.getEmail())
-                                                       .memberId(member.getId())
-                                                       .authorities(authorities)
-                                                       .build();
+                .email(member.getEmail())
+                .memberId(member.getId())
+                .authorities(authorities)
+                .nickname(member.getNickname())
+                .build();
 
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null,
-                                                                                                     authorities));
+                authorities));
 
         // 토큰 생성
         TokenResponseDto tokenResponseDto = jwtProvider.createTokenDto(principal);
@@ -89,7 +95,7 @@ public class ProviderService {
         // Reids에 Refresh Token 저장
         String refreshToken = tokenResponseDto.getRefreshToken();
         redisService.setDataWithExpiration("RT:" + member.getEmail(), refreshToken,
-                                           tokenResponseDto.getRefreshTokenLifetimeInMs());
+                tokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return tokenResponseDto;
@@ -133,24 +139,30 @@ public class ProviderService {
         if (provider.equals("kakao")) {
             KakaoProfile kakaoProfile = gson.fromJson(response.getBody(), KakaoProfile.class);
             return ProfileDto.builder()
-                             .email(kakaoProfile.getKakao_account().getEmail())
-                             .nickname(kakaoProfile.getKakao_account().getProfile().getNickname())
-                             .profileImage(kakaoProfile.getKakao_account().getProfile().getProfile_image_url())
-                             .build();
+                    .email(kakaoProfile.getKakao_account().getEmail())
+                    .nickname(kakaoProfile.getKakao_account().getProfile().getNickname())
+                    .profileImage(kakaoProfile.getKakao_account().getProfile().getProfile_image_url())
+                    .build();
         } else if (provider.equals("naver")) {
             NaverProfile naverProfile = gson.fromJson(response.getBody(), NaverProfile.class);
             return ProfileDto.builder()
-                             .email(naverProfile.getResponse().getEmail())
-                             .nickname(naverProfile.getResponse().getNickname())
-                             .profileImage(naverProfile.getResponse().getProfile_image())
-                             .build();
+                    .email(naverProfile.getResponse().getEmail())
+                    .nickname(naverProfile.getResponse().getNickname())
+                    .profileImage(naverProfile.getResponse().getProfile_image())
+                    .build();
         } else {
             GoogleProfile googleProfile = gson.fromJson(response.getBody(), GoogleProfile.class);
+            String checkedPicture = googleProfile.getPicture();
+            if (!checkedPicture.contains(".bmp") || !checkedPicture.contains(".jpg") || !checkedPicture.contains(".jpeg") || !checkedPicture.contains(".png")) {
+                log.info(">>>>>>>>> 구글 프로필 이미지 파일 형식이 잘못되어 기본 프로필사진으로 전환");
+                checkedPicture = BASE_PROFILE_IMAGE_URL;
+            }
+
             return ProfileDto.builder()
-                             .email(googleProfile.getEmail())
-                             .nickname(googleProfile.getName())
-                             .profileImage(googleProfile.getPicture())
-                             .build();
+                    .email(googleProfile.getEmail())
+                    .nickname(googleProfile.getName())
+                    .profileImage(checkedPicture)
+                    .build();
         }
     }
 }
