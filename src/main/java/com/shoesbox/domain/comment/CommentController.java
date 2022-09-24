@@ -1,6 +1,7 @@
 package com.shoesbox.domain.comment;
 
 import com.shoesbox.domain.comment.dto.CommentRequestDto;
+import com.shoesbox.domain.guest.GuestService;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import javax.validation.Valid;
 @RestController
 public class CommentController {
     private final CommentService commentService;
+    private final GuestService guestService;
 
     @GetMapping("/{postId}")
     public ResponseEntity<Object> readComments(@PathVariable long postId) {
@@ -25,6 +27,10 @@ public class CommentController {
     public ResponseEntity<Object> createComment(
             @PathVariable long postId, @Valid @RequestBody CommentRequestDto commentRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        // 게스트계정 테스트중
+        guestService.guestCheck(currentMemberId);
+
         return ResponseHandler.ok(commentService.createComment(
                 commentRequestDto.getContent(), currentMemberId, postId));
     }
@@ -33,12 +39,20 @@ public class CommentController {
     public ResponseEntity<Object> updateComment(
             @PathVariable("commentId") long commentId, @Valid @RequestBody CommentRequestDto commentRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        // 게스트계정 테스트중
+        guestService.guestCheck(currentMemberId);
+
         return ResponseHandler.ok(commentService.updateComment(currentMemberId, commentId, commentRequestDto));
     }
 
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Object> deleteComment(@PathVariable("commentId") long commentId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        // 게스트계정 테스트중
+        guestService.guestCheck(currentMemberId);
+
         return ResponseHandler.ok(commentService.deleteComment(currentMemberId, commentId));
     }
 }
