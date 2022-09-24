@@ -140,14 +140,12 @@ public class ProviderService {
             KakaoProfile kakaoProfile = gson.fromJson(response.getBody(), KakaoProfile.class);
             return ProfileDto.builder()
                     .email(kakaoProfile.getKakao_account().getEmail())
-                    .nickname(kakaoProfile.getKakao_account().getProfile().getNickname())
                     .profileImage(kakaoProfile.getKakao_account().getProfile().getProfile_image_url())
                     .build();
         } else if (provider.equals("naver")) {
             NaverProfile naverProfile = gson.fromJson(response.getBody(), NaverProfile.class);
             return ProfileDto.builder()
                     .email(naverProfile.getResponse().getEmail())
-                    .nickname(naverProfile.getResponse().getNickname())
                     .profileImage(naverProfile.getResponse().getProfile_image())
                     .build();
         } else {
@@ -160,7 +158,6 @@ public class ProviderService {
 
             return ProfileDto.builder()
                     .email(googleProfile.getEmail())
-                    .nickname(googleProfile.getName())
                     .profileImage(checkedPicture)
                     .build();
         }
