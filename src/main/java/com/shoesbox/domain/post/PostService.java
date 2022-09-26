@@ -27,8 +27,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Service
 public class PostService {
-    private final static String defaultThumbnailImageAddress =
-            "https://shoesbox-sparta.s3.ap-northeast-2.amazonaws.com/default_thumbnail.jpg";
+    private final static String defaultThumbnailImageAddress = "https://i.ibb.co/hXJpCbH/default-thumbnail.png";
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
