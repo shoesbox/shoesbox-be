@@ -36,9 +36,6 @@ public class GuestController {
 
     @PostMapping("/auth/login/guest")
     public ResponseEntity<Object> login() {
-        // 스케쥴러를 사용해 일정 시간마다(ex:3AM) 게스트 계정 삭제 필요
-        // 추후 모든 게스트계정이 사용중일 경우도 추가 필요
-
         SignDto signDto = null;
         for (int i = 1; i <= 100; i++) {
             // 게스트는 총 100명까지 로그인 가능
@@ -54,21 +51,18 @@ public class GuestController {
                 if (!guestService.isJoinedGuest(GUEST_ID + i + "@" + GUEST_EMAIL)) {
                     // 등록된 계정이 없을 경우, 새 계정 생성
                     memberService.signUp(signDto);
-                    log.info(">>>>>>> 신규 게스트 계정 생성 : " + signDto.getEmail());
+                    log.info("<<체험계정>> 생성 : " + signDto.getEmail());
 
-                    // 친구 관계 설정:친구 수락 관계
-                    String friend = guestService.makeFriendToGuest(FRIEND, signDto.getEmail(), FriendState.FRIEND);
-                    log.info(">>>>>>> " + friend);
-                    // 친구 관계 설정:친구 요청 관계
-                    String requestedFriend = guestService.makeFriendToGuest(REQUESTED_FRIEND, signDto.getEmail(), FriendState.REQUEST);
-                    log.info(">>>>>>> " + requestedFriend);
+                    // 새 게스트 계정의 친구 관계 설정
+                    guestService.makeFriendToGuest(FRIEND, signDto.getEmail(), FriendState.FRIEND);
+                    guestService.makeFriendToGuest(REQUESTED_FRIEND, signDto.getEmail(), FriendState.REQUEST);
                 }
 
                 // 등록된 계정이 있을 경우, 반복문 종료 후 로그인 처리
                 break;
             }
         }
-        log.info(">>>>>>> 게스트 계정 로그인 : " + signDto.getEmail());
+        log.info("<<체험계정>> 로그인 : " + signDto.getEmail());
         return ResponseHandler.ok(memberService.login(signDto));
     }
 }

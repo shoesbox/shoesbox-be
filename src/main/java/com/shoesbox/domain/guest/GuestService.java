@@ -17,10 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class GuestService {
 
-    @Value("guest")
-    private String guestId;
-    @Value("@test.com")
-    private String testEmail;
+    @Value("${spring.guest.guest_id}")
+    private String GUEST_ID;
+    @Value("${spring.guest.guest_email}")
+    private String GUEST_EMAIL;
 
     private final MemberRepository memberRepository;
     private final FriendRepository friendRepository;
@@ -31,7 +31,7 @@ public class GuestService {
         Member currentMember = memberRepository.findById(currentMemberId).orElseThrow(() -> new EntityNotFoundException(
                 Member.class.getPackageName()));
 
-        return currentMember.getEmail().contains(guestId) && currentMember.getEmail().contains(testEmail);
+        return currentMember.getEmail().contains(GUEST_ID) && currentMember.getEmail().contains(GUEST_EMAIL);
     }
 
     @Transactional(readOnly = true)
@@ -40,7 +40,7 @@ public class GuestService {
     }
 
     @Transactional
-    public String makeFriendToGuest(String fromMemberEmail, String toMemberEmail, FriendState friendState) {
+    public void makeFriendToGuest(String fromMemberEmail, String toMemberEmail, FriendState friendState) {
         Member fromMember = memberRepository.findByEmail(fromMemberEmail).orElseThrow(() -> new UsernameNotFoundException("친구 계정을 찾을 수 없습니다"));
         Member toMember = memberRepository.findByEmail(toMemberEmail).orElseThrow(() -> new UsernameNotFoundException("게스트 계정을 찾을 수 없습니다"));
 
@@ -51,8 +51,6 @@ public class GuestService {
                 .build();
 
         friendRepository.save(friend);
-
-        return "From : " + friend.getFromMember().getNickname() + " / To : " + friend.getToMember().getNickname();
     }
 
     public void guestCheck(long currentMemberId) {
