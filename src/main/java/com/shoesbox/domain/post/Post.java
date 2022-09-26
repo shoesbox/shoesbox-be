@@ -25,21 +25,14 @@ public class Post extends BaseTimeEntity {
     @Id
     @Setter
     private Long id;
-
     @Column(nullable = false)
     private String title;
-
     @Column(nullable = false)
     private String content;
-
-    @Column(nullable = false)
-    private String nickname;
-
-    @Column(nullable = false)
-    private LocalDate date;
-
     @Column(nullable = false)
     private String thumbnailUrl;
+    @Column(nullable = false)
+    private LocalDate date;
 
     // 작성자
     @ManyToOne(fetch = FetchType.LAZY)
