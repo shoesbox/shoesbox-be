@@ -24,7 +24,6 @@ public class FriendController {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         String currentMemberNickname = SecurityUtil.getCurrentMemberNickname();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(
@@ -57,7 +56,6 @@ public class FriendController {
     public ResponseEntity<Object> acceptFriendRequest(@PathVariable long fromMemberId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         Friend fromFriend = friendService.findRelationship(fromMemberId, currentMemberId, FriendState.REQUEST);
@@ -69,7 +67,6 @@ public class FriendController {
     public ResponseEntity<Object> refuseFriendRequest(@PathVariable long fromMemberId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         Friend fromFriend = friendService.findRelationship(fromMemberId, currentMemberId, FriendState.REQUEST);
@@ -81,7 +78,6 @@ public class FriendController {
     public ResponseEntity<Object> cancelFriendRequest(@PathVariable long toMemberId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         Friend toFriend = friendService.findRelationship(currentMemberId, toMemberId, FriendState.REQUEST);
@@ -93,7 +89,6 @@ public class FriendController {
     public ResponseEntity<Object> deleteFriend(@PathVariable long friendId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(friendService.deleteFriend(friendId, currentMemberId, FriendState.FRIEND));

@@ -28,7 +28,6 @@ public class CommentController {
             @PathVariable long postId, @Valid @RequestBody CommentRequestDto commentRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(commentService.createComment(
@@ -40,7 +39,6 @@ public class CommentController {
             @PathVariable("commentId") long commentId, @Valid @RequestBody CommentRequestDto commentRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(commentService.updateComment(currentMemberId, commentId, commentRequestDto));
@@ -50,7 +48,6 @@ public class CommentController {
     public ResponseEntity<Object> deleteComment(@PathVariable("commentId") long commentId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(commentService.deleteComment(currentMemberId, commentId));

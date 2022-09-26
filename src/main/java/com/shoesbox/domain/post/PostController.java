@@ -24,7 +24,6 @@ public class PostController {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         String currentMemberNickname = SecurityUtil.getCurrentMemberNickname();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(postService.createPost(currentMemberId, currentMemberNickname, postRequestDto));
@@ -61,7 +60,6 @@ public class PostController {
     public ResponseEntity<Object> updatePost(@PathVariable long postId, PostUpdateDto postUpdateDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(postService.updatePost(currentMemberId, postId, postUpdateDto));
@@ -72,7 +70,6 @@ public class PostController {
     public ResponseEntity<Object> deletePost(@PathVariable long postId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(postService.deletePost(currentMemberId, postId));

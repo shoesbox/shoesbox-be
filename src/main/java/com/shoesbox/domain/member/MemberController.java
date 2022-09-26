@@ -20,7 +20,6 @@ import javax.validation.Valid;
 @RequestMapping(("/api/members"))
 public class MemberController {
     private final MemberService memberService;
-    // 게스트계정 테스트중
     private final GuestService guestService;
 
     // 회원 가입
@@ -57,7 +56,6 @@ public class MemberController {
             @RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         if (targetId == 0L) {
@@ -78,7 +76,6 @@ public class MemberController {
     public ResponseEntity<Object> deleteAccount(@RequestParam(value = "m") long targetId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         if (currentMemberId != targetId) {
@@ -92,7 +89,6 @@ public class MemberController {
     public ResponseEntity<Object> resetProfileImage() {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
 
-        // 게스트계정 테스트중
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(memberService.resetProfileImage(currentMemberId));
