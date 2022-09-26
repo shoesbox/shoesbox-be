@@ -38,7 +38,7 @@ public class PostService {
 
     // 글 작성
     @Transactional
-    public long createPost(long memberId, String currentMemberNickname, PostRequestDto postRequestDto) {
+    public long createPost(long memberId, PostRequestDto postRequestDto) {
         // 날짜 검사
         LocalDate targetDate = validatePostRequest(memberId, postRequestDto);
         String thumbnailUrl;
@@ -51,17 +51,16 @@ public class PostService {
             thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
         }
         Member member = Member.builder()
-                              .id(memberId)
-                              .build();
+                .id(memberId)
+                .build();
         // 게시글 생성
         Post post = Post.builder()
-                        .title(postRequestDto.getTitle())
-                        .content(postRequestDto.getContent())
-                        .nickname(currentMemberNickname)
-                        .member(member)
-                        .thumbnailUrl(thumbnailUrl)
-                        .date(targetDate)
-                        .build();
+                .title(postRequestDto.getTitle())
+                .content(postRequestDto.getContent())
+                .member(member)
+                .thumbnailUrl(thumbnailUrl)
+                .date(targetDate)
+                .build();
         post = postRepository.save(post);
 
         // 썸네일이 기본값이 아니면
@@ -109,12 +108,12 @@ public class PostService {
             // 작성일이 일치하는 날이 없다면 일기를 쓰지 않은 날이다.
             // 빈 객체를 생성해서 넣어준다.
             posts[i] = PostResponseListDto.builder()
-                                          .postId(0)
-                                          .thumbnailUrl(null)
-                                          .createdYear(today.getYear())
-                                          .createdMonth(today.getMonthValue())
-                                          .createdDay(today.getDayOfMonth())
-                                          .build();
+                    .postId(0)
+                    .thumbnailUrl(null)
+                    .createdYear(today.getYear())
+                    .createdMonth(today.getMonthValue())
+                    .createdDay(today.getDayOfMonth())
+                    .build();
         }
         return Arrays.asList(posts);
     }
@@ -123,8 +122,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public PostResponseDto getPost(long currentMemberId, long postId) {
         Post post = getPost(postId);
-        long authorId = post.getMemberId();
-        checkAuthorization(currentMemberId, authorId);
+        checkAuthorization(currentMemberId, post.getMemberId());
         return toPostResponseDto(post);
     }
 
@@ -176,17 +174,17 @@ public class PostService {
 
     private Post getPost(long postId) {
         return postRepository.findById(postId)
-                             .orElseThrow(() -> new EntityNotFoundException(Post.class.getPackageName()));
+                .orElseThrow(() -> new EntityNotFoundException(Post.class.getPackageName()));
     }
 
     private PostResponseListDto[] getPostsByDate(long memberId, LocalDate firstDay, LocalDate lastDay) {
         return postRepository.findAllByMemberIdAndDateBetween(memberId, firstDay, lastDay)
-                             .stream()
-                             // PostListResponseDto의 배열로 변환한다.
-                             .map(this::toPostListResponseDto)
-                             .sorted(Comparator.comparing(PostResponseListDto::getCreatedMonth)
-                                               .thenComparing(PostResponseListDto::getCreatedDay))
-                             .toArray(PostResponseListDto[]::new);
+                .stream()
+                // PostListResponseDto의 배열로 변환한다.
+                .map(this::toPostListResponseDto)
+                .sorted(Comparator.comparing(PostResponseListDto::getCreatedMonth)
+                        .thenComparing(PostResponseListDto::getCreatedDay))
+                .toArray(PostResponseListDto[]::new);
     }
 
     private PostResponseDto toPostResponseDto(Post post) {
@@ -195,26 +193,26 @@ public class PostService {
             urls.add(photo.getUrl());
         }
         return PostResponseDto.builder()
-                              .postId(post.getId())
-                              .title(post.getTitle())
-                              .content(post.getContent())
-                              .nickname(post.getNickname())
-                              .memberId(post.getMemberId())
-                              .images(urls)
-                              .createdAt(post.getCreatedAt())
-                              .modifiedAt(post.getModifiedAt())
-                              .build();
+                .postId(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .nickname(post.getMember().getNickname())
+                .memberId(post.getMemberId())
+                .images(urls)
+                .createdAt(post.getCreatedAt())
+                .modifiedAt(post.getModifiedAt())
+                .build();
     }
 
     private PostResponseListDto toPostListResponseDto(Post post) {
         return PostResponseListDto.builder()
-                                  .postId(post.getId())
-                                  .thumbnailUrl(post.getThumbnailUrl())
-                                  .createdYear(post.getDate().getYear())
-                                  .createdMonth(post.getDate().getMonthValue())
-                                  .createdDay(post.getDate().getDayOfMonth())
-                                  .date(post.getDate())
-                                  .build();
+                .postId(post.getId())
+                .thumbnailUrl(post.getThumbnailUrl())
+                .createdYear(post.getDate().getYear())
+                .createdMonth(post.getDate().getMonthValue())
+                .createdDay(post.getDate().getDayOfMonth())
+                .date(post.getDate())
+                .build();
     }
 
     private String createThumbnail(MultipartFile multipartFile) {
@@ -235,10 +233,10 @@ public class PostService {
         for (var imageFile : imageFiles) {
             var uploadedImageUrl = s3Service.uploadImage(imageFile);
             Photo photo = Photo.builder()
-                               .url(uploadedImageUrl)
-                               .post(post)
-                               .member(post.getMember())
-                               .build();
+                    .url(uploadedImageUrl)
+                    .post(post)
+                    .member(post.getMember())
+                    .build();
             photoRepository.save(photo);
             photos.add(photo);
         }
@@ -265,7 +263,7 @@ public class PostService {
 
     private LocalDate validatePostRequest(long memberId, PostRequestDto postRequestDto) {
         LocalDate targetDate = LocalDate.of(postRequestDto.getYear(), postRequestDto.getMonth(),
-                                            postRequestDto.getDay());
+                postRequestDto.getDay());
         // 연도 검사
         if (targetDate.getYear() != LocalDate.now().getYear()) {
             throw new IllegalArgumentException("연도를 잘못 입력하였습니다.");
