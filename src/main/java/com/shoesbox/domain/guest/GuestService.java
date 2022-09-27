@@ -27,11 +27,12 @@ public class GuestService {
 
 
     @Transactional(readOnly = true)
-    public boolean isGuest(long currentMemberId) {
+    public void guestCheck(long currentMemberId) {
         Member currentMember = memberRepository.findById(currentMemberId).orElseThrow(() -> new EntityNotFoundException(
                 Member.class.getPackageName()));
+        boolean isGuest = currentMember.getEmail().contains(GUEST_ID) && currentMember.getEmail().contains(GUEST_EMAIL);
 
-        return currentMember.getEmail().contains(GUEST_ID) && currentMember.getEmail().contains(GUEST_EMAIL);
+        if (isGuest) throw new UnAuthorizedException("체험용 계정입니다. 회원가입 후 이용하실 수 있습니다.");
     }
 
     @Transactional(readOnly = true)
@@ -51,9 +52,5 @@ public class GuestService {
                 .build();
 
         friendRepository.save(friend);
-    }
-
-    public void guestCheck(long currentMemberId) {
-        if (isGuest(currentMemberId)) throw new UnAuthorizedException("체험용 계정입니다. 회원가입 후 이용하실 수 있습니다.");
     }
 }
