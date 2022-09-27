@@ -1,5 +1,6 @@
 package com.shoesbox.domain.post;
 
+import com.shoesbox.domain.friend.Friend;
 import com.shoesbox.domain.friend.FriendRepository;
 import com.shoesbox.domain.friend.FriendState;
 import com.shoesbox.domain.member.Member;
@@ -16,9 +17,11 @@ import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -26,6 +29,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
 import java.time.temporal.WeekFields;
 import java.util.*;
+
+import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
 @RequiredArgsConstructor
 @Service
@@ -71,6 +76,10 @@ public class PostService {
         if (!thumbnailUrl.equals(defaultThumbnailImageAddress)) {
             createPhoto(postRequestDto.getImageFiles(), post);
         }
+
+        // 모든 친구에 알림 생성 및 발송
+        notifyAddPostEvent(memberId, post);
+
         return post.getId();
     }
 
@@ -308,6 +317,23 @@ public class PostService {
                 targetId, currentMemberId, FriendState.FRIEND) ||
                 friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
                         currentMemberId, targetId, FriendState.FRIEND);
+    }
+
+    public void notifyAddPostEvent(long myMemberId, Post post) {
+
+        List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(myMemberId, FriendState.FRIEND);
+
+        for (Friend friend : friends) {
+            long friendId = friend.getId();
+            if (sseEmitters.containsKey(friendId)) {
+                SseEmitter sseEmitter = sseEmitters.get(friendId);
+                try {
+                    sseEmitter.send(SseEmitter.event().name("addPost").data(myMemberId + "," + "\n\n"), MediaType.APPLICATION_JSON);
+                } catch (Exception e) {
+                    sseEmitters.remove(friendId);
+                }
+            } // todo : 접속 중이 아닌 유저의 경우 db에 저장 후 차후 알림
+        }
     }
 
     @Transactional
