@@ -15,7 +15,7 @@ public class AlarmService {
 
     @Transactional(readOnly = true)
     public List<AlarmResponseDto> getAlarmList(long currentMemberId) {
-        List<Alarm> alarms = alarmRepository.findAllByReceiveMemberIdAndChecked(currentMemberId, false);
+        List<Alarm> alarms = alarmRepository.findAllByReceiveMemberId(currentMemberId);
         List<AlarmResponseDto> alarmList = new ArrayList<>();
         for (Alarm alarm : alarms) {
             alarmList.add(toAlarmResponseDto(alarm));
@@ -30,7 +30,7 @@ public class AlarmService {
                 () -> new IllegalArgumentException("해당 알람을 찾을 수 없습니다."));
 
         alarmRepository.delete(alarm);
-        
+
         return "댓글 삭제 성공";
     }
 
@@ -38,11 +38,12 @@ public class AlarmService {
         // content 형태 : postId or commentId + "," + month + "," + day
         String[] data = alarm.getContent().split(",");
         return AlarmResponseDto.builder()
+                .alarmId(alarm.getId())
                 .sendMemberId(alarm.getSendMember().getId())
                 .sendMemberNickname(alarm.getSendMember().getNickname())
                 .receiveMemberId(alarm.getReceiveMemberId())
                 .messageType(alarm.getMessageType())
-                .contentId(Long.parseLong(data[0]))
+                .postId(Long.parseLong(data[0]))
                 .month(Integer.parseInt(data[1]))
                 .day(Integer.parseInt(data[2]))
                 .build();

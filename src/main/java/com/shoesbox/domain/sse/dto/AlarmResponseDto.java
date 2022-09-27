@@ -16,7 +16,7 @@ public class AlarmResponseDto {
     long receiveMemberId;
     MessageType messageType;
 
-    long contentId; // post or comment
+    long postId; // post or comment or friend
     int month;
     int day;
 }

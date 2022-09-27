@@ -144,7 +144,7 @@ public class CommentService {
         int day = Integer.parseInt(createDate.substring(createDate.indexOf('월') + 2, createDate.indexOf('일')));
 
         // 알림 내용 db에 저장
-        saveAlarm(currentId, memberId, comment.getId(), month, day);
+        saveAlarm(currentId, memberId, postId, month, day);
     }
 
     @Transactional

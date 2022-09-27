@@ -18,10 +18,6 @@ public class Alarm extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 알람 확인 상태 (확인시 TRUE, 미확인시 FALSE)
-    @Column(nullable = false)
-    private boolean isChecked;
-
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private MessageType messageType;
