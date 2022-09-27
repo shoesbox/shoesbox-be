@@ -5,6 +5,7 @@ import com.shoesbox.domain.comment.Comment;
 import com.shoesbox.domain.friend.Friend;
 import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.domain.post.Post;
+import com.shoesbox.domain.sse.Alarm;
 import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.*;
 
@@ -75,6 +76,12 @@ public class Member extends BaseTimeEntity {
             cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Photo> photos = new ArrayList<>();
+
+    // 알람
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "sendMember",
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Alarm> alarms = new ArrayList<>();
 
     public void updateInfo(String nickname, String profileImageUrl) {
         if (nickname != null) {
