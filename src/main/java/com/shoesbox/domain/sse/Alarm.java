@@ -18,16 +18,9 @@ public class Alarm extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 알람 확인 상태 (확인시 TRUE, 미확인시 FALSE)
-    @Column(nullable = false)
-    private boolean isChecked;
-
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private SendType sendType;
-
-    @Column(nullable = false)
-    private String content;
+    private MessageType messageType;
 
     // 발송자
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,10 +31,15 @@ public class Alarm extends BaseTimeEntity {
     @Column(nullable = false)
     private long receiveMemberId;
 
+    // post 혹은 comment의 Id + "," + month + "," + day 형태로 저장
+    @Column(nullable = false)
+    private String content;
+
     @Builder
-    private Alarm(Member sendMember, long receiveMemberId, String content) {
+    private Alarm(Member sendMember, long receiveMemberId, String content, MessageType messageType) {
         this.sendMember = sendMember;
         this.receiveMemberId = receiveMemberId;
         this.content = content;
+        this.messageType = messageType;
     }
 }
