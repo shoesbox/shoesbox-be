@@ -3,6 +3,7 @@ package com.shoesbox.domain.sse;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.global.common.BaseTimeEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -11,8 +12,8 @@ import javax.persistence.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "sseemitter")
-public class SseEmitter extends BaseTimeEntity {
+@Table(name = "alarms")
+public class Alarm extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,12 +30,18 @@ public class SseEmitter extends BaseTimeEntity {
     private String content;
 
     // 발송자
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "send_member_id", nullable = false)
     private Member sendMember;
 
     // 수신자
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receive_member_id", nullable = false)
-    private Member receiveMember;
+    @Column(nullable = false)
+    private long receiveMemberId;
+
+    @Builder
+    private Alarm(Member sendMember, long receiveMemberId, String content) {
+        this.sendMember = sendMember;
+        this.receiveMemberId = receiveMemberId;
+        this.content = content;
+    }
 }
