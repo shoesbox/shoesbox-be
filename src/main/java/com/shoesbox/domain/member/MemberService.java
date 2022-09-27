@@ -74,7 +74,7 @@ public class MemberService {
         // RefreshToken 저장
         String refreshToken = tokenResponseDto.getRefreshToken();
         redisService.setDataWithExpiration("RT:" + authentication.getName(), refreshToken,
-                                           tokenResponseDto.getRefreshTokenLifetimeInMs());
+                tokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return tokenResponseDto;
@@ -89,11 +89,11 @@ public class MemberService {
         }
         Member member = getMember(targetId);
         return MemberInfoResponseDto.builder()
-                                    .memberId(targetId)
-                                    .nickname(member.getNickname())
-                                    .email(member.getEmail())
-                                    .profileImageUrl(member.getProfileImageUrl())
-                                    .build();
+                .memberId(targetId)
+                .nickname(member.getNickname())
+                .email(member.getEmail())
+                .profileImageUrl(member.getProfileImageUrl())
+                .build();
     }
 
     @Transactional
@@ -173,11 +173,11 @@ public class MemberService {
         var member = getMember(currentMemberId);
         member.updateInfo(member.getNickname(), BASE_PROFILE_IMAGE_URL);
         return MemberInfoResponseDto.builder()
-                                    .memberId(currentMemberId)
-                                    .nickname(member.getNickname())
-                                    .email(member.getEmail())
-                                    .profileImageUrl(member.getProfileImageUrl())
-                                    .build();
+                .memberId(currentMemberId)
+                .nickname(member.getNickname())
+                .email(member.getEmail())
+                .profileImageUrl(member.getProfileImageUrl())
+                .build();
     }
 
     @Transactional
@@ -189,7 +189,7 @@ public class MemberService {
 
     private Member getMember(long memberId) {
         return memberRepository.findById(memberId)
-                               .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
+                .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
     }
 
     private void checkEmail(String email) {
@@ -200,11 +200,11 @@ public class MemberService {
 
     private Member toMember(SignDto signDto) {
         return Member.builder()
-                     .email(signDto.getEmail())
-                     .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
-                     .nickname(signDto.getEmail().split("@")[0])
-                     .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
-                     .build();
+                .email(signDto.getEmail())
+                .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
+                .nickname(signDto.getEmail().split("@")[0])
+                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
+                .build();
     }
 
     // 자기 자신, 혹은 친구 관계인지 검증

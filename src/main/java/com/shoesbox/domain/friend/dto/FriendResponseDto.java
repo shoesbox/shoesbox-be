@@ -16,7 +16,7 @@ public class FriendResponseDto {
     private FriendState friendState;
 
     @Builder
-    public FriendResponseDto(long toMemberId, String toMemberNickname, long fromMemberId, String fromMemberNickname, FriendState friendState){
+    public FriendResponseDto(long toMemberId, String toMemberNickname, long fromMemberId, String fromMemberNickname, FriendState friendState) {
         this.toMemberId = toMemberId;
         this.toMemberNickname = toMemberNickname;
         this.fromMemberId = fromMemberId;

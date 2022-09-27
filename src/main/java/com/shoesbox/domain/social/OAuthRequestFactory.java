@@ -23,7 +23,7 @@ public class OAuthRequestFactory {
 
             return new OAuthRequest(kakaoInfo.getKakaoTokenUrl(), map);
 
-        } else if(provider.equals("google")) {
+        } else if (provider.equals("google")) {
             map.add("grant_type", "authorization_code");
             map.add("client_id", googleInfo.getGoogleClientId());
             map.add("client_secret", googleInfo.getGoogleClientSecret());
@@ -46,7 +46,7 @@ public class OAuthRequestFactory {
     public String getProfileUrl(String provider) {
         if (provider.equals("kakao")) {
             return kakaoInfo.getKakaoProfileUrl();
-        } else if(provider.equals("naver")) {
+        } else if (provider.equals("naver")) {
             return naverInfo.getNaverProfileUrl();
         } else {
             return googleInfo.getGoogleProfileUrl();

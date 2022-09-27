@@ -52,7 +52,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 // SecurityContext에 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 log.info("Security Context에 'userId: {}' 인증 정보를 저장했습니다.",
-                         authentication.getName());
+                        authentication.getName());
                 log.info("uri: {}", requestURI);
             }
         } catch (SecurityException | MalformedJwtException e) {

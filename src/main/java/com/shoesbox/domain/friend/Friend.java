@@ -33,13 +33,13 @@ public class Friend extends BaseTimeEntity {
     private Member toMember;
 
     @Builder
-    private Friend(Member fromMember, Member toMember, FriendState friendState){
+    private Friend(Member fromMember, Member toMember, FriendState friendState) {
         this.fromMember = fromMember;
         this.toMember = toMember;
         this.friendState = friendState;
     }
 
-    public void updateFriendState(FriendState friendState){
+    public void updateFriendState(FriendState friendState) {
         this.friendState = friendState;
     }
 }

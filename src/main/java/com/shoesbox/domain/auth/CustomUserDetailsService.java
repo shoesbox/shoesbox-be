@@ -22,19 +22,19 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Transactional
     public UserDetails loadUserByUsername(final String email) {
         return memberRepository.findByEmail(email)
-                               .map(this::createUser)
-                               .orElseThrow(() -> new EntityNotFoundException(Member.class.getName()));
+                .map(this::createUser)
+                .orElseThrow(() -> new EntityNotFoundException(Member.class.getName()));
     }
 
     // DB 에 User 값이 존재한다면 UserDetails 객체로 만들어서 리턴
     private CustomUserDetails createUser(Member member) {
         GrantedAuthority grantedAuthority = new SimpleGrantedAuthority(member.getAuthority());
         return CustomUserDetails.builder()
-                                .email(member.getEmail())
-                                .password(member.getPassword())
-                                .nickname(member.getNickname())
-                                .memberId(member.getId())
-                                .authorities(Collections.singleton(grantedAuthority))
-                                .build();
+                .email(member.getEmail())
+                .password(member.getPassword())
+                .nickname(member.getNickname())
+                .memberId(member.getId())
+                .authorities(Collections.singleton(grantedAuthority))
+                .build();
     }
 }

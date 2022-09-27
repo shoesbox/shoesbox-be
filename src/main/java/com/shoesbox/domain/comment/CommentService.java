@@ -30,13 +30,13 @@ public class CommentService {
         Post post = getPost(postId);
         checkSelfAuthorization(currentMemberId, post.getMemberId());
         Member currentMember = memberRepository.findById(currentMemberId)
-                                               .orElseThrow(() -> new EntityNotFoundException(
-                                                       Member.class.getPackageName()));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        Member.class.getPackageName()));
         Comment comment = Comment.builder()
-                                 .content(content)
-                                 .member(currentMember)
-                                 .post(post)
-                                 .build();
+                .content(content)
+                .member(currentMember)
+                .post(post)
+                .build();
         commentRepository.save(comment);
         return toCommentResponseDto(comment);
     }
@@ -66,30 +66,29 @@ public class CommentService {
 
     private Comment getComment(long commentId) {
         return commentRepository.findById(commentId)
-                                .orElseThrow(() -> new EntityNotFoundException(Comment.class.getPackageName()));
+                .orElseThrow(() -> new EntityNotFoundException(Comment.class.getPackageName()));
     }
 
     private Post getPost(long postId) {
         return postRepository.findById(postId)
-                             .orElseThrow(() -> new EntityNotFoundException(Post.class.getPackageName()));
+                .orElseThrow(() -> new EntityNotFoundException(Post.class.getPackageName()));
     }
 
     private CommentResponseDto toCommentResponseDto(Comment comment) {
         return CommentResponseDto.builder()
-                                 .commentId(comment.getId())
-                                 .content(comment.getContent())
-                                 .profileImageUrl(comment.getMember().getProfileImageUrl())
-                                 .nickname(comment.getMember().getNickname())
-                                 .memberId(comment.getMember().getId())
-                                 .postId(comment.getPost().getId())
-                                 .createdAt(comment.getCreatedAt())
-                                 .modifiedAt(comment.getModifiedAt())
-                                 .build();
+                .commentId(comment.getId())
+                .content(comment.getContent())
+                .profileImageUrl(comment.getMember().getProfileImageUrl())
+                .nickname(comment.getMember().getNickname())
+                .memberId(comment.getMember().getId())
+                .postId(comment.getPost().getId())
+                .createdAt(comment.getCreatedAt())
+                .modifiedAt(comment.getModifiedAt())
+                .build();
     }
 
     private void checkAuthorization(long currentMemberId, long targetId) {
-        checkSelfAuthorization(currentMemberId, targetId);
-        if (!isFriend(currentMemberId, targetId)) {
+        if (currentMemberId != targetId && !isFriend(currentMemberId, targetId)) {
             throw new UnAuthorizedException("접근 권한이 없습니다.");
         }
     }
@@ -103,8 +102,8 @@ public class CommentService {
     private boolean isFriend(long currentMemberId, long targetId) {
         return currentMemberId == targetId
                 || friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(targetId, currentMemberId,
-                                                                                    FriendState.FRIEND)
+                FriendState.FRIEND)
                 || friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(currentMemberId, targetId,
-                                                                                    FriendState.FRIEND);
+                FriendState.FRIEND);
     }
 }
