@@ -90,6 +90,8 @@ public class SecurityConfig {
                 .antMatchers("/api/members/auth/**").permitAll()
                 .antMatchers("/login").permitAll()
                 .antMatchers("/oauth2/authorization/**").permitAll()
+                .antMatchers("/api/sub/**").permitAll()
+
                 // .antMatchers(HttpMethod.GET, "/api/posts/**", "/api/comments/**").permitAll()
                 // .antMatchers(HttpMethod.POST, "/api/posts/**").hasAnyAuthority("ROLE_USER")
                 // 나머지는 전부 인증 필요
