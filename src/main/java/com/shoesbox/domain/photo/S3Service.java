@@ -37,6 +37,10 @@ public class S3Service {
     @Value("${cloud.aws.region.static}")
     private String region;
 
+    // 리사이징 할 파일 크기
+    private static final int thumbnailWidth = 200;
+    private static final int thumbnailHeight = 200;
+
     @PostConstruct
     public void setS3Client() {
         AWSCredentials credentials = new BasicAWSCredentials(this.accessKey, this.secretKey);
@@ -94,15 +98,11 @@ public class S3Service {
         String fileExtension = fileName.substring(fileName.lastIndexOf("."));
         String saveName = "s_" + uuid + fileExtension;
 
-        // 리사이징 할 파일 크기
-        int targetWidth = 200;
-        int targetHeight = 200;
-
         File outPutStream = new File(saveName);
 
         // Thumbnailator로 리사이징
         Thumbnails.of(mfile.getInputStream())
-                .size(targetWidth, targetHeight)
+                .size(thumbnailWidth, thumbnailHeight)
                 .toFile(outPutStream);
 
         ObjectMetadata objMeta = new ObjectMetadata();

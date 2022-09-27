@@ -53,12 +53,12 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatus status, WebRequest request) {
         String error =
                 ex.getMessage() + ", " + ex.getSupportedMediaTypes().stream()
-                                           .map(String::valueOf) + ", " + Arrays.toString(ex.getStackTrace());
+                        .map(String::valueOf) + ", " + Arrays.toString(ex.getStackTrace());
         var apiError = ApiError.builder()
-                               .status(BAD_REQUEST)
-                               .message(error)
-                               .ex(ex)
-                               .build();
+                .status(BAD_REQUEST)
+                .message(error)
+                .ex(ex)
+                .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -79,10 +79,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 "Missing request parameter '%s'",
                 ex.getParameterName());
         var apiError = ApiError.builder()
-                               .status(BAD_REQUEST)
-                               .message(error)
-                               .ex(ex)
-                               .build();
+                .status(BAD_REQUEST)
+                .message(error)
+                .ex(ex)
+                .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -107,10 +107,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         ex.getSupportedMediaTypes().forEach(t -> builder.append(t).append(", "));
         builder.append("을 사용해 주십시오.  ");
         var apiError = ApiError.builder()
-                               .status(UNSUPPORTED_MEDIA_TYPE)
-                               .message(builder.substring(0, builder.length() - 2))
-                               .ex(ex)
-                               .build();
+                .status(UNSUPPORTED_MEDIA_TYPE)
+                .message(builder.substring(0, builder.length() - 2))
+                .ex(ex)
+                .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -130,10 +130,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatus status,
             WebRequest request) {
         var apiError = ApiError.builder()
-                               .status(BAD_REQUEST)
-                               .message("Validation error. 값이 올바르지 않습니다.")
-                               .ex(ex)
-                               .build();
+                .status(BAD_REQUEST)
+                .message("Validation error. 값이 올바르지 않습니다.")
+                .ex(ex)
+                .build();
         apiError.addValidationErrors(ex.getBindingResult().getFieldErrors());
         apiError.addValidationError(ex.getBindingResult().getGlobalErrors());
         return ResponseHandler.fail(apiError);
@@ -158,10 +158,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         var error = "Malformed JSON request." +
                 "정상적인 JSON 요청이 아닙니다. 형식이 올바른지 확인하십시오.";
         var apiError = ApiError.builder()
-                               .status(BAD_REQUEST)
-                               .message(error)
-                               .ex(ex)
-                               .build();
+                .status(BAD_REQUEST)
+                .message(error)
+                .ex(ex)
+                .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -182,10 +182,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         var error = "Error writing JSON output. " +
                 "기본 생성자, Getters, Jackson 의존성이 있는지 확인하십시오.";
         var apiError = ApiError.builder()
-                               .status(INTERNAL_SERVER_ERROR)
-                               .message(error)
-                               .ex(ex)
-                               .build();
+                .status(INTERNAL_SERVER_ERROR)
+                .message(error)
+                .ex(ex)
+                .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -206,10 +206,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 ex.getRequestURL(),
                 ex.getHttpMethod());
         var apiError = ApiError.builder()
-                               .status(BAD_REQUEST)
-                               .message(error)
-                               .ex(ex)
-                               .build();
+                .status(BAD_REQUEST)
+                .message(error)
+                .ex(ex)
+                .build();
         return ResponseHandler.fail(apiError);
     }
 
@@ -227,10 +227,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                     DuplicateFriendRequestException.class})
     protected ResponseEntity<Object> handleBadRequest(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
-                                           .status(BAD_REQUEST)
-                                           .message(ex.getMessage())
-                                           .ex(ex)
-                                           .build());
+                .status(BAD_REQUEST)
+                .message(ex.getMessage())
+                .ex(ex)
+                .build());
     }
 
     /**
@@ -242,10 +242,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({RefreshTokenNotFoundException.class, EntityNotFoundException.class})
     protected ResponseEntity<Object> handleNotFound(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
-                                           .status(NOT_FOUND)
-                                           .message(ex.getMessage())
-                                           .ex(ex)
-                                           .build());
+                .status(NOT_FOUND)
+                .message(ex.getMessage())
+                .ex(ex)
+                .build());
     }
 
     /**
@@ -257,10 +257,10 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({InvalidJwtException.class, UnAuthorizedException.class})
     protected ResponseEntity<Object> handleJWTVerification(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
-                                           .status(FORBIDDEN)
-                                           .message(ex.getMessage())
-                                           .ex(ex)
-                                           .build());
+                .status(FORBIDDEN)
+                .message(ex.getMessage())
+                .ex(ex)
+                .build());
     }
 
     private ResponseEntity<Object> buildResponseEntity(ApiError apiError) {

@@ -32,9 +32,9 @@ public class FriendService {
         }
 
         Member fromMember = Member.builder()
-                                  .id(currentMemberId)
-                                  .nickname(currentMemberNickname)
-                                  .build();
+                .id(currentMemberId)
+                .nickname(currentMemberNickname)
+                .build();
 
         // 친구요청 받은 건 중복체크
         Friend requestToMe = friendRepository.findByToMemberIdAndFromMemberId(toMember.getId(), fromMember.getId());
@@ -48,10 +48,10 @@ public class FriendService {
         }
 
         Friend friend = Friend.builder()
-                              .fromMember(fromMember)
-                              .toMember(toMember)
-                              .friendState(FriendState.REQUEST)
-                              .build();
+                .fromMember(fromMember)
+                .toMember(toMember)
+                .friendState(FriendState.REQUEST)
+                .build();
 
         friendRepository.save(friend);
 
@@ -71,7 +71,7 @@ public class FriendService {
         if (friendState == FriendState.FRIEND) {
             // 친구 요청을 받은 리스트
             List<Friend> fromFriends = friendRepository.findAllByFromMemberIdAndFriendState(currentMemberId,
-                                                                                            friendState);
+                    friendState);
             for (Friend friend : fromFriends) {
                 friendList.add(toToFriendListResponseDto(friend));
             }
@@ -135,28 +135,28 @@ public class FriendService {
 
     private FriendListResponseDto toFromFriendListResponseDto(Friend friend) {
         return FriendListResponseDto.builder()
-                                    .memberId(friend.getFromMember().getId())
-                                    .memberNickname(friend.getFromMember().getNickname())
-                                    .friendState(friend.getFriendState())
-                                    .build();
+                .memberId(friend.getFromMember().getId())
+                .memberNickname(friend.getFromMember().getNickname())
+                .friendState(friend.getFriendState())
+                .build();
     }
 
     private FriendListResponseDto toToFriendListResponseDto(Friend friend) {
         return FriendListResponseDto.builder()
-                                    .memberId(friend.getToMember().getId())
-                                    .memberNickname(friend.getToMember().getNickname())
-                                    .friendState(friend.getFriendState())
-                                    .build();
+                .memberId(friend.getToMember().getId())
+                .memberNickname(friend.getToMember().getNickname())
+                .friendState(friend.getFriendState())
+                .build();
     }
 
     private FriendResponseDto toFriendResponseDto(Friend friend) {
         return FriendResponseDto.builder()
-                                .toMemberId(friend.getToMember().getId())
-                                .toMemberNickname(friend.getToMember().getNickname())
-                                .fromMemberId(friend.getFromMember().getId())
-                                .fromMemberNickname(friend.getFromMember().getNickname())
-                                .friendState(friend.getFriendState())
-                                .build();
+                .toMemberId(friend.getToMember().getId())
+                .toMemberNickname(friend.getToMember().getNickname())
+                .fromMemberId(friend.getFromMember().getId())
+                .fromMemberNickname(friend.getFromMember().getNickname())
+                .friendState(friend.getFriendState())
+                .build();
     }
 
     private void FriendStateCheck(FriendState friendState) {
@@ -169,8 +169,8 @@ public class FriendService {
 
     public Friend findRelationship(long fromMemberId, long toMemberId, FriendState friendState) {
         return friendRepository.findByFromMemberIdAndToMemberIdAndFriendState(fromMemberId, toMemberId, friendState)
-                               .orElseThrow(
-                                       () -> new IllegalArgumentException("목록에 없는 회원입니다."));
+                .orElseThrow(
+                        () -> new IllegalArgumentException("목록에 없는 회원입니다."));
     }
 
     public boolean isFriend(long memberId, long currentMemberId) {

@@ -23,7 +23,6 @@ public class FriendController {
     public ResponseEntity<Object> requestFriend(@Valid @RequestBody FriendRequestDto friendRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         String currentMemberNickname = SecurityUtil.getCurrentMemberNickname();
-
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(
@@ -55,10 +54,10 @@ public class FriendController {
     @PutMapping("/{fromMemberId}/accept")
     public ResponseEntity<Object> acceptFriendRequest(@PathVariable long fromMemberId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
 
         Friend fromFriend = friendService.findRelationship(fromMemberId, currentMemberId, FriendState.REQUEST);
+
         return ResponseHandler.ok(friendService.acceptFriendRequest(fromFriend));
     }
 
@@ -66,10 +65,10 @@ public class FriendController {
     @DeleteMapping("/{fromMemberId}/refuse")
     public ResponseEntity<Object> refuseFriendRequest(@PathVariable long fromMemberId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
 
         Friend fromFriend = friendService.findRelationship(fromMemberId, currentMemberId, FriendState.REQUEST);
+
         return ResponseHandler.ok(friendService.deleteFriendRequest(fromFriend));
     }
 
@@ -88,7 +87,6 @@ public class FriendController {
     @DeleteMapping("/{friendId}")
     public ResponseEntity<Object> deleteFriend(@PathVariable long friendId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
 
         return ResponseHandler.ok(friendService.deleteFriend(friendId, currentMemberId, FriendState.FRIEND));

@@ -8,6 +8,5 @@ import lombok.*;
 @Builder
 public class ProfileDto {
     private String email;
-    private String nickname;
     private String profileImage;
 }

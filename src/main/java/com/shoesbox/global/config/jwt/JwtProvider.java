@@ -67,8 +67,8 @@ public class JwtProvider {
     public TokenResponseDto createTokenDto(CustomUserDetails userDetails) {
         // 권한 가져오기
         String authorities = userDetails.getAuthorities().stream()
-                                        .map(GrantedAuthority::getAuthority)
-                                        .collect(Collectors.joining(","));
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
 
         // 현재 시간(now)에 정해둔 유효 기간만큼 더해서 만료일(accessTokenExpiration) 설정
         long now = (new Date()).getTime();
@@ -78,35 +78,35 @@ public class JwtProvider {
 
         // 액세스 토큰 생성
         var accessToken = Jwts.builder()
-                              // payload "sub": "name"
-                              .setSubject("Access Token")
-                              // 클레임에 memberId(PK) 저장
-                              .claim(USER_ID, String.valueOf(userDetails.getMemberId()))
-                              // payload "auth": "ROLE_USER"
-                              .claim(AUTHORITIES_KEY, authorities)
-                              // payload "exp": accessTokenLifetimeInSeconds * 1000
-                              .setExpiration(accessTokenExpiration)
-                              // header "alg": "HS512"
-                              .signWith(key, SignatureAlgorithm.HS512)
-                              .compact();
+                // payload "sub": "name"
+                .setSubject("Access Token")
+                // 클레임에 memberId(PK) 저장
+                .claim(USER_ID, String.valueOf(userDetails.getMemberId()))
+                // payload "auth": "ROLE_USER"
+                .claim(AUTHORITIES_KEY, authorities)
+                // payload "exp": accessTokenLifetimeInSeconds * 1000
+                .setExpiration(accessTokenExpiration)
+                // header "alg": "HS512"
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
 
         // 리프레쉬 토큰 생성
         var refreshToken = Jwts.builder()
-                               .setSubject("Refresh Token")
-                               .setExpiration(refreshTokenExpiration)
-                               .signWith(key, SignatureAlgorithm.HS512)
-                               .compact();
+                .setSubject("Refresh Token")
+                .setExpiration(refreshTokenExpiration)
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
 
         return TokenResponseDto.builder()
-                               .grantType(BEARER_TYPE)
-                               .accessToken(accessToken)
-                               .accessTokenLifetime(this.ACCESS_TOKEN_LIFETIME_IN_MS)
-                               .refreshToken(refreshToken)
-                               .refreshTokenLifetime(this.REFRESH_TOKEN_LIFETIME_IN_MS)
-                               .email(userDetails.getEmail())
-                               .nickname(userDetails.getNickname())
-                               .memberId(userDetails.getMemberId())
-                               .build();
+                .grantType(BEARER_TYPE)
+                .accessToken(accessToken)
+                .accessTokenLifetime(this.ACCESS_TOKEN_LIFETIME_IN_MS)
+                .refreshToken(refreshToken)
+                .refreshTokenLifetime(this.REFRESH_TOKEN_LIFETIME_IN_MS)
+                .email(userDetails.getEmail())
+                .nickname(userDetails.getNickname())
+                .memberId(userDetails.getMemberId())
+                .build();
     }
 
     public Authentication getAuthentication(String accessToken) {
@@ -132,16 +132,16 @@ public class JwtProvider {
         }
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
-                      .map(SimpleGrantedAuthority::new)
-                      .collect(Collectors.toList());
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
 
         // CustomUserDetails 객체를 생성해서
         CustomUserDetails principal = CustomUserDetails.builder()
-                                                       .memberId(memberId)
-                                                       .email(member.getEmail())
-                                                       .nickname(member.getNickname())
-                                                       .authorities(authorities)
-                                                       .build();
+                .memberId(memberId)
+                .email(member.getEmail())
+                .nickname(member.getNickname())
+                .authorities(authorities)
+                .build();
 
         // Authentication 반환
         return new UsernamePasswordAuthenticationToken(principal, accessToken, authorities);
