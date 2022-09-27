@@ -1,5 +1,6 @@
 package com.shoesbox.domain.post;
 
+import com.shoesbox.domain.guest.GuestService;
 import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostUpdateDto;
 import com.shoesbox.global.common.ResponseHandler;
@@ -15,11 +16,15 @@ import java.time.LocalDate;
 @RequestMapping("/api/posts")
 public class PostController {
     private final PostService postService;
+    private final GuestService guestService;
 
     // 생성
     @PostMapping
     public ResponseEntity<Object> createPost(PostRequestDto postRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        guestService.guestCheck(currentMemberId);
+
         return ResponseHandler.ok(postService.createPost(currentMemberId, postRequestDto));
     }
 
@@ -53,6 +58,8 @@ public class PostController {
     @PatchMapping("/{postId}")
     public ResponseEntity<Object> updatePost(@PathVariable long postId, PostUpdateDto postUpdateDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+        guestService.guestCheck(currentMemberId);
+
         return ResponseHandler.ok(postService.updatePost(currentMemberId, postId, postUpdateDto));
     }
 
@@ -60,6 +67,8 @@ public class PostController {
     @DeleteMapping("/{postId}")
     public ResponseEntity<Object> deletePost(@PathVariable long postId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+        guestService.guestCheck(currentMemberId);
+
         return ResponseHandler.ok(postService.deletePost(currentMemberId, postId));
     }
 }
