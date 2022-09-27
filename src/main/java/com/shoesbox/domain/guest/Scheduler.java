@@ -10,7 +10,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -27,12 +26,12 @@ public class Scheduler {
 
     // 초, 분, 시 일, 월, 주 : 매일 5시마다 게스트 계정 삭제
     @Scheduled(cron = "0 0 5 * * *")
-    public void deleteGuestAccount() throws InterruptedException {
+    public void deleteGuestAccount() {
         // 1초에 1db씩 조회
-        TimeUnit.SECONDS.sleep(1);
         List<Member> guestMember = memberRepository.findAllByEmailEndsWith(GUEST_EMAIL);
+        int guestMemberSize = guestMember.size();
 
-        for (int i = 0; i < guestMember.size(); i++) {
+        for (int i = 0; i < guestMemberSize; i++) {
             memberService.logout(guestMember.get(i).getEmail());
             memberService.deleteAccount(guestMember.get(i).getId());
         }
