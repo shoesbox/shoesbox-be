@@ -19,7 +19,7 @@ public class GuestService {
 
     @Value("guest")
     private String GUEST_ID;
-    @Value("test.com")
+    @Value("shoesboxguest.email")
     private String GUEST_EMAIL;
 
     private final MemberRepository memberRepository;
@@ -33,6 +33,11 @@ public class GuestService {
         boolean isGuest = currentMember.getEmail().contains(GUEST_ID) && currentMember.getEmail().contains(GUEST_EMAIL);
 
         if (isGuest) throw new UnAuthorizedException("체험용 계정입니다. 회원가입 후 이용하실 수 있습니다.");
+    }
+
+    @Transactional(readOnly = true)
+    public int guestCount() {
+        return memberRepository.findAllByEmailEndsWith(GUEST_EMAIL).size();
     }
 
     @Transactional(readOnly = true)

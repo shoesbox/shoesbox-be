@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GuestController {
     @Value("guest")
     private String GUEST_ID;
-    @Value("test.com")
+    @Value("shoesboxguest.email")
     private String GUEST_EMAIL;
     @Value("1234")
     private String GUEST_PASSWORD;
@@ -37,18 +37,19 @@ public class GuestController {
     @PostMapping("/auth/login/guest")
     public ResponseEntity<Object> login() {
         SignDto signDto = null;
-        for (int i = 1; i <= 100; i++) {
-            // 게스트는 총 100명까지 로그인 가능
-            String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + GUEST_ID + i + "@" + GUEST_EMAIL);
+        int guestCount = guestService.guestCount();
+
+        for (int i = 0; i <= guestCount; i++) {
+            String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + GUEST_ID + (i + 1) + "@" + GUEST_EMAIL);
 
             if (savedRefreshToken == null) {
                 // 해당 게스트 아이디가 로그인되어있지 않을 경우
                 signDto = SignDto.builder()
-                        .email(GUEST_ID + i + "@" + GUEST_EMAIL)
+                        .email(GUEST_ID + (i + 1) + "@" + GUEST_EMAIL)
                         .password(GUEST_PASSWORD)
                         .build();
 
-                if (!guestService.isJoinedGuest(GUEST_ID + i + "@" + GUEST_EMAIL)) {
+                if (!guestService.isJoinedGuest(GUEST_ID + (i + 1) + "@" + GUEST_EMAIL)) {
                     // 등록된 계정이 없을 경우, 새 계정 생성
                     memberService.signUp(signDto);
                     log.info("<<체험계정>> 생성 : " + signDto.getEmail());
@@ -62,7 +63,9 @@ public class GuestController {
                 break;
             }
         }
+
         log.info("<<체험계정>> 로그인 : " + signDto.getEmail());
         return ResponseHandler.ok(memberService.login(signDto));
     }
+
 }

@@ -184,6 +184,7 @@ public class MemberService {
     public long deleteAccount(long targetId) {
         var member = getMember(targetId);
         memberRepository.delete(member);
+        redisTemplate.delete("RT:" + member.getEmail());
         return targetId;
     }
 
