@@ -358,7 +358,7 @@ public class PostService {
                 .sendMember(sendMember)
                 .receiveMemberId(receiveMemberId)
                 .content(content)
-                .messageType(MessageType.COMMENT)
+                .messageType(MessageType.POST)
                 .build();
 
         alarmRepository.save(alarm);
