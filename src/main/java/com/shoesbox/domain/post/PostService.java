@@ -323,6 +323,12 @@ public class PostService {
 
         List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(myMemberId, FriendState.FRIEND);
 
+        // 알람에 저장할 날짜 객체 생성
+        String createDate = post.getCreatedAt();
+        int month = Integer.parseInt(createDate.substring(createDate.indexOf('년') + 2, createDate.indexOf('월')));
+        int day = Integer.parseInt(createDate.substring(createDate.indexOf('월') + 2, createDate.indexOf('일')));
+        long postId = post.getId();
+
         for (Friend friend : friends) {
             long friendId = friend.getId();
             if (sseEmitters.containsKey(friendId)) {
@@ -333,6 +339,9 @@ public class PostService {
                     sseEmitters.remove(friendId);
                 }
             } // todo : 접속 중이 아닌 유저의 경우 db에 저장 후 차후 알림
+
+            // 알림 내용 db에 저장
+            saveAlarm(myMemberId, friendId, postId, month, day);
         }
     }
 
