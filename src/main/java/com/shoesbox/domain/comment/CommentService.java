@@ -5,6 +5,7 @@ import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
 import com.shoesbox.global.exception.runtime.PostNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
+import com.shoesbox.sse.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,8 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final FriendService friendService;
+    private final NotificationService notificationService;
+
 
     @Transactional(readOnly = true)
     public List<CommentResponseDto> readComment(Long postId, long currentMemberId) {
@@ -59,6 +62,9 @@ public class CommentService {
                 .profileImageUrl(post.getMember().getProfileImageUrl())
                 .build();
         commentRepository.save(comment);
+
+        // 알림 이벤트 호출
+        notificationService.notifyAddCommentEvent(postId);
 
         return toCommentResponseDto(comment);
     }

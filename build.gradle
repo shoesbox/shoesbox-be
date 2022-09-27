@@ -54,6 +54,10 @@ dependencies {
     // Thumbnail : https://mvnrepository.com/artifact/net.coobird/thumbnailator
     implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.1'
 
+    //thymeleaf
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect'
+
     // websocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.webjars:webjars-locator-core'

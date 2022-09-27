@@ -30,4 +30,13 @@ public class ResponseHandler {
                 .errorDetails(apiError)
                 .build(), apiError.getStatus());
     }
+
+//    public static ResponseEntity<Object> usingResponseEntityBuilderAndHttpHeaders() {
+//        HttpHeaders responseHeaders = new HttpHeaders();
+//        responseHeaders.set("Content-Type", "text/event-stream;charset=UTF-8");
+//
+//        return ResponseEntity.ok()
+//                .headers(responseHeaders)
+//                .body("Response with header using ResponseEntity");
+//    }
 }

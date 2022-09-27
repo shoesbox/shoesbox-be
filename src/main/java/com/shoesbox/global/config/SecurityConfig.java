@@ -48,6 +48,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedOrigin("http://localhost:8080");
         // configuration.addAllowedOrigin("http://ec2-52-79-227-137.ap-northeast-2.compute.amazonaws.com:8000/");
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "OPTIONS", "DELETE", "PATCH"));
@@ -88,6 +89,7 @@ public class SecurityConfig {
                 .antMatchers("/api/members/auth/**").permitAll()
                 .antMatchers("/login").permitAll()
                 .antMatchers("/oauth2/authorization/**").permitAll()
+                .antMatchers("/**").permitAll()
                 // .antMatchers(HttpMethod.GET, "/api/posts/**", "/api/comments/**").permitAll()
                 // .antMatchers(HttpMethod.POST, "/api/posts/**").hasAnyAuthority("ROLE_USER")
                 // 나머지는 전부 인증 필요
