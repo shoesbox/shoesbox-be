@@ -321,7 +321,15 @@ public class PostService {
 
     public void notifyAddPostEvent(long myMemberId, Post post) {
 
-        List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(myMemberId, FriendState.FRIEND);
+        List<Friend> friends = new ArrayList<>();
+
+        // 친구 요청을 한 리스트
+        List<Friend> toFriends = friendRepository.findAllByToMemberIdAndFriendState(myMemberId, FriendState.FRIEND);
+        friends.addAll(toFriends);
+
+        // 친구 요청을 받은 리스트
+        List<Friend> fromFriends = friendRepository.findAllByFromMemberIdAndFriendState(myMemberId, FriendState.FRIEND);
+        friends.addAll(fromFriends);
 
         // 알람에 저장할 날짜 객체 생성
         String createDate = post.getCreatedAt();
@@ -340,8 +348,14 @@ public class PostService {
                 }
             } // todo : 접속 중이 아닌 유저의 경우 db에 저장 후 차후 알림
 
+            long friendMemberId;
+            if (friend.getToMember().getId() == myMemberId) {
+                friendMemberId = friend.getFromMember().getId();
+            } else {
+                friendMemberId = friend.getToMember().getId();
+            }
             // 알림 내용 db에 저장
-            saveAlarm(myMemberId, friendId, postId, month, day);
+            saveAlarm(myMemberId, friendMemberId, postId, month, day);
         }
     }
 
