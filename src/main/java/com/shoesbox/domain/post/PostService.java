@@ -10,6 +10,9 @@ import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
 import com.shoesbox.domain.post.dto.PostResponseListDto;
 import com.shoesbox.domain.post.dto.PostUpdateDto;
+import com.shoesbox.domain.sse.Alarm;
+import com.shoesbox.domain.sse.AlarmRepository;
+import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
+    private final AlarmRepository alarmRepository;
     private final S3Service s3Service;
     private final TemporalField fieldISO = WeekFields.of(Locale.KOREA).dayOfWeek();
 
@@ -304,5 +308,24 @@ public class PostService {
                 targetId, currentMemberId, FriendState.FRIEND) ||
                 friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
                         currentMemberId, targetId, FriendState.FRIEND);
+    }
+
+    @Transactional
+    public void saveAlarm(long sendMemberId, long receiveMemberId, long contentId, int month, int day) {
+        String content = contentId + "," + month + "," + day;
+
+        // send: 댓글작성자, receive: 글작성자
+        Member sendMember = Member.builder()
+                .id(sendMemberId)
+                .build();
+
+        Alarm alarm = Alarm.builder()
+                .sendMember(sendMember)
+                .receiveMemberId(receiveMemberId)
+                .content(content)
+                .messageType(MessageType.COMMENT)
+                .build();
+
+        alarmRepository.save(alarm);
     }
 }

@@ -8,6 +8,9 @@ import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
+import com.shoesbox.domain.sse.Alarm;
+import com.shoesbox.domain.sse.AlarmRepository;
+import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final FriendRepository friendRepository;
+    private final AlarmRepository alarmRepository;
 
     @Transactional
     public CommentResponseDto createComment(String content, long currentMemberId, long postId) {
@@ -37,13 +41,15 @@ public class CommentService {
         Member currentMember = memberRepository.findById(currentMemberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         Member.class.getPackageName()));
+
         Comment comment = Comment.builder()
                 .content(content)
                 .member(currentMember)
                 .post(post)
                 .build();
         commentRepository.save(comment);
-        notifyAddCommentEvent(postId, currentMemberId);
+
+        notifyAddCommentEvent(postId, currentMemberId, comment);
         return toCommentResponseDto(comment);
     }
 
@@ -113,7 +119,7 @@ public class CommentService {
                 FriendState.FRIEND);
     }
 
-    public void notifyAddCommentEvent(long postId, long currentId) {
+    public void notifyAddCommentEvent(long postId, long currentId, Comment comment) {
 
         // 댓글에 대한 처리 후 해당 댓글이 달린 게시글의 pk값으로 게시글을 조회
         Post post = postRepository.findById(postId).orElseThrow(
@@ -121,11 +127,6 @@ public class CommentService {
         );
 
         long memberId = post.getMemberId();
-
-        // 친구관계 검증
-        if (!isFriend(currentId, memberId)) {
-            throw new IllegalArgumentException("친구관계가 아닌 경우 알림을 보낼 수 없습니다.");
-        }
 
         // 로그인 한 사용자에게 알림 발송
         if (sseEmitters.containsKey(memberId) && currentId != memberId) {
@@ -135,8 +136,33 @@ public class CommentService {
             } catch (Exception e) {
                 sseEmitters.remove(memberId);
             }
-        } // todo : 접속 중이 아닌 유저의 경우 db에 저장 후 차후 알림
+        }
 
+        // 알람에 저장할 날짜 객체 생성
+        String createDate = comment.getCreatedAt();
+        int month = Integer.parseInt(createDate.substring(createDate.indexOf('년') + 2, createDate.indexOf('월')));
+        int day = Integer.parseInt(createDate.substring(createDate.indexOf('월') + 2, createDate.indexOf('일')));
+
+        // 알림 내용 db에 저장
+        saveAlarm(currentId, memberId, postId, month, day);
     }
 
+    @Transactional
+    public void saveAlarm(long sendMemberId, long receiveMemberId, long contentId, int month, int day) {
+        String content = contentId + "," + month + "," + day;
+
+        // send: 댓글작성자, receive: 글작성자
+        Member sendMember = Member.builder()
+                .id(sendMemberId)
+                .build();
+
+        Alarm alarm = Alarm.builder()
+                .sendMember(sendMember)
+                .receiveMemberId(receiveMemberId)
+                .content(content)
+                .messageType(MessageType.COMMENT)
+                .build();
+
+        alarmRepository.save(alarm);
+    }
 }
