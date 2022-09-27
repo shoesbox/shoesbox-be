@@ -28,7 +28,7 @@ public class CommentService {
     @Transactional
     public CommentResponseDto createComment(String content, long currentMemberId, long postId) {
         Post post = getPost(postId);
-        checkSelfAuthorization(currentMemberId, post.getMemberId());
+        checkAuthorization(currentMemberId, post.getMemberId());
         Member currentMember = memberRepository.findById(currentMemberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         Member.class.getPackageName()));
