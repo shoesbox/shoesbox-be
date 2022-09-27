@@ -18,15 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(("/api/members"))
 @RestController
 public class GuestController {
-    @Value("${spring.guest.guest_id}")
+    @Value("guest")
     private String GUEST_ID;
-    @Value("${spring.guest.guest_email}")
+    @Value("test.com")
     private String GUEST_EMAIL;
-    @Value("${spring.guest.guest_password}")
+    @Value("1234")
     private String GUEST_PASSWORD;
-    @Value("${spring.guest.friend_id_full}")
+    @Value("Friend1@test.com")
     private String FRIEND;
-    @Value("${spring.guest.requested_friend_id_full}")
+    @Value("Friend2@test.com")
     private String REQUESTED_FRIEND;
 
     private final RedisTemplate<String, String> redisTemplate;

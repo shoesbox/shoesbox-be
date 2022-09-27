@@ -16,9 +16,9 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class Scheduler {
 
-    @Value("${spring.guest.guest_id}")
+    @Value("guest")
     private String GUEST_ID;
-    @Value("${spring.guest.guest_email}")
+    @Value("test.com")
     private String GUEST_EMAIL;
 
     private final MemberRepository memberRepository;
