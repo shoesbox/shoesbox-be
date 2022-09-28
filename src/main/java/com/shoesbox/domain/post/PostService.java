@@ -18,6 +18,7 @@ import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ import java.util.*;
 
 import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PostService {
@@ -345,6 +347,7 @@ public class PostService {
                 try {
                     sseEmitter.send(SseEmitter.event().name("addPost").data(messgeDto, MediaType.APPLICATION_JSON));
                 } catch (Exception e) {
+                    log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> There are some ERROR");
                     sseEmitters.remove(receiverMemberId);
                 }
             } // todo : 접속 중이 아닌 유저의 경우 db에 저장 후 차후 알림

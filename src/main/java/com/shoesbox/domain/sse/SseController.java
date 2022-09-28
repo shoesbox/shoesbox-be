@@ -71,6 +71,12 @@ public class SseController {
                 sseEmitter.completeWithError(e);
             }
         });
+
+        // 로그인한 유저가 새롭게 로그인한 경우 업데이트
+        if (sseEmitters.containsKey(memberId)) {
+            sseEmitters.get(memberId).completeWithError(new IllegalArgumentException("중복된 소켓 혹은 다른 기기에서 접속이 되었습니다."));
+            sseEmitters.remove(memberId);
+        }
         // user의 memberId를 key값으로 해서 SseEmitter를 저장
         sseEmitters.put(memberId, sseEmitter);
         sseEmitter.onCompletion(() -> sseEmitters.remove(memberId));
