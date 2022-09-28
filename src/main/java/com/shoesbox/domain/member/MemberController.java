@@ -1,6 +1,7 @@
 package com.shoesbox.domain.member;
 
 import com.shoesbox.domain.auth.dto.TokenRequestDto;
+import com.shoesbox.domain.guest.GuestService;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.global.common.ResponseHandler;
@@ -19,6 +20,7 @@ import javax.validation.Valid;
 @RequestMapping(("/api/members"))
 public class MemberController {
     private final MemberService memberService;
+    private final GuestService guestService;
 
     // 회원 가입
     @PostMapping("/auth/signup")
@@ -53,6 +55,9 @@ public class MemberController {
     public ResponseEntity<Object> updateMemberInfo(
             @RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        guestService.guestCheck(currentMemberId);
+
         if (targetId == 0L) {
             targetId = currentMemberId;
         }
@@ -70,6 +75,9 @@ public class MemberController {
     @DeleteMapping("/delete")
     public ResponseEntity<Object> deleteAccount(@RequestParam(value = "m") long targetId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        guestService.guestCheck(currentMemberId);
+
         if (currentMemberId != targetId) {
             throw new UnAuthorizedException("본인의 memberId가 아닙니다.");
         }
@@ -80,6 +88,9 @@ public class MemberController {
     @GetMapping("/reset")
     public ResponseEntity<Object> resetProfileImage() {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
+
+        guestService.guestCheck(currentMemberId);
+
         return ResponseHandler.ok(memberService.resetProfileImage(currentMemberId));
     }
 }
