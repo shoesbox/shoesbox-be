@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
@@ -47,7 +46,7 @@ public class PostService {
             thumbnailUrl = defaultThumbnailImageAddress;
         } else {
             // 새로운 이미지가 있으면 썸네일 업로드
-            thumbnailUrl = createThumbnail(postRequestDto.getImageFiles().get(0));
+            thumbnailUrl = s3Service.uploadThumbnail(postRequestDto.getImageFiles().get(0));
         }
         Member member = Member.builder()
                 .id(memberId)
@@ -149,7 +148,7 @@ public class PostService {
         }
 
         // 썸네일 생성
-        String thumbnailUrl = createThumbnail(postUpdateDto.getImageFiles().get(0));
+        String thumbnailUrl = s3Service.uploadThumbnail(postUpdateDto.getImageFiles().get(0));
         // 첨부 이미지 저장
         createPhoto(postUpdateDto.getImageFiles(), post);
         post.update(postUpdateDto.getTitle(), postUpdateDto.getContent(), thumbnailUrl);
@@ -212,18 +211,6 @@ public class PostService {
                 .createdDay(post.getDate().getDayOfMonth())
                 .date(post.getDate())
                 .build();
-    }
-
-    private String createThumbnail(MultipartFile multipartFile) {
-        // 썸네일 업로드 및 맵핑
-        String thumbnailUrl;
-        try {
-            thumbnailUrl = s3Service.uploadThumbnail(multipartFile);
-        } catch (IOException e) {
-            throw new RuntimeException("썸네일 업로드 실패");
-        }
-
-        return thumbnailUrl;
     }
 
     private void createPhoto(List<MultipartFile> imageFiles, Post post) {

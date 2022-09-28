@@ -2,6 +2,7 @@ package com.shoesbox.global.exception;
 
 import com.shoesbox.domain.friend.exception.DuplicateFriendRequestException;
 import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
+import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.exception.apierror.ApiError;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
@@ -9,6 +10,9 @@ import com.shoesbox.global.exception.runtime.InvalidJwtException;
 import com.shoesbox.global.exception.runtime.RefreshTokenNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
+import org.apache.tomcat.util.http.fileupload.impl.SizeException;
+import org.apache.tomcat.util.http.fileupload.impl.SizeLimitExceededException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -224,11 +228,29 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                     DuplicateUserInfoException.class,
                     BadCredentialsException.class,
                     ConstraintViolationException.class,
-                    DuplicateFriendRequestException.class})
+                    DuplicateFriendRequestException.class,
+                    ImageUploadFailureException.class})
     protected ResponseEntity<Object> handleBadRequest(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(BAD_REQUEST)
                 .message(ex.getMessage())
+                .ex(ex)
+                .build());
+    }
+
+    /**
+     * 파일 업로드 용량 제한 관련 예외
+     *
+     * @param ex the Exception
+     * @return the ApiError object
+     */
+    @ExceptionHandler({
+            FileSizeLimitExceededException.class,
+            SizeLimitExceededException.class})
+    protected ResponseEntity<Object> handleBadRequest(SizeException ex) {
+        return buildResponseEntity(ApiError.builder()
+                .status(BAD_REQUEST)
+                .message("파일 업로드 용량 제한 초과: 파일은 개당 10MB, 최대 50MB까지만 업로드 가능합니다.")
                 .ex(ex)
                 .build());
     }
