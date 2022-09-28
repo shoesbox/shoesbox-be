@@ -50,7 +50,7 @@ public class CommentService {
                 .build();
         commentRepository.save(comment);
 
-        notifyAddCommentEvent(postId, currentMemberId, comment, currentMember.getNickname());
+        notifyAddCommentEvent(post, currentMemberId, currentMember.getNickname());
         return toCommentResponseDto(comment);
     }
 
@@ -120,18 +120,13 @@ public class CommentService {
                 FriendState.FRIEND);
     }
 
-    public void notifyAddCommentEvent(long postId, long senderMemberId, Comment comment, String senderNickName) {
+    public void notifyAddCommentEvent(Post post, long senderMemberId, String senderNickName) {
 
-        // 댓글에 대한 처리 후 해당 댓글이 달린 게시글의 pk값으로 게시글을 조회
-        Post post = postRepository.findById(postId).orElseThrow(
-                () -> new IllegalArgumentException("알림을 보낼 게시물을 찾을 수 없습니다.")
-        );
-
+        long postId = post.getId();
         long receiverMemberId = post.getMemberId();
-        // 알람에 저장할 날짜 객체 생성
-        String createDate = post.getCreatedAt();
-        int month = Integer.parseInt(createDate.substring(createDate.indexOf('년') + 2, createDate.indexOf('월')));
-        int day = Integer.parseInt(createDate.substring(createDate.indexOf('월') + 2, createDate.indexOf('일')));
+        // 알람에 저장할 날짜 객체 생성 (일기 작성일)
+        int month = post.getDate().getMonthValue();
+        int day = post.getDate().getDayOfMonth();
 
         // 로그인 한 사용자에게 알림 발송
         if (sseEmitters.containsKey(receiverMemberId) && senderMemberId != receiverMemberId) {

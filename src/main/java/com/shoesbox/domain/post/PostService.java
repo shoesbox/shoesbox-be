@@ -333,9 +333,8 @@ public class PostService {
         friends.addAll(fromFriends);
 
         // 알람에 저장할 날짜 객체 생성
-        String createDate = post.getCreatedAt();
-        int month = Integer.parseInt(createDate.substring(createDate.indexOf('년') + 2, createDate.indexOf('월')));
-        int day = Integer.parseInt(createDate.substring(createDate.indexOf('월') + 2, createDate.indexOf('일')));
+        int month = post.getDate().getMonthValue();
+        int day = post.getDate().getDayOfMonth();
         long postId = post.getId();
 
         for (Friend friend : friends) {
