@@ -25,7 +25,6 @@ public class PostController {
 
         guestService.guestCheck(currentMemberId);
 
-        return ResponseHandler.ok(postService.createPost(currentMemberId, postRequestDto));
         String currentMemberNickName = SecurityUtil.getCurrentMemberNickname();
         return ResponseHandler.ok(postService.createPost(currentMemberId, currentMemberNickName, postRequestDto));
     }
