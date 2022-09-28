@@ -20,7 +20,8 @@ public class PostController {
     @PostMapping
     public ResponseEntity<Object> createPost(PostRequestDto postRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-        return ResponseHandler.ok(postService.createPost(currentMemberId, postRequestDto));
+        String currentMemberNickName = SecurityUtil.getCurrentMemberNickname();
+        return ResponseHandler.ok(postService.createPost(currentMemberId, currentMemberNickName, postRequestDto));
     }
 
     // 전체 조회

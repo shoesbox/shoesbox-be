@@ -13,6 +13,7 @@ import com.shoesbox.domain.post.dto.PostResponseListDto;
 import com.shoesbox.domain.post.dto.PostUpdateDto;
 import com.shoesbox.domain.sse.Alarm;
 import com.shoesbox.domain.sse.AlarmRepository;
+import com.shoesbox.domain.sse.MessageDto;
 import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
@@ -46,7 +47,7 @@ public class PostService {
 
     // 글 작성
     @Transactional
-    public long createPost(long memberId, PostRequestDto postRequestDto) {
+    public long createPost(long memberId, String nickName, PostRequestDto postRequestDto) {
         // 날짜 검사
         LocalDate targetDate = validatePostRequest(memberId, postRequestDto);
         String thumbnailUrl;
@@ -78,7 +79,7 @@ public class PostService {
         }
 
         // 모든 친구에 알림 생성 및 발송
-        notifyAddPostEvent(memberId, post);
+        notifyAddPostEvent(memberId, post, nickName);
 
         return post.getId();
     }
@@ -319,16 +320,16 @@ public class PostService {
                         currentMemberId, targetId, FriendState.FRIEND);
     }
 
-    public void notifyAddPostEvent(long myMemberId, Post post) {
+    public void notifyAddPostEvent(long senderMemberId, Post post, String senderNickName) {
 
         List<Friend> friends = new ArrayList<>();
 
         // 친구 요청을 한 리스트
-        List<Friend> toFriends = friendRepository.findAllByToMemberIdAndFriendState(myMemberId, FriendState.FRIEND);
+        List<Friend> toFriends = friendRepository.findAllByToMemberIdAndFriendState(senderMemberId, FriendState.FRIEND);
         friends.addAll(toFriends);
 
         // 친구 요청을 받은 리스트
-        List<Friend> fromFriends = friendRepository.findAllByFromMemberIdAndFriendState(myMemberId, FriendState.FRIEND);
+        List<Friend> fromFriends = friendRepository.findAllByFromMemberIdAndFriendState(senderMemberId, FriendState.FRIEND);
         friends.addAll(fromFriends);
 
         // 알람에 저장할 날짜 객체 생성
@@ -338,24 +339,25 @@ public class PostService {
         long postId = post.getId();
 
         for (Friend friend : friends) {
-            long friendId = friend.getId();
-            if (sseEmitters.containsKey(friendId)) {
-                SseEmitter sseEmitter = sseEmitters.get(friendId);
+            long receiverMemberId = friend.getId();
+            if (sseEmitters.containsKey(receiverMemberId)) {
+                MessageDto messgeDto = MessageDto.builder().msgType("Post").senderNickName(senderNickName).postId(postId).month(month).day(day).build();
+                SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
                 try {
-                    sseEmitter.send(SseEmitter.event().name("addPost").data(myMemberId + "," + "\n\n"), MediaType.APPLICATION_JSON);
+                    sseEmitter.send(SseEmitter.event().name("addPost").data(messgeDto), MediaType.APPLICATION_JSON);
                 } catch (Exception e) {
-                    sseEmitters.remove(friendId);
+                    sseEmitters.remove(receiverMemberId);
                 }
             } // todo : 접속 중이 아닌 유저의 경우 db에 저장 후 차후 알림
 
             long friendMemberId;
-            if (friend.getToMember().getId() == myMemberId) {
+            if (friend.getToMember().getId() == senderMemberId) {
                 friendMemberId = friend.getFromMember().getId();
             } else {
                 friendMemberId = friend.getToMember().getId();
             }
             // 알림 내용 db에 저장
-            saveAlarm(myMemberId, friendMemberId, postId, month, day);
+            saveAlarm(senderMemberId, friendMemberId, postId, month, day);
         }
     }
 

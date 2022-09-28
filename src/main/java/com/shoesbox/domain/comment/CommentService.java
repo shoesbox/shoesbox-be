@@ -10,6 +10,7 @@ import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
 import com.shoesbox.domain.sse.Alarm;
 import com.shoesbox.domain.sse.AlarmRepository;
+import com.shoesbox.domain.sse.MessageDto;
 import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
@@ -49,7 +50,7 @@ public class CommentService {
                 .build();
         commentRepository.save(comment);
 
-        notifyAddCommentEvent(postId, currentMemberId, comment);
+        notifyAddCommentEvent(postId, currentMemberId, comment, currentMember.getNickname());
         return toCommentResponseDto(comment);
     }
 
@@ -119,32 +120,32 @@ public class CommentService {
                 FriendState.FRIEND);
     }
 
-    public void notifyAddCommentEvent(long postId, long currentId, Comment comment) {
+    public void notifyAddCommentEvent(long postId, long senderMemberId, Comment comment, String senderNickName) {
 
         // 댓글에 대한 처리 후 해당 댓글이 달린 게시글의 pk값으로 게시글을 조회
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new IllegalArgumentException("알림을 보낼 게시물을 찾을 수 없습니다.")
         );
 
-        long memberId = post.getMemberId();
-
-        // 로그인 한 사용자에게 알림 발송
-        if (sseEmitters.containsKey(memberId) && currentId != memberId) {
-            SseEmitter sseEmitter = sseEmitters.get(memberId);
-            try {
-                sseEmitter.send(SseEmitter.event().name("addComment").data(postId + "\n\n"), MediaType.APPLICATION_JSON);
-            } catch (Exception e) {
-                sseEmitters.remove(memberId);
-            }
-        }
-
+        long receiverMemberId = post.getMemberId();
         // 알람에 저장할 날짜 객체 생성
         String createDate = comment.getCreatedAt();
         int month = Integer.parseInt(createDate.substring(createDate.indexOf('년') + 2, createDate.indexOf('월')));
         int day = Integer.parseInt(createDate.substring(createDate.indexOf('월') + 2, createDate.indexOf('일')));
 
+        // 로그인 한 사용자에게 알림 발송
+        if (sseEmitters.containsKey(receiverMemberId) && senderMemberId != receiverMemberId) {
+            SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
+            MessageDto messageDto = MessageDto.builder().postId(postId).senderNickName(senderNickName).month(month).day(day).msgType("Comment").build();
+            try {
+                sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto), MediaType.APPLICATION_JSON);
+            } catch (Exception e) {
+                sseEmitters.remove(receiverMemberId);
+            }
+        }
+
         // 알림 내용 db에 저장
-        saveAlarm(currentId, memberId, postId, month, day);
+        saveAlarm(senderMemberId, receiverMemberId, postId, month, day);
     }
 
     @Transactional

@@ -93,7 +93,7 @@ public class SseController {
     @RequestMapping(value = "/api/sub/test2")
     public void TestSSE() {
 
-        MessageDto a = MessageDto.builder().senderNickName("sponGbob").postId(1).month("9").day("1").msgType("post").build();
+        MessageDto a = MessageDto.builder().senderNickName("sponGbob").postId(1).month(9).day(1).msgType("post").build();
 
         for (SseEmitter emitter : sseEmitters.values()) {
             try {

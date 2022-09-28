@@ -11,6 +11,6 @@ public class MessageDto {
     String msgType;
     String senderNickName;
     long postId;
-    String month;
-    String day;
+    int month;
+    int day;
 }
