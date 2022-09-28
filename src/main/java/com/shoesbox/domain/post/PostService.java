@@ -32,6 +32,7 @@ import java.time.temporal.TemporalField;
 import java.time.temporal.WeekFields;
 import java.util.*;
 
+import static com.shoesbox.domain.sse.SseController.cachedThreadPool;
 import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
 @Slf4j
@@ -344,13 +345,18 @@ public class PostService {
             if (sseEmitters.containsKey(receiverMemberId)) {
                 MessageDto messgeDto = MessageDto.builder().msgType("Post").senderNickName(senderNickName).postId(postId).month(month).day(day).build();
                 SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
-                try {
-                    sseEmitter.send(SseEmitter.event().name("addPost").data(messgeDto, MediaType.APPLICATION_JSON));
-                } catch (Exception e) {
-                    log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> There are some ERROR");
-                    sseEmitters.remove(receiverMemberId);
-                }
-            } // todo : 접속 중이 아닌 유저의 경우 db에 저장 후 차후 알림
+
+                cachedThreadPool.execute(() -> {
+                    try {
+                        sseEmitter.send(SseEmitter.event().name("addPost").data(messgeDto, MediaType.APPLICATION_JSON));
+                        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
+
+                    } catch (Exception e) {
+                        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> There are some ERROR");
+                        sseEmitter.completeWithError(e);
+                    }
+                });
+            }
 
             long friendMemberId;
             if (friend.getToMember().getId() == senderMemberId) {

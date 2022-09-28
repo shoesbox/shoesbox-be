@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
@@ -27,15 +28,37 @@ public class SseController {
 
     // 사용자 식별 - member의 pk값을 파싱
     public static Map<Long, SseEmitter> sseEmitters = new ConcurrentHashMap<>();
-    private static final long SSE_SESSION_TIMEOUT = 30 * 60 * 1000L;
+    private static final Long SSE_SESSION_TIMEOUT = 3600 * 1000L;
     private final MemberRepository memberRepository;
+
+    //    private final EmitterRepository emitterRepository;
+    public static final ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
+
 
     @CrossOrigin
     @RequestMapping(value = "/api/sub", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseBodyEmitter subscribe(
             @RequestParam(value = "id", defaultValue = "0", required = false) long memberId,
+            @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId,
             HttpServletResponse response) {
 
+//        //1
+//        String id = String.valueOf(memberId + '_' + System.currentTimeMillis());
+//
+//        //2
+//        SseEmitter emitter = emitterRepository.save(id, new SseEmitter(SSE_SESSION_TIMEOUT));
+//
+//        //3
+//        sendToClient(emitter, id, "EventStream Created. [userId=" + memberId + "]");
+//
+//        // 4
+//        // 클라이언트가 미수신한 Event 목록이 존재할 경우 전송하여 Event 유실을 예방
+//        if (!lastEventId.isEmpty()) {
+//            Map<String, Object> events = emitterRepository.findAllEventCacheStartWithId(String.valueOf(userId));
+//            events.entrySet().stream()
+//                    .filter(entry -> lastEventId.compareTo(entry.getKey()) < 0)
+//                    .forEach(entry -> sendToClient(emitter, entry.getKey(), entry.getValue()));
+//        }
 
         response.setContentType("text/event-stream");
         response.setCharacterEncoding("UTF-8");
@@ -74,8 +97,7 @@ public class SseController {
 
         // 로그인한 유저가 새롭게 로그인한 경우 업데이트
         if (sseEmitters.containsKey(memberId)) {
-            sseEmitters.get(memberId).completeWithError(new IllegalArgumentException("중복된 소켓 혹은 다른 기기에서 접속이 되었습니다."));
-            sseEmitters.remove(memberId);
+            return sseEmitters.get(memberId);
         }
         // user의 memberId를 key값으로 해서 SseEmitter를 저장
         sseEmitters.put(memberId, sseEmitter);
@@ -111,10 +133,21 @@ public class SseController {
         for (SseEmitter emitter : sseEmitters.values()) {
             try {
                 // JSON 형식으로 전송하기
-                emitter.send(SseEmitter.event().name("message").data(a, MediaType.APPLICATION_JSON));
+                emitter.send(SseEmitter.event().name("message").data(a.toString()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
+
+//    private void sendToClient(SseEmitter emitter, String id, Object data) {
+//        try {
+//            emitter.send(SseEmitter.event()
+//                    .id(id)
+//                    .name("sse")
+//                    .data(data));
+//        } catch (IOException exception) {
+//            emitterRepository.deleteById(id);
+//            throw new RuntimeException("연결 오류!");
+//        }
 }

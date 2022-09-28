@@ -15,6 +15,7 @@ import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +24,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.shoesbox.domain.sse.SseController.cachedThreadPool;
 import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
-
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class CommentService {
@@ -132,15 +134,23 @@ public class CommentService {
         if (sseEmitters.containsKey(receiverMemberId) && senderMemberId != receiverMemberId) {
             SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
             MessageDto messageDto = MessageDto.builder().postId(postId).senderNickName(senderNickName).month(month).day(day).msgType("Comment").build();
-            try {
-                sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
-            } catch (Exception e) {
-                sseEmitters.remove(receiverMemberId);
-            }
+            cachedThreadPool.execute(() -> {
+                try {
+                    sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+                    log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> There are some ERROR");
+                    sseEmitter.completeWithError(e);
+                }
+            });
+
+
         }
 
         // 알림 내용 db에 저장
-        saveAlarm(senderMemberId, receiverMemberId, postId, month, day);
+
+        if (senderMemberId != receiverMemberId) {
+            saveAlarm(senderMemberId, receiverMemberId, postId, month, day);
+        }
     }
 
     @Transactional
