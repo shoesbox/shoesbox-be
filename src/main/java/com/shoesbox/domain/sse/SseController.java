@@ -3,11 +3,11 @@ package com.shoesbox.domain.sse;
 
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
-import com.shoesbox.global.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
@@ -30,46 +30,54 @@ public class SseController {
     private static final long SSE_SESSION_TIMEOUT = 30 * 60 * 1000L;
     private final MemberRepository memberRepository;
 
+    @CrossOrigin
     @RequestMapping(value = "/api/sub", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseBodyEmitter subscribe(
             @RequestParam(value = "id", defaultValue = "0", required = false) long memberId,
             HttpServletResponse response) {
 
 
-        long myMemberId = SecurityUtil.getCurrentMemberId();
+        response.setContentType("text/event-stream");
+        response.setCharacterEncoding("UTF-8");
 
-        if (myMemberId == memberId) {
-            response.setContentType("text/event-stream");
-            response.setCharacterEncoding("UTF-8");
-            // memberId 검증
-            Member member = memberRepository.findById(memberId).orElseThrow(
-                    () -> new IllegalArgumentException("Member Not Found Error in Notification Controller")
-            );
-            // 현재 클라이언트를 위한 SseEmitter 생성
-            SseEmitter sseEmitter = new SseEmitter(SSE_SESSION_TIMEOUT);
-            ExecutorService service = Executors.newSingleThreadExecutor();
+        // memberId 검증
+        Member member = memberRepository.findById(memberId).orElseThrow(
+                () -> new IllegalArgumentException("Member Not Found Error in Notification Controller")
+        );
+        // 현재 클라이언트를 위한 SseEmitter 생성
+        SseEmitter sseEmitter = new SseEmitter(SSE_SESSION_TIMEOUT);
+        ExecutorService service = Executors.newSingleThreadExecutor();
 
-            service.execute(() -> {
-                try {
-                    // 연결
-                    sseEmitter.send(SseEmitter.event().name("connect").data(memberId + "has connected\n\n"));
-                    log.info(">>>>>>>>>>>>>>>>> [Connection Established] memberId : " + memberId + " has connected.");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    sseEmitter.completeWithError(e);
-                    return;
-                }
-            });
-            // user의 memberId를 key값으로 해서 SseEmitter를 저장
-            sseEmitters.put(memberId, sseEmitter);
-            sseEmitter.onCompletion(() -> sseEmitters.remove(memberId));
-            sseEmitter.onTimeout(() -> sseEmitters.remove(memberId));
-            sseEmitter.onError((e) -> sseEmitters.remove(memberId));
+        // 멤버 검증
+        //        long myMemberId = SecurityUtil.getCurrentMemberId();
+//        if (myMemberId != memberId) {
+//            try {
+//                // 503 error를 방지하기 위한 더미 데이터
+//                sseEmitter.send(SseEmitter.event().name("error").data("멤버 아이디가 일치하지 않습니다.\n\n"));
+//            } catch (IOException e) {
+//                sseEmitter.completeWithError(e);
+//                throw new IllegalArgumentException(e);
+//            }
+//            return sseEmitter;
+//        }
+
+        service.execute(() -> {
+            try {
+                // 연결 -
+                sseEmitter.send(SseEmitter.event().name("connect").data(memberId + "has connected\n\n"));
+                log.info(">>>>>>>>>>>>>>>>> [Connection Established] memberId : " + memberId + " has connected.");
+            } catch (IOException e) {
+                e.printStackTrace();
+                sseEmitter.completeWithError(e);
+            }
+        });
+        // user의 memberId를 key값으로 해서 SseEmitter를 저장
+        sseEmitters.put(memberId, sseEmitter);
+        sseEmitter.onCompletion(() -> sseEmitters.remove(memberId));
+        sseEmitter.onTimeout(() -> sseEmitters.remove(memberId));
+        sseEmitter.onError((e) -> sseEmitters.remove(memberId));
 //        sseEmitter.complete() -> 반드시 return값을 void로 처리할 것 complete 후 함수가 끝남;
-            return sseEmitter;
-        } else {
-            return null;
-        }
+        return sseEmitter;
     }
 
     @RequestMapping(value = "/api/sub/test", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -86,7 +94,6 @@ public class SseController {
                 e.printStackTrace();
             }
         }
-
         // 댓글 알림 서비스 테스트
     }
 

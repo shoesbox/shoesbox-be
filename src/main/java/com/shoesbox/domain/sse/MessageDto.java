@@ -2,9 +2,7 @@ package com.shoesbox.domain.sse;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.extern.jackson.Jacksonized;
 
-@Jacksonized
 @Builder
 @Getter
 public class MessageDto {
@@ -13,4 +11,5 @@ public class MessageDto {
     long postId;
     int month;
     int day;
+
 }

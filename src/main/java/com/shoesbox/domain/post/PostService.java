@@ -339,12 +339,12 @@ public class PostService {
         long postId = post.getId();
 
         for (Friend friend : friends) {
-            long receiverMemberId = friend.getId();
+            long receiverMemberId = friend.getToMember().getId();
             if (sseEmitters.containsKey(receiverMemberId)) {
                 MessageDto messgeDto = MessageDto.builder().msgType("Post").senderNickName(senderNickName).postId(postId).month(month).day(day).build();
                 SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
                 try {
-                    sseEmitter.send(SseEmitter.event().name("addPost").data(messgeDto), MediaType.APPLICATION_JSON);
+                    sseEmitter.send(SseEmitter.event().name("addPost").data(messgeDto, MediaType.APPLICATION_JSON));
                 } catch (Exception e) {
                     sseEmitters.remove(receiverMemberId);
                 }

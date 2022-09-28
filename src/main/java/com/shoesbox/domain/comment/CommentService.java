@@ -129,7 +129,7 @@ public class CommentService {
 
         long receiverMemberId = post.getMemberId();
         // 알람에 저장할 날짜 객체 생성
-        String createDate = comment.getCreatedAt();
+        String createDate = post.getCreatedAt();
         int month = Integer.parseInt(createDate.substring(createDate.indexOf('년') + 2, createDate.indexOf('월')));
         int day = Integer.parseInt(createDate.substring(createDate.indexOf('월') + 2, createDate.indexOf('일')));
 
@@ -138,7 +138,7 @@ public class CommentService {
             SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
             MessageDto messageDto = MessageDto.builder().postId(postId).senderNickName(senderNickName).month(month).day(day).msgType("Comment").build();
             try {
-                sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto), MediaType.APPLICATION_JSON);
+                sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
             } catch (Exception e) {
                 sseEmitters.remove(receiverMemberId);
             }
