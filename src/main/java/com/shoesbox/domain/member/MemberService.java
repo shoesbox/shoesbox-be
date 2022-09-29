@@ -33,6 +33,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.shoesbox.domain.sse.SseController.sseEmitters;
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -167,6 +169,10 @@ public class MemberService {
 
     @Transactional
     public Boolean logout(String email) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("로그아웃 할 유저를 찾을 수 없습니다."));
+        if (sseEmitters.containsKey(member.getId())) {
+            sseEmitters.remove(member.getId());
+        }
         return redisTemplate.delete("RT:" + email);
     }
 

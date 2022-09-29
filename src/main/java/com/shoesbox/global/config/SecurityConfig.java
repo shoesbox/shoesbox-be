@@ -48,8 +48,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedOrigin("http://localhost:3000");
-        configuration.addAllowedOrigin("http://3.34.130.9");
-        configuration.addAllowedOrigin("http://shoesbox.today/");
         configuration.addAllowedOrigin("https://shoesbox.web.app/");
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "OPTIONS", "DELETE", "PATCH"));

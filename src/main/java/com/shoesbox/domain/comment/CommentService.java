@@ -8,15 +8,27 @@ import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
+import com.shoesbox.domain.sse.Alarm;
+import com.shoesbox.domain.sse.AlarmRepository;
+import com.shoesbox.domain.sse.MessageDto;
+import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.shoesbox.domain.sse.SseController.sseEmitters;
+import static com.shoesbox.domain.sse.SseController.sseExcutor;
+
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class CommentService {
@@ -24,6 +36,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final FriendRepository friendRepository;
+    private final AlarmRepository alarmRepository;
 
     @Transactional
     public CommentResponseDto createComment(String content, long currentMemberId, long postId) {
@@ -32,12 +45,15 @@ public class CommentService {
         Member currentMember = memberRepository.findById(currentMemberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         Member.class.getPackageName()));
+
         Comment comment = Comment.builder()
                 .content(content)
                 .member(currentMember)
                 .post(post)
                 .build();
         commentRepository.save(comment);
+
+        notifyAddCommentEvent(post, currentMemberId, currentMember.getNickname());
         return toCommentResponseDto(comment);
     }
 
@@ -105,5 +121,58 @@ public class CommentService {
                 FriendState.FRIEND)
                 || friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(currentMemberId, targetId,
                 FriendState.FRIEND);
+    }
+
+    public void notifyAddCommentEvent(Post post, long senderMemberId, String senderNickName) {
+
+        long postId = post.getId();
+        long receiverMemberId = post.getMemberId();
+        // 알람에 저장할 날짜 객체 생성 (일기 작성일)
+        int month = post.getDate().getMonthValue();
+        int day = post.getDate().getDayOfMonth();
+
+        // 로그인 한 사용자에게 알림 발송
+        if (sseEmitters.containsKey(receiverMemberId) && senderMemberId != receiverMemberId) {
+            SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
+            MessageDto messageDto = MessageDto.builder()
+                    .postId(postId)
+                    .senderNickName(senderNickName)
+                    .month(month)
+                    .day(day)
+                    .msgType("Comment")
+                    .build();
+            sseExcutor.execute(() -> {
+                try {
+                    sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
+                    Thread.sleep(500);
+                } catch (IOException | InterruptedException e) {
+                    log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> There are some ERROR");
+                    sseEmitter.completeWithError(e);
+                }
+            });
+        }
+        // 알림 내용 db에 저장
+        if (senderMemberId != receiverMemberId) {
+            saveAlarm(senderMemberId, receiverMemberId, postId, month, day);
+        }
+    }
+
+    @Transactional
+    public void saveAlarm(long senderMemberId, long receiverMemberId, long contentId, int month, int day) {
+        String content = contentId + "," + month + "," + day;
+
+        // send: 댓글작성자, receive: 글작성자
+        Member senderMember = Member.builder()
+                .id(senderMemberId)
+                .build();
+
+        Alarm alarm = Alarm.builder()
+                .senderMember(senderMember)
+                .receiverMemberId(receiverMemberId)
+                .content(content)
+                .messageType(MessageType.COMMENT)
+                .build();
+
+        alarmRepository.save(alarm);
     }
 }

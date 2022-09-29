@@ -1,8 +1,10 @@
 package com.shoesbox.domain.post;
 
+import com.shoesbox.domain.friend.Friend;
 import com.shoesbox.domain.friend.FriendRepository;
 import com.shoesbox.domain.friend.FriendState;
 import com.shoesbox.domain.member.Member;
+import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.domain.photo.PhotoRepository;
 import com.shoesbox.domain.photo.S3Service;
@@ -10,28 +12,42 @@ import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
 import com.shoesbox.domain.post.dto.PostResponseListDto;
 import com.shoesbox.domain.post.dto.PostUpdateDto;
+import com.shoesbox.domain.sse.Alarm;
+import com.shoesbox.domain.sse.AlarmRepository;
+import com.shoesbox.domain.sse.MessageDto;
+import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
 import java.time.temporal.WeekFields;
 import java.util.*;
 
+import static com.shoesbox.domain.sse.SseController.sseEmitters;
+import static com.shoesbox.domain.sse.SseController.sseExcutor;
+
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PostService {
     @Value("${default-images.thumbnail}")
     private String DEFAULT_THUMBNAIL_URL;
+    private final MemberRepository memberRepository;
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
+    private final AlarmRepository alarmRepository;
     private final S3Service s3Service;
     private final TemporalField fieldISO = WeekFields.of(Locale.KOREA).dayOfWeek();
 
@@ -49,9 +65,8 @@ public class PostService {
             // 새로운 이미지가 있으면 썸네일 업로드
             thumbnailUrl = s3Service.uploadThumbnail(postRequestDto.getImageFiles().get(0));
         }
-        Member member = Member.builder()
-                .id(memberId)
-                .build();
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
         // 게시글 생성
         Post post = Post.builder()
                 .title(postRequestDto.getTitle())
@@ -67,6 +82,10 @@ public class PostService {
         if (!thumbnailUrl.equals(DEFAULT_THUMBNAIL_URL)) {
             createPhoto(postRequestDto.getImageFiles(), post);
         }
+
+        // 모든 친구에 알림 생성 및 발송
+        notifyAddPostEvent(memberId, post, member.getNickname());
+
         return post.getId();
     }
 
@@ -292,5 +311,75 @@ public class PostService {
                 targetId, currentMemberId, FriendState.FRIEND) ||
                 friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
                         currentMemberId, targetId, FriendState.FRIEND);
+    }
+
+    public void notifyAddPostEvent(long senderMemberId, Post post, String senderNickName) {
+
+        // 친구 요청을 한 리스트
+        List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(senderMemberId, FriendState.FRIEND);
+
+        // 친구 요청을 받은 리스트
+        friends.addAll(friendRepository.findAllByFromMemberIdAndFriendState(senderMemberId, FriendState.FRIEND));
+
+        // 알람에 저장할 날짜 객체 생성
+        int month = post.getDate().getMonthValue();
+        int day = post.getDate().getDayOfMonth();
+        long postId = post.getId();
+
+        for (Friend friend : friends) {
+            long receiverMemberId = friend.getToMember().getId();
+            if (sseEmitters.containsKey(receiverMemberId) && receiverMemberId != senderMemberId) {
+                MessageDto messgeDto = MessageDto.builder()
+                        .msgType("Post")
+                        .senderNickName(senderNickName)
+                        .postId(postId)
+                        .month(month)
+                        .day(day)
+                        .build();
+                SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
+
+                sseExcutor.execute(() -> {
+                    try {
+                        sseEmitter.send(
+                                SseEmitter.event()
+                                        .name("addPost")
+                                        .data(messgeDto, MediaType.APPLICATION_JSON));
+                        log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
+                        Thread.sleep(500);
+                    } catch (IOException | InterruptedException e) {
+                        log.info(">>>>>>>>>>>>>> There are some ERROR");
+                        sseEmitter.completeWithError(e);
+                    }
+                });
+            }
+
+            long friendMemberId;
+            if (friend.getToMember().getId() == senderMemberId) {
+                friendMemberId = friend.getFromMember().getId();
+            } else {
+                friendMemberId = friend.getToMember().getId();
+            }
+            // 알림 내용 db에 저장
+            saveAlarm(senderMemberId, friendMemberId, postId, month, day);
+        }
+    }
+
+    @Transactional
+    public void saveAlarm(long senderMemberId, long receiverMemberId, long contentId, int month, int day) {
+        String content = contentId + "," + month + "," + day;
+
+        // send: 댓글작성자, receive: 글작성자
+        Member senderMember = Member.builder()
+                .id(senderMemberId)
+                .build();
+
+        Alarm alarm = Alarm.builder()
+                .senderMember(senderMember)
+                .receiverMemberId(receiverMemberId)
+                .content(content)
+                .messageType(MessageType.POST)
+                .build();
+
+        alarmRepository.save(alarm);
     }
 }
