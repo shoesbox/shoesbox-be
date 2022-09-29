@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.luciad.imageio.webp.WebPWriteParam;
 import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
+import io.jsonwebtoken.lang.Assert;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -101,25 +102,28 @@ public class S3Service {
         checkExtension(fileName);
         // 확장자 추출
         String fileExtension = fileName.substring(fileName.lastIndexOf("."));
-        // 랜덤 파일명
-        String randomFilename = "s_" + UUID.randomUUID();
-        // 리사이즈용 파일 생성
-        File originalThumbnail = new File(TMP_DIR + randomFilename + fileExtension);
-
         try {
+            // 리사이즈용 임시 파일 생성
+            File originalThumbnail = File.createTempFile(
+                    "s_" + UUID.randomUUID(),
+                    fileExtension,
+                    new File((System.getProperty("user.dir") + "/tmp/")));
             // Thumbnailator로 리사이징
             Thumbnails.of(file.getInputStream())
                     .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
                     .toFile(originalThumbnail);
             // WebP로 변환
-            File encodedThumbnail = ConvertToWebp(new FileInputStream(originalThumbnail));
+            var originalInputStream = new FileInputStream(originalThumbnail);
+            File encodedThumbnail = ConvertToWebp(originalInputStream);
+            // 임시 파일 삭제
+            originalInputStream.close();
+            Assert.isTrue(originalThumbnail.delete(), "임시 파일이 삭제되지 않음!");
             // 이미지 업로드
             uploadImageToS3(encodedThumbnail);
         } catch (java.io.IOException e) {
             throw new ImageUploadFailureException(e.getMessage(), e);
         }
 
-        originalThumbnail.delete();
         return s3Client.getUrl(bucket, fileName).toString();    ///url string 리턴
     }
 
@@ -128,7 +132,7 @@ public class S3Service {
         BufferedImage originalImage = ImageIO.read(originalInputStream);
 
         // 인코딩할 빈 파일
-        File createdImage = new File(TMP_DIR + UUID.randomUUID() + ".webp");
+        File createdImage = new File(System.getProperty("user.dir") + "/tmp/" + UUID.randomUUID() + ".webp");
 
         // WebP ImageWriter 인스턴스 생성
         ImageWriter writer = ImageIO.getImageWritersByMIMEType("image/webp").next();
@@ -138,11 +142,15 @@ public class S3Service {
         writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
         writeParam.setCompressionType(writeParam.getCompressionTypes()[WebPWriteParam.LOSSY_COMPRESSION]);
         writeParam.setCompressionQuality(1f);
+
         // ImageWriter 반환값(빈 파일) 설정
-        writer.setOutput(new FileImageOutputStream(createdImage));
+        var createdOutputStream = new FileImageOutputStream(createdImage);
+        writer.setOutput(createdOutputStream);
 
         // 인코딩
         writer.write(null, new IIOImage(originalImage, null, null), writeParam);
+        createdOutputStream.close();
+        originalInputStream.close();
         return createdImage;
     }
 
@@ -164,7 +172,8 @@ public class S3Service {
         InputStream inputStream = new FileInputStream(imageFile);
         s3Client.putObject(new PutObjectRequest(bucket, imageFile.getName(), inputStream, objMeta)
                 .withCannedAcl(CannedAccessControlList.PublicRead));
+        inputStream.close();
         // 임시 파일 삭제
-        imageFile.delete();
+        Assert.isTrue(imageFile.delete(), "임시 파일이 삭제되지 않음!");
     }
 }
