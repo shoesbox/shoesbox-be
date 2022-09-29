@@ -77,7 +77,7 @@ public class Member extends BaseTimeEntity {
     @Builder.Default
     private List<Photo> photos = new ArrayList<>();
 
-    // 알람
+    // 알림
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "senderMember",
             cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

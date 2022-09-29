@@ -11,5 +11,4 @@ public class MessageDto {
     long postId;
     int month;
     int day;
-
 }

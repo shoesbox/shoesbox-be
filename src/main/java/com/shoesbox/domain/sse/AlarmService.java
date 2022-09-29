@@ -1,14 +1,15 @@
 package com.shoesbox.domain.sse;
 
 import com.shoesbox.domain.sse.dto.AlarmResponseDto;
+import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -18,20 +19,16 @@ public class AlarmService {
 
     @Transactional(readOnly = true)
     public List<AlarmResponseDto> getAlarmList(long currentMemberId) {
-        List<Alarm> alarms = alarmRepository.findAllByReceiverMemberId(currentMemberId);
-        List<AlarmResponseDto> alarmList = new ArrayList<>();
-        for (Alarm alarm : alarms) {
-            alarmList.add(toAlarmResponseDto(alarm));
-        }
-
-        return alarmList;
+        return alarmRepository.findAllByReceiverMemberId(currentMemberId)
+                .stream()
+                .map(this::toAlarmResponseDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public String deleteAlarm(long currentMemberId, long alarmId) {
         Alarm alarm = getAlarm(alarmId);
         checkSelfAuthorization(currentMemberId, alarm.getReceiverMemberId());
-
         alarmRepository.delete(alarm);
         return "댓글 삭제 성공";
     }
@@ -39,7 +36,6 @@ public class AlarmService {
     @Transactional
     public String deleteAllAlarm(long currentMemberId) {
         List<Alarm> alarms = alarmRepository.findAllByReceiverMemberId(currentMemberId);
-
         for (Alarm alarm : alarms) {
             checkSelfAuthorization(currentMemberId, alarm.getReceiverMemberId());
             alarmRepository.delete(alarm);
@@ -62,18 +58,16 @@ public class AlarmService {
                 .build();
     }
 
-
     private Alarm getAlarm(long alarmId) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> GET Alarm");
+        log.info(">>>>>>>>>>>>>> GET Alarm");
         return alarmRepository.findById(alarmId).orElseThrow(
-                () -> new IllegalArgumentException("해당 알람을 찾을 수 없습니다."));
+                () -> new EntityNotFoundException(Alarm.class.getPackageName()));
     }
 
     private void checkSelfAuthorization(long currentMemberId, long targetId) {
-        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Check Authorization ");
+        log.info(">>>>>>>>>>>>>> Check Authorization ");
         if (currentMemberId != targetId) {
             throw new UnAuthorizedException("접근 권한이 없습니다.");
         }
     }
-
 }

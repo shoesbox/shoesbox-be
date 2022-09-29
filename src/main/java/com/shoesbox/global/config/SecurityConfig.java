@@ -48,7 +48,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedOrigin("http://localhost:3000");
-        configuration.addAllowedOrigin("http://shoesbox.today/");
         configuration.addAllowedOrigin("https://shoesbox.web.app/");
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "OPTIONS", "DELETE", "PATCH"));
@@ -89,8 +88,6 @@ public class SecurityConfig {
                 .antMatchers("/api/members/auth/**").permitAll()
                 .antMatchers("/login").permitAll()
                 .antMatchers("/oauth2/authorization/**").permitAll()
-                .antMatchers("/api/sub/**").permitAll()
-                .antMatchers("/api/alarm/**").permitAll()
 
                 // 나머지는 전부 인증 필요
                 .anyRequest().authenticated()

@@ -18,7 +18,6 @@ public class AlarmController {
     public ResponseEntity<Object> getAlarmList() {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         guestService.guestCheck(currentMemberId);
-
         return ResponseHandler.ok(alarmService.getAlarmList(currentMemberId));
     }
 
@@ -26,7 +25,6 @@ public class AlarmController {
     public ResponseEntity<Object> deleteAlarm(@PathVariable long alarmId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         guestService.guestCheck(currentMemberId);
-
         return ResponseHandler.ok(alarmService.deleteAlarm(currentMemberId, alarmId));
     }
 
@@ -34,7 +32,6 @@ public class AlarmController {
     public ResponseEntity<Object> deleteAllAlarm() {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         guestService.guestCheck(currentMemberId);
-
         return ResponseHandler.ok(alarmService.deleteAllAlarm(currentMemberId));
     }
 }

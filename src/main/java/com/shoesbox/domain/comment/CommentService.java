@@ -21,11 +21,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.shoesbox.domain.sse.SseController.cachedThreadPool;
 import static com.shoesbox.domain.sse.SseController.sseEmitters;
+import static com.shoesbox.domain.sse.SseController.sseExcutor;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -133,21 +134,24 @@ public class CommentService {
         // 로그인 한 사용자에게 알림 발송
         if (sseEmitters.containsKey(receiverMemberId) && senderMemberId != receiverMemberId) {
             SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
-            MessageDto messageDto = MessageDto.builder().postId(postId).senderNickName(senderNickName).month(month).day(day).msgType("Comment").build();
-            cachedThreadPool.execute(() -> {
+            MessageDto messageDto = MessageDto.builder()
+                    .postId(postId)
+                    .senderNickName(senderNickName)
+                    .month(month)
+                    .day(day)
+                    .msgType("Comment")
+                    .build();
+            sseExcutor.execute(() -> {
                 try {
                     sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
-                } catch (Exception e) {
+                    Thread.sleep(500);
+                } catch (IOException | InterruptedException e) {
                     log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> There are some ERROR");
                     sseEmitter.completeWithError(e);
                 }
             });
-
-
         }
-
         // 알림 내용 db에 저장
-
         if (senderMemberId != receiverMemberId) {
             saveAlarm(senderMemberId, receiverMemberId, postId, month, day);
         }
