@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 
 @RequestMapping("/api/comments")
@@ -25,11 +26,14 @@ public class CommentController {
 
     @PostMapping("/{postId}")
     public ResponseEntity<Object> createComment(
-            @PathVariable long postId, @Valid @RequestBody CommentRequestDto commentRequestDto) {
+            @PathVariable long postId,
+            @Valid @RequestBody CommentRequestDto commentRequestDto,
+            HttpServletResponse response) {
+        response.setContentType("text/event-stream");
+        response.setCharacterEncoding("UTF-8");
+
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
-
         return ResponseHandler.ok(commentService.createComment(
                 commentRequestDto.getContent(), currentMemberId, postId));
     }

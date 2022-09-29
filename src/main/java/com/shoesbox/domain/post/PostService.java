@@ -35,7 +35,6 @@ import java.time.temporal.WeekFields;
 import java.util.*;
 
 import static com.shoesbox.domain.sse.SseController.sseEmitters;
-import static com.shoesbox.domain.sse.SseController.sseExcutor;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -314,7 +313,6 @@ public class PostService {
     }
 
     public void notifyAddPostEvent(long senderMemberId, Post post, String senderNickName) {
-
         // 친구 요청을 한 리스트
         List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(senderMemberId, FriendState.FRIEND);
 
@@ -338,19 +336,30 @@ public class PostService {
                         .build();
                 SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
 
-                sseExcutor.execute(() -> {
-                    try {
-                        sseEmitter.send(
-                                SseEmitter.event()
-                                        .name("addPost")
-                                        .data(messgeDto, MediaType.APPLICATION_JSON));
-                        log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
-                        Thread.sleep(500);
-                    } catch (IOException | InterruptedException e) {
-                        log.info(">>>>>>>>>>>>>> There are some ERROR");
-                        sseEmitter.completeWithError(e);
-                    }
-                });
+//                sseExecutor.execute(() -> {
+//                    try {
+//                        sseEmitter.send(
+//                                SseEmitter.event()
+//                                        .name("addPost")
+//                                        .data(messgeDto, MediaType.APPLICATION_JSON));
+//                        log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
+//                        Thread.sleep(100);
+//                    } catch (IOException | InterruptedException e) {
+//                        log.error(e.getLocalizedMessage());
+//                        sseEmitter.completeWithError(e);
+//                    }
+//                });
+                try {
+                    sseEmitter.send(
+                            SseEmitter.event()
+                                    .name("addPost")
+                                    .data(messgeDto, MediaType.APPLICATION_JSON));
+                    log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
+                    Thread.sleep(100);
+                } catch (IOException | InterruptedException e) {
+                    log.error(e.getLocalizedMessage());
+                    sseEmitter.completeWithError(e);
+                }
             }
 
             long friendMemberId;

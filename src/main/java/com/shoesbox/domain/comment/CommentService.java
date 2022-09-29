@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.shoesbox.domain.sse.SseController.sseEmitters;
-import static com.shoesbox.domain.sse.SseController.sseExcutor;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -141,15 +140,22 @@ public class CommentService {
                     .day(day)
                     .msgType("Comment")
                     .build();
-            sseExcutor.execute(() -> {
-                try {
-                    sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
-                    Thread.sleep(500);
-                } catch (IOException | InterruptedException e) {
-                    log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> There are some ERROR");
-                    sseEmitter.completeWithError(e);
-                }
-            });
+//            sseExecutor.execute(() -> {
+//                try {
+//                    sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
+//                    Thread.sleep(100);
+//                } catch (IOException | InterruptedException e) {
+//                    log.error(e.getLocalizedMessage());
+//                    sseEmitter.completeWithError(e);
+//                }
+//            });
+            try {
+                sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
+                Thread.sleep(100);
+            } catch (IOException | InterruptedException e) {
+                log.error(e.getLocalizedMessage());
+                sseEmitter.completeWithError(e);
+            }
         }
         // 알림 내용 db에 저장
         if (senderMemberId != receiverMemberId) {
