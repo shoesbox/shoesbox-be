@@ -92,8 +92,6 @@ public class SecurityConfig {
                 .antMatchers("/api/sub/**").permitAll()
                 .antMatchers("/api/alarm/**").permitAll()
 
-                // .antMatchers(HttpMethod.GET, "/api/posts/**", "/api/comments/**").permitAll()
-                // .antMatchers(HttpMethod.POST, "/api/posts/**").hasAnyAuthority("ROLE_USER")
                 // 나머지는 전부 인증 필요
                 .anyRequest().authenticated()
 

@@ -12,7 +12,6 @@ import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,26 +22,26 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 @Service
 public class GuestService {
-
-    @Value("guest")
-    private String GUEST_ID;
-    @Value("shoesboxguest.email")
-    private String GUEST_EMAIL;
-
+    private static final String GUEST_ID = "guest";
+    private static final String GUEST_EMAIL = "shoesboxguest.email";
     private final MemberRepository memberRepository;
     private final FriendRepository friendRepository;
     private final PostRepository postRepository;
-
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-
+    @Value("${default-images.thumbnail}")
+    private String DEFAULT_THUMBNAIL_URL;
+    @Value("${default-images.profile}")
+    private String DEFAULT_PROFILE_URL;
 
     @Transactional(readOnly = true)
     public void guestCheck(long currentMemberId) {
-        Member currentMember = memberRepository.findById(currentMemberId).orElseThrow(() -> new EntityNotFoundException(
-                Member.class.getPackageName()));
+        Member currentMember = memberRepository.findById(currentMemberId)
+                .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
         boolean isGuest = currentMember.getEmail().contains(GUEST_ID) && currentMember.getEmail().contains(GUEST_EMAIL);
 
-        if (isGuest) throw new UnAuthorizedException("체험용 계정입니다. 회원가입 후 이용하실 수 있습니다.");
+        if (isGuest) {
+            throw new UnAuthorizedException("체험용 계정입니다. 회원가입 후 이용하실 수 있습니다.");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -60,9 +59,12 @@ public class GuestService {
         Member fromMember = memberRepository.findByEmail(fromMemberEmail).orElse(null);
 
         // 친구계정이 db에 없을 경우 생성
-        if (fromMember == null) makeFriendAccount(fromMemberEmail);
+        if (fromMember == null) {
+            fromMember = makeFriendAccount(fromMemberEmail);
+        }
 
-        Member toMember = memberRepository.findByEmail(toMemberEmail).orElseThrow(() -> new UsernameNotFoundException("게스트 계정을 찾을 수 없습니다"));
+        Member toMember = memberRepository.findByEmail(toMemberEmail)
+                .orElseThrow(() -> new EntityNotFoundException("게스트 계정"));
 
         Friend friend = Friend.builder()
                 .fromMember(fromMember)
@@ -79,7 +81,7 @@ public class GuestService {
                 .email(friendEmail)
                 .password(bCryptPasswordEncoder.encode("1234"))
                 .nickname(friendEmail.split("@")[0])
-                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
+                .profileImageUrl(DEFAULT_PROFILE_URL)
                 .build();
 
         memberRepository.save(friendMember);
@@ -89,7 +91,7 @@ public class GuestService {
                 .title("일기 제목입니다.")
                 .content("일기 내용입니다.")
                 .member(friendMember)
-                .thumbnailUrl("https://i.ibb.co/hXJpCbH/default-thumbnail.png")
+                .thumbnailUrl(DEFAULT_THUMBNAIL_URL)
                 .date(LocalDate.now())
                 .build();
 

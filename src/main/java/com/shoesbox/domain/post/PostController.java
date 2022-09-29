@@ -22,11 +22,8 @@ public class PostController {
     @PostMapping
     public ResponseEntity<Object> createPost(PostRequestDto postRequestDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
-
-        String currentMemberNickName = SecurityUtil.getCurrentMemberNickname();
-        return ResponseHandler.ok(postService.createPost(currentMemberId, currentMemberNickName, postRequestDto));
+        return ResponseHandler.ok(postService.createPost(currentMemberId, postRequestDto));
     }
 
     // 전체 조회
@@ -60,7 +57,6 @@ public class PostController {
     public ResponseEntity<Object> updatePost(@PathVariable long postId, PostUpdateDto postUpdateDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         guestService.guestCheck(currentMemberId);
-
         return ResponseHandler.ok(postService.updatePost(currentMemberId, postId, postUpdateDto));
     }
 
@@ -69,7 +65,6 @@ public class PostController {
     public ResponseEntity<Object> deletePost(@PathVariable long postId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         guestService.guestCheck(currentMemberId);
-
         return ResponseHandler.ok(postService.deletePost(currentMemberId, postId));
     }
 }
