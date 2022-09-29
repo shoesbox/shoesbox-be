@@ -314,7 +314,6 @@ public class PostService {
     }
 
     public void notifyAddPostEvent(long senderMemberId, Post post, String senderNickName) {
-
         // 친구 요청을 한 리스트
         List<Friend> friends = friendRepository.findAllByToMemberIdAndFriendState(senderMemberId, FriendState.FRIEND);
 
