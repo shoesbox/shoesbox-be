@@ -8,6 +8,8 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.luciad.imageio.webp.WebPWriteParam;
+import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
@@ -16,6 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.FileImageOutputStream;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -38,8 +46,9 @@ public class S3Service {
     private String region;
 
     // 리사이징 할 파일 크기
-    private static final int thumbnailWidth = 200;
-    private static final int thumbnailHeight = 200;
+    private static final int THUMBNAIL_WIDTH = 200;
+    private static final int THUMBNAIL_HEIGHT = 200;
+    private static final String CONTENT_TYPE = "image/webp";
 
     @PostConstruct
     public void setS3Client() {
@@ -57,28 +66,29 @@ public class S3Service {
         String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
 
         // 확장자 점검
-        if (!(fileName.endsWith(".bmp") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png"))) {
-            throw new IllegalArgumentException("bmp,jpg,jpeg,png 형식의 이미지 파일이 요구됨.");
-        }
-
-        String fileExtension = fileName.substring(fileName.lastIndexOf("."));
+        checkExtension(fileName);
 
         // 파일이름을 무작위 값으로 변경
-        fileName = UUID.randomUUID() + fileExtension;
+        fileName = UUID.randomUUID() + ".webp";
+        try {
+            // WebP로 변환
+            File createdImage = ConvertToWebp(file.getInputStream());
 
-        ObjectMetadata objMeta = new ObjectMetadata();
-        objMeta.setContentLength(file.getSize());
-        objMeta.setContentType(file.getContentType());
-
-        try (InputStream inputStream = file.getInputStream()) {
+            // 메타데이터 설정
+            ObjectMetadata objMeta = new ObjectMetadata();
+            objMeta.setContentLength(createdImage.length());
+            objMeta.setContentType(CONTENT_TYPE);
             // 파일 업로드
+            InputStream inputStream = new FileInputStream(createdImage);
             s3Client.putObject(new PutObjectRequest(bucket, fileName, inputStream, objMeta)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
+
         } catch (java.io.IOException e) {
-            throw new IllegalArgumentException("S3 Bucket 객체 업로드 실패.");
+            throw new ImageUploadFailureException(e.getMessage(), e);
         }
 
-        return s3Client.getUrl(bucket, fileName).toString();    ///url string 리턴
+        // url string 리턴
+        return s3Client.getUrl(bucket, fileName).toString();
     }
 
     // 파일 삭제
@@ -90,34 +100,71 @@ public class S3Service {
         s3Client.deleteObject(bucket, sourceKey);
     }
 
-    public String uploadThumbnail(MultipartFile mfile) throws IOException {
+    public String uploadThumbnail(MultipartFile file) {
         // 파일 이름 받아오기
-        String originalName = Objects.requireNonNull(mfile.getOriginalFilename()).toLowerCase();
-        String fileName = originalName.substring(originalName.lastIndexOf("\\") + 1);
-        String uuid = UUID.randomUUID().toString();
-        String fileExtension = fileName.substring(fileName.lastIndexOf("."));
-        String saveName = "s_" + uuid + fileExtension;
+        String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
 
-        File outPutStream = new File(saveName);
+        // 확장자 점검
+        checkExtension(fileName);
 
-        // Thumbnailator로 리사이징
-        Thumbnails.of(mfile.getInputStream())
-                .size(thumbnailWidth, thumbnailHeight)
-                .toFile(outPutStream);
+        // 랜덤 파일명으로 변경
+        fileName = "s_" + UUID.randomUUID() + ".webp";
+        File createdImage = new File(System.getProperty("java.io.tmpdir") + fileName);
+        try {
+            // Thumbnailator로 리사이징
+            Thumbnails.of(file.getInputStream())
+                    .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
+                    .toFile(createdImage);
 
-        ObjectMetadata objMeta = new ObjectMetadata();
-        objMeta.setContentLength(outPutStream.length());
-        objMeta.setContentType(mfile.getContentType());
+            // WebP로 변환
+            ConvertToWebp(new FileInputStream(createdImage));
 
-        try (InputStream inputStream = new FileInputStream(outPutStream)) {
+            // 메타데이터 설정
+            ObjectMetadata objMeta = new ObjectMetadata();
+            objMeta.setContentLength(createdImage.length());
+            objMeta.setContentType(CONTENT_TYPE);
+
             // 파일 업로드
-            s3Client.putObject(new PutObjectRequest(bucket, saveName, inputStream, objMeta)
+            InputStream inputStream = new FileInputStream(createdImage);
+            s3Client.putObject(new PutObjectRequest(bucket, fileName, inputStream, objMeta)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
         } catch (java.io.IOException e) {
-            throw new IllegalArgumentException("S3 Bucket 객체 업로드 실패.");
+            throw new ImageUploadFailureException(e.getMessage(), e);
         }
 
-        outPutStream.delete();
-        return s3Client.getUrl(bucket, saveName).toString();    ///url string 리턴
+        createdImage.delete();
+        return s3Client.getUrl(bucket, fileName).toString();    ///url string 리턴
+    }
+
+    private File ConvertToWebp(InputStream originalInputStream) throws IOException {
+        // 기존 파일
+        BufferedImage originalImage = ImageIO.read(originalInputStream);
+
+        // 인코딩할 빈 파일
+        File createdImage = new File(System.getProperty("java.io.tmpdir") + UUID.randomUUID() + ".webp");
+
+        // WebP ImageWriter 인스턴스 생성
+        ImageWriter writer = ImageIO.getImageWritersByMIMEType("image/webp").next();
+
+        // 인코딩 설정
+        WebPWriteParam writeParam = new WebPWriteParam(writer.getLocale());
+        writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        writeParam.setCompressionType(writeParam.getCompressionTypes()[WebPWriteParam.LOSSY_COMPRESSION]);
+        writeParam.setCompressionQuality(1f);
+        // ImageWriter 반환값(빈 파일) 설정
+        writer.setOutput(new FileImageOutputStream(createdImage));
+
+        // 인코딩
+        writer.write(null, new IIOImage(originalImage, null, null), writeParam);
+        return createdImage;
+    }
+
+    private void checkExtension(String fileName) {
+        if (!(fileName.endsWith(".bmp")
+                || fileName.endsWith(".jpg")
+                || fileName.endsWith(".jpeg")
+                || fileName.endsWith(".png"))) {
+            throw new ImageUploadFailureException("이미지 파일 형식은 bmp, jpg, jpeg, png 중 하나여야 합니다.");
+        }
     }
 }
