@@ -5,6 +5,8 @@ import com.shoesbox.domain.friend.dto.FriendRequestDto;
 import com.shoesbox.domain.friend.dto.FriendResponseDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
+import com.shoesbox.domain.sse.Alarm;
+import com.shoesbox.domain.sse.AlarmRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class FriendService {
 
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
+    private final AlarmRepository alarmRepository;
 
     @Transactional
     public FriendResponseDto requestFriend(
@@ -129,6 +132,15 @@ public class FriendService {
         // 모두 아닌 경우에는 throw
         if (responseDto == null) {
             throw new IllegalArgumentException("친구 목록에 없는 회원입니다.");
+        }
+
+        List<Alarm> alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(currentMemberId, friendId);
+        for (Alarm alarm : alarmToDelete) {
+            alarmRepository.delete(alarm);
+        }
+        alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(friendId, currentMemberId);
+        for (Alarm alarm : alarmToDelete) {
+            alarmRepository.delete(alarm);
         }
         return responseDto;
     }
