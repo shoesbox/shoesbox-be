@@ -22,7 +22,9 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException) throws IOException {
         String exception = (String) request.getAttribute("exception");
-
+        if (exception == null) {
+            return;
+        }
         if (exception.equals(JwtExceptionCode.UNKNOWN_ERROR.getCode())) {
             setResponse(response, JwtExceptionCode.UNKNOWN_ERROR);
         }
