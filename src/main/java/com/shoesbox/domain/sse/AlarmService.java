@@ -18,7 +18,7 @@ public class AlarmService {
 
     @Transactional(readOnly = true)
     public List<AlarmResponseDto> getAlarmList(long currentMemberId) {
-        List<Alarm> alarms = alarmRepository.findAllByReceiveMemberId(currentMemberId);
+        List<Alarm> alarms = alarmRepository.findAllByReceiverMemberId(currentMemberId);
         List<AlarmResponseDto> alarmList = new ArrayList<>();
         for (Alarm alarm : alarms) {
             alarmList.add(toAlarmResponseDto(alarm));
@@ -38,7 +38,7 @@ public class AlarmService {
 
     @Transactional
     public String deleteAllAlarm(long currentMemberId) {
-        List<Alarm> alarms = alarmRepository.findAllByReceiveMemberId(currentMemberId);
+        List<Alarm> alarms = alarmRepository.findAllByReceiverMemberId(currentMemberId);
 
         for (Alarm alarm : alarms) {
             checkSelfAuthorization(currentMemberId, alarm.getReceiverMemberId());

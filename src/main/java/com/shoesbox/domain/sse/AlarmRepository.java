@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AlarmRepository extends JpaRepository<Alarm, Long> {
-    List<Alarm> findAllByReceiveMemberId(long receiveMemberId);
+    List<Alarm> findAllByReceiverMemberId(long receiverMemberId);
 
-    Optional<Alarm> findByReceiveMemberId(long receiveMemberId);
+    Optional<Alarm> findByReceiverMemberId(long receiverMemberId);
 }

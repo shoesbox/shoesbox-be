@@ -342,7 +342,7 @@ public class PostService {
 
         for (Friend friend : friends) {
             long receiverMemberId = friend.getToMember().getId();
-            if (sseEmitters.containsKey(receiverMemberId)) {
+            if (sseEmitters.containsKey(receiverMemberId) && receiverMemberId != senderMemberId) {
                 MessageDto messgeDto = MessageDto.builder().msgType("Post").senderNickName(senderNickName).postId(postId).month(month).day(day).build();
                 SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
 
