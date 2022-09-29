@@ -28,13 +28,12 @@ import java.util.*;
 @Service
 public class PostService {
     @Value("${default-images.thumbnail}")
-    private static String DEFAULT_THUMBNAIL_URL;
+    private String DEFAULT_THUMBNAIL_URL;
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
     private final S3Service s3Service;
     private final TemporalField fieldISO = WeekFields.of(Locale.KOREA).dayOfWeek();
-
 
     // 글 작성
     @Transactional

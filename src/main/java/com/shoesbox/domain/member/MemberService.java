@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MemberService {
     @Value("${default-images.profile}")
-    private static String BASE_PROFILE_IMAGE_URL;
+    private String DEFAULT_PROFILE_IMAGE_URL;
     private final MemberRepository memberRepository;
     private final FriendRepository friendRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -171,15 +171,10 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberInfoResponseDto resetProfileImage(long currentMemberId) {
+    public long resetProfileImage(long currentMemberId) {
         var member = getMember(currentMemberId);
-        member.updateInfo(member.getNickname(), BASE_PROFILE_IMAGE_URL);
-        return MemberInfoResponseDto.builder()
-                .memberId(currentMemberId)
-                .nickname(member.getNickname())
-                .email(member.getEmail())
-                .profileImageUrl(member.getProfileImageUrl())
-                .build();
+        member.updateInfo(member.getNickname(), DEFAULT_PROFILE_IMAGE_URL);
+        return member.getId();
     }
 
     @Transactional
@@ -206,7 +201,7 @@ public class MemberService {
                 .email(signDto.getEmail())
                 .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
                 .nickname(signDto.getEmail().split("@")[0])
-                .profileImageUrl(BASE_PROFILE_IMAGE_URL)
+                .profileImageUrl(DEFAULT_PROFILE_IMAGE_URL)
                 .build();
     }
 

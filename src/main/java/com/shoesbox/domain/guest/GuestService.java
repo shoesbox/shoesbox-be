@@ -29,9 +29,9 @@ public class GuestService {
     private final PostRepository postRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     @Value("${default-images.thumbnail}")
-    private static String DEFAULT_THUMBNAIL_URL;
+    private String DEFAULT_THUMBNAIL_URL;
     @Value("${default-images.profile}")
-    private static String DEFAULT_PROFILE_URL;
+    private String DEFAULT_PROFILE_URL;
 
     @Transactional(readOnly = true)
     public void guestCheck(long currentMemberId) {
