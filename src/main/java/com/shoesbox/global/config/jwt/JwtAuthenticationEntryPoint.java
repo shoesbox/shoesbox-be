@@ -1,6 +1,7 @@
 package com.shoesbox.global.config.jwt;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Component
+@Slf4j
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(
@@ -21,7 +23,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
             AuthenticationException authException) throws IOException {
         String exception = (String) request.getAttribute("exception");
 
-        if (exception == null) {
+        if (exception.equals(JwtExceptionCode.UNKNOWN_ERROR.getCode())) {
             setResponse(response, JwtExceptionCode.UNKNOWN_ERROR);
         }
         // 잘못된 타입의 토큰인 경우

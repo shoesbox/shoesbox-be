@@ -49,33 +49,33 @@ public class JwtFilter extends OncePerRequestFilter {
                 jwtProvider.validateToken(jwt);
                 // 정상 토큰이면 해당 토큰으로 Authentication(userId)을 가져와서
                 Authentication authentication = jwtProvider.getAuthentication(jwt);
-                log.info("Authentication: " + authentication);
+
                 // SecurityContext에 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("Security Context에 'userId: {}' 인증 정보를 저장했습니다.",
+                log.info("Security Context에 'email: {}' 인증 정보를 저장했습니다.",
                         authentication.getName());
-                log.info("uri: {}", requestURI);
+                log.info("URI: {}", requestURI);
             }
         } catch (SecurityException | MalformedJwtException e) {
-            log.error(Arrays.toString(e.getStackTrace()));
+            log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.INVALID_SIGNATURE_TOKEN.getCode());
         } catch (ExpiredJwtException e) {
-            log.error(Arrays.toString(e.getStackTrace()));
+            log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.EXPIRED_TOKEN.getCode());
         } catch (UnsupportedJwtException e) {
-            log.error(Arrays.toString(e.getStackTrace()));
+            log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.UNSUPPORTED_TOKEN.getCode());
         } catch (IllegalArgumentException e) {
-            log.error(Arrays.toString(e.getStackTrace()));
+            log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.WRONG_TOKEN.getCode());
         } catch (InvalidJwtException e) {
-            log.error(Arrays.toString(e.getStackTrace()));
+            log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.LOGGED_OUT_TOKEN.getCode());
         } catch (InvalidKeyException e) {
-            log.error(Arrays.toString(e.getStackTrace()));
+            log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.INVALID_AUTHORITIES_TOKEN.getCode());
         } catch (Exception e) {
-            log.error(Arrays.toString(e.getStackTrace()));
+            log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.UNKNOWN_ERROR.getCode());
         }
 
