@@ -17,6 +17,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -56,18 +57,25 @@ public class JwtFilter extends OncePerRequestFilter {
                 log.info("uri: {}", requestURI);
             }
         } catch (SecurityException | MalformedJwtException e) {
+            log.error(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.INVALID_SIGNATURE_TOKEN.getCode());
         } catch (ExpiredJwtException e) {
+            log.error(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.EXPIRED_TOKEN.getCode());
         } catch (UnsupportedJwtException e) {
+            log.error(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.UNSUPPORTED_TOKEN.getCode());
         } catch (IllegalArgumentException e) {
+            log.error(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.WRONG_TOKEN.getCode());
         } catch (InvalidJwtException e) {
+            log.error(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.LOGGED_OUT_TOKEN.getCode());
         } catch (InvalidKeyException e) {
+            log.error(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.INVALID_AUTHORITIES_TOKEN.getCode());
         } catch (Exception e) {
+            log.error(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.UNKNOWN_ERROR.getCode());
         }
 
