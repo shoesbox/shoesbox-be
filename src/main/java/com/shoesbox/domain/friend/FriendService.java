@@ -108,6 +108,7 @@ public class FriendService {
 
     @Transactional
     public FriendListResponseDto deleteFriend(long friendId, long currentMemberId, FriendState friendState) {
+
         Friend friend = friendRepository
                 .findByFromMemberIdAndToMemberIdAndFriendState(friendId, currentMemberId, friendState).orElse(null);
         FriendListResponseDto responseDto = null;
@@ -134,14 +135,7 @@ public class FriendService {
             throw new IllegalArgumentException("친구 목록에 없는 회원입니다.");
         }
 
-        List<Alarm> alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(currentMemberId, friendId);
-        for (Alarm alarm : alarmToDelete) {
-            alarmRepository.delete(alarm);
-        }
-        alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(friendId, currentMemberId);
-        for (Alarm alarm : alarmToDelete) {
-            alarmRepository.delete(alarm);
-        }
+        deleteAlarm(currentMemberId, friendId);
         return responseDto;
     }
 
@@ -190,5 +184,17 @@ public class FriendService {
                 memberId, currentMemberId, FriendState.FRIEND) ||
                 friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
                         currentMemberId, memberId, FriendState.FRIEND);
+    }
+
+    private void deleteAlarm(long currentMemberId, long friendId) {
+        try {
+            List<Alarm> alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(currentMemberId, friendId);
+            alarmRepository.deleteAll(alarmToDelete);
+            alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(friendId, currentMemberId);
+            alarmRepository.deleteAll(alarmToDelete);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("알림을 삭제할 수 없습니다.");
+        }
+
     }
 }
