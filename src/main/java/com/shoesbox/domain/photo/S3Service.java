@@ -51,6 +51,7 @@ public class S3Service {
     private static final int THUMBNAIL_HEIGHT = 200;
     private static final String CONTENT_TYPE = "image/webp";
     private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
+//    private static final String TMP_DIR = System.getProperty("user.home") + "/tmp/";
 
     @PostConstruct
     public void setS3Client() {
@@ -107,7 +108,7 @@ public class S3Service {
             File originalThumbnail = File.createTempFile(
                     "s_" + UUID.randomUUID(),
                     fileExtension,
-                    new File((System.getProperty("user.dir") + "/tmp/")));
+                    new File(TMP_DIR));
             // Thumbnailator로 리사이징
             Thumbnails.of(file.getInputStream())
                     .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
@@ -132,7 +133,10 @@ public class S3Service {
         BufferedImage originalImage = ImageIO.read(originalInputStream);
 
         // 인코딩할 빈 파일
-        File createdImage = new File(System.getProperty("user.dir") + "/tmp/" + UUID.randomUUID() + ".webp");
+        File createdImage = File.createTempFile(
+                "s_" + UUID.randomUUID(),
+                ".webp",
+                new File(TMP_DIR));
 
         // WebP ImageWriter 인스턴스 생성
         ImageWriter writer = ImageIO.getImageWritersByMIMEType("image/webp").next();
