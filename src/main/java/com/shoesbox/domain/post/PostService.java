@@ -13,6 +13,7 @@ import com.shoesbox.domain.post.dto.PostUpdateDto;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,7 +27,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Service
 public class PostService {
-    private final static String defaultThumbnailImageAddress = "https://i.ibb.co/hXJpCbH/default-thumbnail.png";
+    @Value("${default-images.thumbnail}")
+    private static String DEFAULT_THUMBNAIL_URL;
     private final PostRepository postRepository;
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
@@ -43,7 +45,7 @@ public class PostService {
         // 새로운 이미지가 없으면
         if (!validateImageFiles(postRequestDto.getImageFiles())) {
             // 기본값 사용
-            thumbnailUrl = defaultThumbnailImageAddress;
+            thumbnailUrl = DEFAULT_THUMBNAIL_URL;
         } else {
             // 새로운 이미지가 있으면 썸네일 업로드
             thumbnailUrl = s3Service.uploadThumbnail(postRequestDto.getImageFiles().get(0));
@@ -63,7 +65,7 @@ public class PostService {
 
         // 썸네일이 기본값이 아니면
         // photo 생성
-        if (!thumbnailUrl.equals(defaultThumbnailImageAddress)) {
+        if (!thumbnailUrl.equals(DEFAULT_THUMBNAIL_URL)) {
             createPhoto(postRequestDto.getImageFiles(), post);
         }
         return post.getId();

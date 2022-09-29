@@ -55,9 +55,7 @@ public class MemberController {
     public ResponseEntity<Object> updateMemberInfo(
             @RequestParam(value = "m", defaultValue = "0") long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
-
         if (targetId == 0L) {
             targetId = currentMemberId;
         }
@@ -75,9 +73,7 @@ public class MemberController {
     @DeleteMapping("/delete")
     public ResponseEntity<Object> deleteAccount(@RequestParam(value = "m") long targetId) {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
-
         if (currentMemberId != targetId) {
             throw new UnAuthorizedException("본인의 memberId가 아닙니다.");
         }
@@ -88,9 +84,7 @@ public class MemberController {
     @GetMapping("/reset")
     public ResponseEntity<Object> resetProfileImage() {
         long currentMemberId = SecurityUtil.getCurrentMemberId();
-
         guestService.guestCheck(currentMemberId);
-
         return ResponseHandler.ok(memberService.resetProfileImage(currentMemberId));
     }
 }

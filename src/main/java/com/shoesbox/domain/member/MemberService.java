@@ -22,6 +22,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -36,7 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class MemberService {
-    private static final String BASE_PROFILE_IMAGE_URL = "https://i.ibb.co/N27FwdP/image.png";
+    @Value("${default-images.profile}")
+    private static String BASE_PROFILE_IMAGE_URL;
     private final MemberRepository memberRepository;
     private final FriendRepository friendRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -204,7 +206,7 @@ public class MemberService {
                 .email(signDto.getEmail())
                 .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
                 .nickname(signDto.getEmail().split("@")[0])
-                .profileImageUrl("https://i.ibb.co/N27FwdP/image.png")
+                .profileImageUrl(BASE_PROFILE_IMAGE_URL)
                 .build();
     }
 
