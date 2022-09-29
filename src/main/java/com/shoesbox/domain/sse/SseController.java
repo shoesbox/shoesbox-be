@@ -122,32 +122,25 @@ public class SseController {
                 e.printStackTrace();
             }
         }
-        // 댓글 알림 서비스 테스트
     }
 
-    @RequestMapping(value = "/api/sub/test2")
-    public void TestSSE() {
+    @RequestMapping(value = "/api/sub/adminAlarm", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public void adminAlarm(@RequestParam(value = "data", defaultValue = "hi", required = false) String data, HttpServletResponse response) {
 
-        MessageDto a = MessageDto.builder().senderNickName("sponGbob").postId(1).month(9).day(1).msgType("post").build();
+        response.setContentType("text/event-stream");
+        response.setCharacterEncoding("UTF-8");
+
+        // todo : 관리자 검증 (테스트 계정?)
+
+        String message = String.format("[관리자] 알립니다.\n%s", data);
 
         for (SseEmitter emitter : sseEmitters.values()) {
             try {
-                // JSON 형식으로 전송하기
-                emitter.send(SseEmitter.event().name("message").data(a.toString()));
+                // STRING 형식으로 데이터 전송하기
+                emitter.send(SseEmitter.event().name("message").data(message + "\n\n"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-
-//    private void sendToClient(SseEmitter emitter, String id, Object data) {
-//        try {
-//            emitter.send(SseEmitter.event()
-//                    .id(id)
-//                    .name("sse")
-//                    .data(data));
-//        } catch (IOException exception) {
-//            emitterRepository.deleteById(id);
-//            throw new RuntimeException("연결 오류!");
-//        }
 }

@@ -48,7 +48,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedOrigin("http://localhost:3000");
-        configuration.addAllowedOrigin("http://3.34.130.9");
         configuration.addAllowedOrigin("http://shoesbox.today/");
         configuration.addAllowedOrigin("https://shoesbox.web.app/");
         configuration.setAllowedHeaders(List.of("*"));
@@ -91,6 +90,7 @@ public class SecurityConfig {
                 .antMatchers("/login").permitAll()
                 .antMatchers("/oauth2/authorization/**").permitAll()
                 .antMatchers("/api/sub/**").permitAll()
+                .antMatchers("/api/alarm/**").permitAll()
 
                 // .antMatchers(HttpMethod.GET, "/api/posts/**", "/api/comments/**").permitAll()
                 // .antMatchers(HttpMethod.POST, "/api/posts/**").hasAnyAuthority("ROLE_USER")
