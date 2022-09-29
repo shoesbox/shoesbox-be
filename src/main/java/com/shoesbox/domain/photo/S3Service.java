@@ -49,6 +49,7 @@ public class S3Service {
     private static final int THUMBNAIL_WIDTH = 200;
     private static final int THUMBNAIL_HEIGHT = 200;
     private static final String CONTENT_TYPE = "image/webp";
+    private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
 
     @PostConstruct
     public void setS3Client() {
@@ -74,15 +75,8 @@ public class S3Service {
             // WebP로 변환
             File createdImage = ConvertToWebp(file.getInputStream());
 
-            // 메타데이터 설정
-            ObjectMetadata objMeta = new ObjectMetadata();
-            objMeta.setContentLength(createdImage.length());
-            objMeta.setContentType(CONTENT_TYPE);
-            // 파일 업로드
-            InputStream inputStream = new FileInputStream(createdImage);
-            s3Client.putObject(new PutObjectRequest(bucket, fileName, inputStream, objMeta)
-                    .withCannedAcl(CannedAccessControlList.PublicRead));
-
+            // 이미지 업로드
+            uploadImageToS3(createdImage);
         } catch (java.io.IOException e) {
             throw new ImageUploadFailureException(e.getMessage(), e);
         }
@@ -103,36 +97,29 @@ public class S3Service {
     public String uploadThumbnail(MultipartFile file) {
         // 파일 이름 받아오기
         String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
-
         // 확장자 점검
         checkExtension(fileName);
+        // 확장자 추출
+        String fileExtension = fileName.substring(fileName.lastIndexOf("."));
+        // 랜덤 파일명
+        String randomFilename = "s_" + UUID.randomUUID();
+        // 리사이즈용 파일 생성
+        File originalThumbnail = new File(TMP_DIR + randomFilename + fileExtension);
 
-        // 랜덤 파일명으로 변경
-        fileName = "s_" + UUID.randomUUID() + ".webp";
-        File createdImage = new File(System.getProperty("java.io.tmpdir") + fileName);
         try {
             // Thumbnailator로 리사이징
             Thumbnails.of(file.getInputStream())
                     .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
-                    .toFile(createdImage);
-
+                    .toFile(originalThumbnail);
             // WebP로 변환
-            ConvertToWebp(new FileInputStream(createdImage));
-
-            // 메타데이터 설정
-            ObjectMetadata objMeta = new ObjectMetadata();
-            objMeta.setContentLength(createdImage.length());
-            objMeta.setContentType(CONTENT_TYPE);
-
-            // 파일 업로드
-            InputStream inputStream = new FileInputStream(createdImage);
-            s3Client.putObject(new PutObjectRequest(bucket, fileName, inputStream, objMeta)
-                    .withCannedAcl(CannedAccessControlList.PublicRead));
+            File encodedThumbnail = ConvertToWebp(new FileInputStream(originalThumbnail));
+            // 이미지 업로드
+            uploadImageToS3(encodedThumbnail);
         } catch (java.io.IOException e) {
             throw new ImageUploadFailureException(e.getMessage(), e);
         }
 
-        createdImage.delete();
+        originalThumbnail.delete();
         return s3Client.getUrl(bucket, fileName).toString();    ///url string 리턴
     }
 
@@ -141,7 +128,7 @@ public class S3Service {
         BufferedImage originalImage = ImageIO.read(originalInputStream);
 
         // 인코딩할 빈 파일
-        File createdImage = new File(System.getProperty("java.io.tmpdir") + UUID.randomUUID() + ".webp");
+        File createdImage = new File(TMP_DIR + UUID.randomUUID() + ".webp");
 
         // WebP ImageWriter 인스턴스 생성
         ImageWriter writer = ImageIO.getImageWritersByMIMEType("image/webp").next();
@@ -166,5 +153,18 @@ public class S3Service {
                 || fileName.endsWith(".png"))) {
             throw new ImageUploadFailureException("이미지 파일 형식은 bmp, jpg, jpeg, png 중 하나여야 합니다.");
         }
+    }
+
+    private void uploadImageToS3(File imageFile) throws IOException {
+        ObjectMetadata objMeta = new ObjectMetadata();
+        objMeta.setContentLength(imageFile.length());
+        objMeta.setContentType(CONTENT_TYPE);
+
+        // 파일 업로드
+        InputStream inputStream = new FileInputStream(imageFile);
+        s3Client.putObject(new PutObjectRequest(bucket, imageFile.getName(), inputStream, objMeta)
+                .withCannedAcl(CannedAccessControlList.PublicRead));
+        // 임시 파일 삭제
+        imageFile.delete();
     }
 }
