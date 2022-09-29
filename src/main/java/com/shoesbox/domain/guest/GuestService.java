@@ -29,9 +29,9 @@ public class GuestService {
     private final PostRepository postRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     @Value("${default-images.thumbnail}")
-    private static String DEFAULT_THUMBNAIL;
+    private String DEFAULT_THUMBNAIL_URL;
     @Value("${default-images.profile}")
-    private static String DEFAULT_PROFILE;
+    private String DEFAULT_PROFILE_URL;
 
     @Transactional(readOnly = true)
     public void guestCheck(long currentMemberId) {
@@ -81,7 +81,7 @@ public class GuestService {
                 .email(friendEmail)
                 .password(bCryptPasswordEncoder.encode("1234"))
                 .nickname(friendEmail.split("@")[0])
-                .profileImageUrl(DEFAULT_PROFILE)
+                .profileImageUrl(DEFAULT_PROFILE_URL)
                 .build();
 
         memberRepository.save(friendMember);
@@ -91,7 +91,7 @@ public class GuestService {
                 .title("일기 제목입니다.")
                 .content("일기 내용입니다.")
                 .member(friendMember)
-                .thumbnailUrl(DEFAULT_THUMBNAIL)
+                .thumbnailUrl(DEFAULT_THUMBNAIL_URL)
                 .date(LocalDate.now())
                 .build();
 
