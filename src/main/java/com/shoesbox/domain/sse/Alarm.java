@@ -27,17 +27,17 @@ public class Alarm extends BaseTimeEntity {
 
     // 발송자
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "send_member_id", nullable = false)
-    private Member sendMember;
+    @JoinColumn(name = "sender_member_id", nullable = false)
+    private Member senderMember;
 
     // 수신자
     @Column(nullable = false)
-    private long receiveMemberId;
+    private long receiverMemberId;
 
     @Builder
-    private Alarm(Member sendMember, long receiveMemberId, String content, MessageType messageType) {
-        this.sendMember = sendMember;
-        this.receiveMemberId = receiveMemberId;
+    private Alarm(Member senderMember, long receiverMemberId, String content, MessageType messageType) {
+        this.senderMember = senderMember;
+        this.receiverMemberId = receiverMemberId;
         this.content = content;
         this.messageType = messageType;
     }

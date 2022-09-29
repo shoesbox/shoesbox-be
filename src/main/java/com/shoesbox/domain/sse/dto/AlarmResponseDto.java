@@ -11,9 +11,9 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class AlarmResponseDto {
     long alarmId;
-    long sendMemberId;
-    String sendMemberNickname;
-    long receiveMemberId;
+    long senderMemberId;
+    String senderMemberNickname;
+    long receiverMemberId;
     MessageType messageType;
 
     long postId; // post or comment or friend

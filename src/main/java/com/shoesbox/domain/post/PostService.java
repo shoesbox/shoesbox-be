@@ -370,17 +370,17 @@ public class PostService {
     }
 
     @Transactional
-    public void saveAlarm(long sendMemberId, long receiveMemberId, long contentId, int month, int day) {
+    public void saveAlarm(long senderMemberId, long receiverMemberId, long contentId, int month, int day) {
         String content = contentId + "," + month + "," + day;
 
         // send: 댓글작성자, receive: 글작성자
-        Member sendMember = Member.builder()
-                .id(sendMemberId)
+        Member senderMember = Member.builder()
+                .id(senderMemberId)
                 .build();
 
         Alarm alarm = Alarm.builder()
-                .sendMember(sendMember)
-                .receiveMemberId(receiveMemberId)
+                .senderMember(senderMember)
+                .receiverMemberId(receiverMemberId)
                 .content(content)
                 .messageType(MessageType.POST)
                 .build();

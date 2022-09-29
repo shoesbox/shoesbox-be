@@ -1,13 +1,16 @@
 package com.shoesbox.domain.sse;
 
 import com.shoesbox.domain.sse.dto.AlarmResponseDto;
+import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class AlarmService {
@@ -25,13 +28,23 @@ public class AlarmService {
     }
 
     @Transactional
-    public String deleteAlarm(long currentMemberId) {
-        Alarm alarm = alarmRepository.findByReceiveMemberId(currentMemberId).orElseThrow(
-                () -> new IllegalArgumentException("해당 알람을 찾을 수 없습니다."));
+    public String deleteAlarm(long currentMemberId, long alarmId) {
+        Alarm alarm = getAlarm(alarmId);
+        checkSelfAuthorization(currentMemberId, alarm.getReceiverMemberId());
 
         alarmRepository.delete(alarm);
-
         return "댓글 삭제 성공";
+    }
+
+    @Transactional
+    public String deleteAllAlarm(long currentMemberId) {
+        List<Alarm> alarms = alarmRepository.findAllByReceiveMemberId(currentMemberId);
+
+        for (Alarm alarm : alarms) {
+            checkSelfAuthorization(currentMemberId, alarm.getReceiverMemberId());
+            alarmRepository.delete(alarm);
+        }
+        return "댓글 전체 삭제 성공";
     }
 
     private AlarmResponseDto toAlarmResponseDto(Alarm alarm) {
@@ -39,13 +52,28 @@ public class AlarmService {
         String[] data = alarm.getContent().split(",");
         return AlarmResponseDto.builder()
                 .alarmId(alarm.getId())
-                .sendMemberId(alarm.getSendMember().getId())
-                .sendMemberNickname(alarm.getSendMember().getNickname())
-                .receiveMemberId(alarm.getReceiveMemberId())
+                .senderMemberId(alarm.getSenderMember().getId())
+                .senderMemberNickname(alarm.getSenderMember().getNickname())
+                .receiverMemberId(alarm.getReceiverMemberId())
                 .messageType(alarm.getMessageType())
                 .postId(Long.parseLong(data[0]))
                 .month(Integer.parseInt(data[1]))
                 .day(Integer.parseInt(data[2]))
                 .build();
     }
+
+
+    private Alarm getAlarm(long alarmId) {
+        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> GET Alarm");
+        return alarmRepository.findById(alarmId).orElseThrow(
+                () -> new IllegalArgumentException("해당 알람을 찾을 수 없습니다."));
+    }
+
+    private void checkSelfAuthorization(long currentMemberId, long targetId) {
+        log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Check Authorization ");
+        if (currentMemberId != targetId) {
+            throw new UnAuthorizedException("접근 권한이 없습니다.");
+        }
+    }
+
 }
