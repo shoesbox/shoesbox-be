@@ -5,6 +5,8 @@ import com.shoesbox.domain.friend.dto.FriendRequestDto;
 import com.shoesbox.domain.friend.dto.FriendResponseDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
+import com.shoesbox.domain.sse.Alarm;
+import com.shoesbox.domain.sse.AlarmRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class FriendService {
 
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
+    private final AlarmRepository alarmRepository;
 
     @Transactional
     public FriendResponseDto requestFriend(
@@ -105,6 +108,7 @@ public class FriendService {
 
     @Transactional
     public FriendListResponseDto deleteFriend(long friendId, long currentMemberId, FriendState friendState) {
+
         Friend friend = friendRepository
                 .findByFromMemberIdAndToMemberIdAndFriendState(friendId, currentMemberId, friendState).orElse(null);
         FriendListResponseDto responseDto = null;
@@ -130,6 +134,8 @@ public class FriendService {
         if (responseDto == null) {
             throw new IllegalArgumentException("친구 목록에 없는 회원입니다.");
         }
+
+        deleteAlarm(currentMemberId, friendId);
         return responseDto;
     }
 
@@ -178,5 +184,17 @@ public class FriendService {
                 memberId, currentMemberId, FriendState.FRIEND) ||
                 friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
                         currentMemberId, memberId, FriendState.FRIEND);
+    }
+
+    private void deleteAlarm(long currentMemberId, long friendId) {
+        try {
+            List<Alarm> alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(currentMemberId, friendId);
+            alarmRepository.deleteAll(alarmToDelete);
+            alarmToDelete = alarmRepository.findAllBySenderMemberIdAndReceiverMemberId(friendId, currentMemberId);
+            alarmRepository.deleteAll(alarmToDelete);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("알림을 삭제할 수 없습니다.");
+        }
+
     }
 }
