@@ -57,6 +57,9 @@ public class GuestController {
                     // 새 게스트 계정의 친구 관계 설정
                     guestService.makeFriendToGuest(FRIEND, signDto.getEmail(), FriendState.FRIEND);
                     guestService.makeFriendToGuest(REQUESTED_FRIEND, signDto.getEmail(), FriendState.REQUEST);
+
+                    // 친구 계정 중 오늘 날짜의 게시물이 없을 경우 생성
+                    guestService.makeFriendPost(FRIEND);
                 }
 
                 // 등록된 계정이 있을 경우, 반복문 종료 후 로그인 처리
