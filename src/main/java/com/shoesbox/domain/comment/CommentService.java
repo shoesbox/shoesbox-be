@@ -10,22 +10,16 @@ import com.shoesbox.domain.post.Post;
 import com.shoesbox.domain.post.PostRepository;
 import com.shoesbox.domain.sse.Alarm;
 import com.shoesbox.domain.sse.AlarmRepository;
-import com.shoesbox.domain.sse.MessageDto;
 import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -130,33 +124,34 @@ public class CommentService {
         int month = post.getDate().getMonthValue();
         int day = post.getDate().getDayOfMonth();
 
-        // 로그인 한 사용자에게 알림 발송
-        if (sseEmitters.containsKey(receiverMemberId) && senderMemberId != receiverMemberId) {
-            SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
-            MessageDto messageDto = MessageDto.builder()
-                    .postId(postId)
-                    .senderNickName(senderNickName)
-                    .month(month)
-                    .day(day)
-                    .msgType("Comment")
-                    .build();
-//            sseExecutor.execute(() -> {
-//                try {
-//                    sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
-//                    Thread.sleep(100);
-//                } catch (IOException | InterruptedException e) {
-//                    log.error(e.getLocalizedMessage());
-//                    sseEmitter.completeWithError(e);
-//                }
-//            });
-            try {
-                sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
-                Thread.sleep(100);
-            } catch (IOException | InterruptedException e) {
-                log.error(e.getLocalizedMessage());
-                sseEmitter.completeWithError(e);
-            }
-        }
+//        // 로그인 한 사용자에게 알림 발송
+//        if (sseEmitters.containsKey(receiverMemberId) && senderMemberId != receiverMemberId) {
+//            SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
+//            MessageDto messageDto = MessageDto.builder()
+//                    .postId(postId)
+//                    .senderNickName(senderNickName)
+//                    .month(month)
+//                    .day(day)
+//                    .msgType("Comment")
+//                    .build();
+////            sseExecutor.execute(() -> {
+////                try {
+////                    sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
+////                    Thread.sleep(100);
+////                } catch (IOException | InterruptedException e) {
+////                    log.error(e.getLocalizedMessage());
+////                    sseEmitter.completeWithError(e);
+////                }
+////            });
+//            try {
+//                sseEmitter.send(SseEmitter.event().name("addComment").data(messageDto, MediaType.APPLICATION_JSON));
+//                Thread.sleep(100);
+//            } catch (IOException | InterruptedException e) {
+//                log.error(e.getLocalizedMessage());
+//                sseEmitter.completeWithError(e);
+//            }
+//        }
+
         // 알림 내용 db에 저장
         if (senderMemberId != receiverMemberId) {
             saveAlarm(senderMemberId, receiverMemberId, postId, month, day);
