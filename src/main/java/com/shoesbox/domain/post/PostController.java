@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
 
 @RequiredArgsConstructor
@@ -21,10 +20,9 @@ public class PostController {
 
     // 생성
     @PostMapping
-    public ResponseEntity<Object> createPost(PostRequestDto postRequestDto, HttpServletResponse response) {
-        response.setContentType("text/event-stream");
-        response.setCharacterEncoding("UTF-8");
-        
+    public ResponseEntity<Object> createPost(PostRequestDto postRequestDto) {
+//        response.setContentType("text/event-stream");
+//        response.setCharacterEncoding("UTF-8");
         long currentMemberId = SecurityUtil.getCurrentMemberId();
         guestService.guestCheck(currentMemberId);
         return ResponseHandler.ok(postService.createPost(currentMemberId, postRequestDto));

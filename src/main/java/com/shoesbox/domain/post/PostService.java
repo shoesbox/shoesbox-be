@@ -14,27 +14,21 @@ import com.shoesbox.domain.post.dto.PostResponseListDto;
 import com.shoesbox.domain.post.dto.PostUpdateDto;
 import com.shoesbox.domain.sse.Alarm;
 import com.shoesbox.domain.sse.AlarmRepository;
-import com.shoesbox.domain.sse.MessageDto;
 import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
 import java.time.temporal.WeekFields;
 import java.util.*;
-
-import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -325,42 +319,42 @@ public class PostService {
         long postId = post.getId();
 
         for (Friend friend : friends) {
-            long receiverMemberId = friend.getToMember().getId();
-            if (sseEmitters.containsKey(receiverMemberId) && receiverMemberId != senderMemberId) {
-                MessageDto messgeDto = MessageDto.builder()
-                        .msgType("Post")
-                        .senderNickName(senderNickName)
-                        .postId(postId)
-                        .month(month)
-                        .day(day)
-                        .build();
-                SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
-
-//                sseExecutor.execute(() -> {
-//                    try {
-//                        sseEmitter.send(
-//                                SseEmitter.event()
-//                                        .name("addPost")
-//                                        .data(messgeDto, MediaType.APPLICATION_JSON));
-//                        log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
-//                        Thread.sleep(100);
-//                    } catch (IOException | InterruptedException e) {
-//                        log.error(e.getLocalizedMessage());
-//                        sseEmitter.completeWithError(e);
-//                    }
-//                });
-                try {
-                    sseEmitter.send(
-                            SseEmitter.event()
-                                    .name("addPost")
-                                    .data(messgeDto, MediaType.APPLICATION_JSON));
-                    log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
-                    Thread.sleep(100);
-                } catch (IOException | InterruptedException e) {
-                    log.error(e.getLocalizedMessage());
-                    sseEmitter.completeWithError(e);
-                }
-            }
+//            long receiverMemberId = friend.getToMember().getId();
+//            if (sseEmitters.containsKey(receiverMemberId) && receiverMemberId != senderMemberId) {
+//                MessageDto messgeDto = MessageDto.builder()
+//                        .msgType("Post")
+//                        .senderNickName(senderNickName)
+//                        .postId(postId)
+//                        .month(month)
+//                        .day(day)
+//                        .build();
+//                SseEmitter sseEmitter = sseEmitters.get(receiverMemberId);
+//
+////                sseExecutor.execute(() -> {
+////                    try {
+////                        sseEmitter.send(
+////                                SseEmitter.event()
+////                                        .name("addPost")
+////                                        .data(messgeDto, MediaType.APPLICATION_JSON));
+////                        log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
+////                        Thread.sleep(100);
+////                    } catch (IOException | InterruptedException e) {
+////                        log.error(e.getLocalizedMessage());
+////                        sseEmitter.completeWithError(e);
+////                    }
+////                });
+//                try {
+//                    sseEmitter.send(
+//                            SseEmitter.event()
+//                                    .name("addPost")
+//                                    .data(messgeDto, MediaType.APPLICATION_JSON));
+//                    log.info(">>>>>>>>>>>>>> Sent the Alarm Message from : " + senderNickName + " by POST EVENT.");
+//                    Thread.sleep(100);
+//                } catch (IOException | InterruptedException e) {
+//                    log.error(e.getLocalizedMessage());
+//                    sseEmitter.completeWithError(e);
+//                }
+//            }
 
             long friendMemberId;
             if (friend.getToMember().getId() == senderMemberId) {

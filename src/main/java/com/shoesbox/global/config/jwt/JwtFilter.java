@@ -86,7 +86,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
 
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            log.info("일반 요청");
+//            log.info("일반 요청");
             return bearerToken.substring(7);
         } else if (!StringUtils.hasText(bearerToken) && request.getQueryString() != null) {
             log.info("SSE Subscribe 요청");
