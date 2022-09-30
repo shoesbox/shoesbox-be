@@ -170,9 +170,7 @@ public class MemberService {
     @Transactional
     public Boolean logout(String email) {
         Member member = memberRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("로그아웃 할 유저를 찾을 수 없습니다."));
-        if (sseEmitters.containsKey(member.getId())) {
-            sseEmitters.remove(member.getId());
-        }
+        sseEmitters.remove(member.getId());
         return redisTemplate.delete("RT:" + email);
     }
 

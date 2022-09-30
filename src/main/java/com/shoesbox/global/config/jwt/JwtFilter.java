@@ -22,7 +22,6 @@ import java.util.Arrays;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
-
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtProvider jwtProvider;
@@ -52,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 // SecurityContext에 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.info("Security Context에 'email: {}' 인증 정보를 저장했습니다.",
+                log.info("사용자 email: {} 인증되었습니다.",
                         authentication.getName());
                 log.info("URI: {}", requestURI);
             }
@@ -75,7 +74,7 @@ public class JwtFilter extends OncePerRequestFilter {
             log.debug(Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.INVALID_AUTHORITIES_TOKEN.getCode());
         } catch (Exception e) {
-            log.debug(Arrays.toString(e.getStackTrace()));
+            log.debug("나야 나 \n" + Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.UNKNOWN_ERROR.getCode());
         }
 
@@ -87,7 +86,12 @@ public class JwtFilter extends OncePerRequestFilter {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
 
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+            log.info("일반 요청");
             return bearerToken.substring(7);
+        } else if (!StringUtils.hasText(bearerToken) && request.getQueryString() != null) {
+            log.info("SSE Subscribe 요청");
+            bearerToken = request.getQueryString().substring(4);
+            return bearerToken;
         }
 
         return null;

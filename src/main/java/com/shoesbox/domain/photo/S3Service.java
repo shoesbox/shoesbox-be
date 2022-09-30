@@ -50,8 +50,6 @@ public class S3Service {
     private static final int THUMBNAIL_WIDTH = 200;
     private static final int THUMBNAIL_HEIGHT = 200;
     private static final String CONTENT_TYPE = "image/webp";
-    private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
-//    private static final String TMP_DIR = System.getProperty("user.home") + "/tmp/";
 
     @PostConstruct
     public void setS3Client() {
@@ -67,15 +65,12 @@ public class S3Service {
     public String uploadImage(MultipartFile file) {
         // 파일 이름 받아오기
         String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
-
         // 확장자 점검
         checkExtension(fileName);
-
-        // 파일이름을 무작위 값으로 변경
-        fileName = UUID.randomUUID() + ".webp";
+        File createdImage;
         try {
             // WebP로 변환
-            File createdImage = ConvertToWebp(file.getInputStream());
+            createdImage = ConvertToWebp(file.getInputStream());
 
             // 이미지 업로드
             uploadImageToS3(createdImage);
@@ -84,7 +79,7 @@ public class S3Service {
         }
 
         // url string 리턴
-        return s3Client.getUrl(bucket, fileName).toString();
+        return s3Client.getUrl(bucket, createdImage.getName()).toString();
     }
 
     // 파일 삭제
@@ -105,10 +100,7 @@ public class S3Service {
         String fileExtension = fileName.substring(fileName.lastIndexOf("."));
         try {
             // 리사이즈용 임시 파일 생성
-            File originalThumbnail = File.createTempFile(
-                    "s_" + UUID.randomUUID(),
-                    fileExtension,
-                    new File(TMP_DIR));
+            File originalThumbnail = new File("temp_thumbnail_" + UUID.randomUUID() + fileExtension);
             // Thumbnailator로 리사이징
             Thumbnails.of(file.getInputStream())
                     .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
@@ -120,6 +112,7 @@ public class S3Service {
             originalInputStream.close();
             Assert.isTrue(originalThumbnail.delete(), "임시 파일이 삭제되지 않음!");
             // 이미지 업로드
+            fileName = encodedThumbnail.getName();
             uploadImageToS3(encodedThumbnail);
         } catch (java.io.IOException e) {
             throw new ImageUploadFailureException(e.getMessage(), e);
@@ -133,10 +126,7 @@ public class S3Service {
         BufferedImage originalImage = ImageIO.read(originalInputStream);
 
         // 인코딩할 빈 파일
-        File createdImage = File.createTempFile(
-                "s_" + UUID.randomUUID(),
-                ".webp",
-                new File(TMP_DIR));
+        File createdImage = new File("s_" + UUID.randomUUID() + ".webp");
 
         // WebP ImageWriter 인스턴스 생성
         ImageWriter writer = ImageIO.getImageWritersByMIMEType("image/webp").next();
