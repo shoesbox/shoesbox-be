@@ -114,14 +114,15 @@ public class S3Service {
             // 이미지 업로드
             fileName = encodedThumbnail.getName();
             uploadImageToS3(encodedThumbnail);
-        } catch (java.io.IOException e) {
+        } catch (SecurityException | IOException e) {
             throw new ImageUploadFailureException(e.getMessage(), e);
         }
 
         return s3Client.getUrl(bucket, fileName).toString();    ///url string 리턴
     }
 
-    private File ConvertToWebp(InputStream originalInputStream) throws IOException {
+    private File ConvertToWebp(InputStream originalInputStream)
+            throws IllegalStateException, UnsupportedOperationException, IllegalArgumentException, IOException {
         // 기존 파일
         BufferedImage originalImage = ImageIO.read(originalInputStream);
 
@@ -153,7 +154,7 @@ public class S3Service {
                 || fileName.endsWith(".jpg")
                 || fileName.endsWith(".jpeg")
                 || fileName.endsWith(".png"))) {
-            throw new ImageUploadFailureException("이미지 파일 형식은 bmp, jpg, jpeg, png 중 하나여야 합니다.");
+            throw new ImageUploadFailureException("이미지 파일 형식은 bmp, jpg, jpeg, png 중 하나여야 합니다.", null);
         }
     }
 

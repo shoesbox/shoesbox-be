@@ -36,8 +36,7 @@ public class CommentService {
         Post post = getPost(postId);
         checkAuthorization(currentMemberId, post.getMemberId());
         Member currentMember = memberRepository.findById(currentMemberId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        Member.class.getPackageName()));
+                .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
 
         Comment comment = Comment.builder()
                 .content(content)

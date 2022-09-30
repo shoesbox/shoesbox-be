@@ -217,6 +217,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseHandler.fail(apiError);
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
     /**
      * HttpStatus.BAD_REQUEST를 발생시키는 예외 모음
      *
@@ -261,7 +263,9 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @param ex the Exception
      * @return the ApiError object
      */
-    @ExceptionHandler({RefreshTokenNotFoundException.class, EntityNotFoundException.class})
+    @ExceptionHandler({
+            RefreshTokenNotFoundException.class,
+            EntityNotFoundException.class})
     protected ResponseEntity<Object> handleNotFound(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(NOT_FOUND)
@@ -276,7 +280,9 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @param ex the Exception
      * @return the ApiError object
      */
-    @ExceptionHandler({InvalidJwtException.class, UnAuthorizedException.class})
+    @ExceptionHandler({
+            InvalidJwtException.class,
+            UnAuthorizedException.class})
     protected ResponseEntity<Object> handleJWTVerification(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(FORBIDDEN)
