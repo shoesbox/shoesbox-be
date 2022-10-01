@@ -27,7 +27,8 @@ public class Post extends BaseTimeEntity {
     private Long id;
     @Column(nullable = false)
     private String title;
-    @Column(nullable = false)
+    @Lob
+    @Column(nullable = false, columnDefinition = "text")
     private String content;
     @Column(nullable = false)
     private String thumbnailUrl;
