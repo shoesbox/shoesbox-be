@@ -42,7 +42,7 @@ public class ApiError {
         this();
         this.status = status;
         this.httpStatusCode = status.value();
-        this.originalExceptionType = ex.getCause().getClass().getTypeName();
+        this.originalExceptionType = (ex.getCause() != null) ? ex.getCause().getClass().getTypeName() : null;
         this.customExceptionType = ex.getClass().getTypeName();
         this.message = message;
         if (!message.equals(ex.getLocalizedMessage())) {
