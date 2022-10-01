@@ -35,5 +35,4 @@ public class Photo extends BaseTimeEntity {
     private Post post;
     @Column(name = "post_id", updatable = false, insertable = false)
     private Long postId;
-
 }
