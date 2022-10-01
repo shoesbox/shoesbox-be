@@ -11,12 +11,14 @@ import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
 import com.shoesbox.domain.photo.S3Service;
+import com.shoesbox.domain.photo.exception.ImageDeleteFailureException;
 import com.shoesbox.global.config.jwt.JwtExceptionCode;
 import com.shoesbox.global.config.jwt.JwtProvider;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.InvalidJwtException;
 import com.shoesbox.global.exception.runtime.RefreshTokenNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
+import com.shoesbox.global.util.ImageUtil;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
@@ -49,6 +51,7 @@ public class MemberService {
     private final S3Service s3Service;
     private final RedisService redisService;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ImageUtil imageUtil;
 
     @Transactional
     public String signUp(SignDto signDto) {
@@ -104,16 +107,31 @@ public class MemberService {
     public long updateMemberInfo(long currentMemberId, long targetId, MemberInfoUpdateDto memberInfoUpdateDto) {
         checkSelfAuthorization(currentMemberId, targetId);
         Member member = getMember(currentMemberId);
-        String profileImageUrl = member.getProfileImageUrl();
+        String profileImageUrl = null;
         // 변경할 프로필 이미지가 있으면
         if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile().isEmpty()) {
-            // 기존 이미지 삭제하고
-            s3Service.deleteObjectByImageUrl(member.getProfileImageUrl());
-            // 새로운 이미지 업로드
-            profileImageUrl = s3Service.uploadImage(memberInfoUpdateDto.getImageFile());
-        }
-        member.updateInfo(memberInfoUpdateDto.getNickname(), profileImageUrl);
+            // 기존 이미지 삭제 요청
+            var deleteRequest = s3Service.createDeleteRequest(member.getProfileImageUrl());
+            // 새로운 이미지를 WebP로 변환 후 업로드 요청
+            var createdImageFile = imageUtil.convertMultipartFiletoWebP(memberInfoUpdateDto.getImageFile());
+            var putRequest = s3Service.createPutObjectRequest(createdImageFile);
 
+            try {
+                // 업로드, 삭제 실행
+                profileImageUrl = s3Service.executePutRequest(putRequest);
+                s3Service.executeDeleteRequest(deleteRequest);
+                // 삭제 중 오류 발생 시
+            } catch (ImageDeleteFailureException e) {
+                // 업로드한 이미지가 있을 경우 삭제
+                if (profileImageUrl != null) {
+                    deleteRequest = s3Service.createDeleteRequest(profileImageUrl);
+                    s3Service.executeDeleteRequest(deleteRequest);
+                }
+                throw new ImageDeleteFailureException(e.getLocalizedMessage(), e);
+            }
+        }
+
+        member.updateInfo(memberInfoUpdateDto.getNickname(), profileImageUrl);
         return currentMemberId;
     }
 
@@ -178,7 +196,14 @@ public class MemberService {
     @Transactional
     public long resetProfileImage(long currentMemberId) {
         var member = getMember(currentMemberId);
-        member.updateInfo(member.getNickname(), DEFAULT_PROFILE_IMAGE_URL);
+        var deleteRequest = s3Service.createDeleteRequest(member.getProfileImageUrl());
+        try {
+            s3Service.executeDeleteRequest(deleteRequest);
+            member.updateInfo(member.getNickname(), DEFAULT_PROFILE_IMAGE_URL);
+        } catch (ImageDeleteFailureException e) {
+            throw new ImageDeleteFailureException(e.getLocalizedMessage(), e);
+        }
+
         return member.getId();
     }
 

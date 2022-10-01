@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 
-import java.util.List;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -18,5 +18,5 @@ public class PostResponseDto {
     String nickname;
     String createdAt;
     String modifiedAt;
-    List<String> images;
+    Map<Long, String> images;
 }

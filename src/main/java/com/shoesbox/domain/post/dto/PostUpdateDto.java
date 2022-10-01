@@ -19,5 +19,5 @@ public class PostUpdateDto {
     String title;
     String content;
     List<MultipartFile> imageFiles;
-    List<Long> delteFiles;
+    List<Long> imagesToDelete;
 }
