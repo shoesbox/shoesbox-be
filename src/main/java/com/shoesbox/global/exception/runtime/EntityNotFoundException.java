@@ -5,10 +5,10 @@ package com.shoesbox.global.exception.runtime;
  */
 public class EntityNotFoundException extends RuntimeException {
     public EntityNotFoundException(String entityType) {
-        super(entityType + "를/을 찾을 수 없습니다.", null);
+        super(entityType + "를/을 찾을 수 없습니다.");
     }
 
-    public EntityNotFoundException(String entityType, Throwable cause) {
-        super(entityType + "를/을 찾을 수 없습니다.", cause);
+    public EntityNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

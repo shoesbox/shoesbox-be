@@ -27,10 +27,10 @@ public class ApiError {
     private int httpStatusCode;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd hh:mm:ss:SS")
     private LocalDateTime timestamp;
-    private String originalExceptionType;
-    private String customExceptionType;
     private String message;
     private String debugMessage;
+    private String exceptionType;
+
     private List<ApiSubError> subErrors;
 
     private ApiError() {
@@ -42,12 +42,11 @@ public class ApiError {
         this();
         this.status = status;
         this.httpStatusCode = status.value();
-        this.originalExceptionType = ex.getCause().getClass().getTypeName();
-        this.customExceptionType = ex.getClass().getTypeName();
         this.message = message;
         if (!message.equals(ex.getLocalizedMessage())) {
             this.debugMessage = ex.getLocalizedMessage();
         }
+        this.exceptionType = ex.getClass().getTypeName();
     }
 
     private void addSubError(ApiSubError subError) {
