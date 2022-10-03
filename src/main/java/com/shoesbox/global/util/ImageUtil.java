@@ -31,7 +31,7 @@ public class ImageUtil {
         // 확장자 검사
         checkExtension(Objects.requireNonNull(multipartFile.getOriginalFilename()).toLowerCase());
         // 리사이즈용 임시 파일 생성
-        File tempFile = new File("tmp\\" + "thumbnail_" + UUID.randomUUID() + ".webp");
+        File tempFile = new File("thumbnail_" + UUID.randomUUID() + ".webp");
 
         try {
             // Thumbnailator로 리사이징
@@ -50,7 +50,7 @@ public class ImageUtil {
 
     public File resizeImage(File originalFile) {
         // 리사이즈용 임시 파일 생성
-        File tempFile = new File("tmp\\" + "thumbnail_" + UUID.randomUUID() + ".webp");
+        File tempFile = new File("thumbnail_" + UUID.randomUUID() + ".webp");
         try (InputStream inputStream = new FileInputStream(originalFile)) {
             Thumbnails.of(ImageIO.read(inputStream))
                     .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
@@ -66,7 +66,7 @@ public class ImageUtil {
     public File convertToWebp(File originalFile) {
         try (FileInputStream inputStream = new FileInputStream(originalFile)) {
             // 인코딩할 빈 파일
-            File tempFile = new File("tmp\\" + UUID.randomUUID() + ".webp");
+            File tempFile = new File(UUID.randomUUID() + ".webp");
             var image = ImageIO.read(originalFile);
             // Thumbnailator로 리사이징
             Thumbnails.of(inputStream)
@@ -101,7 +101,7 @@ public class ImageUtil {
         }
         try {
             // 파일 이름
-            var tempImageFile = new File("tmp\\" + file.getOriginalFilename());
+            var tempImageFile = new File(file.getOriginalFilename());
             file.transferTo(tempImageFile.toPath());
             file.getInputStream().close();
             return tempImageFile;

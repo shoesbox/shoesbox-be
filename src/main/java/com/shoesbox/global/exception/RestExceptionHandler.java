@@ -3,6 +3,7 @@ package com.shoesbox.global.exception;
 import com.shoesbox.domain.friend.exception.DuplicateFriendRequestException;
 import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
 import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
+import com.shoesbox.domain.post.exception.FileCountLimitExceededException;
 import com.shoesbox.global.common.ResponseHandler;
 import com.shoesbox.global.exception.apierror.ApiError;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
@@ -231,7 +232,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                     BadCredentialsException.class,
                     ConstraintViolationException.class,
                     DuplicateFriendRequestException.class,
-                    ImageUploadFailureException.class})
+                    ImageUploadFailureException.class,
+                    FileCountLimitExceededException.class})
     protected ResponseEntity<Object> handleBadRequest(RuntimeException ex) {
         return buildResponseEntity(ApiError.builder()
                 .status(BAD_REQUEST)
