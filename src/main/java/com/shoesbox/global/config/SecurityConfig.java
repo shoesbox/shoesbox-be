@@ -95,7 +95,6 @@ public class SecurityConfig {
                 // JwtFilter 를 addFilterBefore 로 등록했던 JwtSecurityConfig 클래스를 적용
                 .and()
                 .addFilterBefore(new JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class);
-        // .apply(new JwtSecurityConfig(tokenProvider));
 
         return httpSecurity.build();
     }

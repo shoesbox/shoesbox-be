@@ -10,7 +10,6 @@ import org.springframework.util.LinkedMultiValueMap;
 @RequiredArgsConstructor
 public class OAuthRequestFactory {
     private final KakaoInfo kakaoInfo;
-    private final GoogleInfo googleInfo;
     private final NaverInfo naverInfo;
 
     public OAuthRequest getRequest(String code, String provider) {
@@ -23,14 +22,6 @@ public class OAuthRequestFactory {
 
             return new OAuthRequest(kakaoInfo.getKakaoTokenUrl(), map);
 
-        } else if (provider.equals("google")) {
-            map.add("grant_type", "authorization_code");
-            map.add("client_id", googleInfo.getGoogleClientId());
-            map.add("client_secret", googleInfo.getGoogleClientSecret());
-            map.add("redirect_uri", googleInfo.getGoogleRedirect());
-            map.add("code", code);
-
-            return new OAuthRequest(googleInfo.getGoogleTokenUrl(), map);
         } else {
             map.add("grant_type", "authorization_code");
             map.add("client_id", naverInfo.getNaverClientId());
@@ -44,12 +35,13 @@ public class OAuthRequestFactory {
     }
 
     public String getProfileUrl(String provider) {
-        if (provider.equals("kakao")) {
-            return kakaoInfo.getKakaoProfileUrl();
-        } else if (provider.equals("naver")) {
-            return naverInfo.getNaverProfileUrl();
-        } else {
-            return googleInfo.getGoogleProfileUrl();
+        switch (provider) {
+            case "kakao":
+                return kakaoInfo.getKakaoProfileUrl();
+            case "naver":
+                return naverInfo.getNaverProfileUrl();
+            default:
+                return null;
         }
     }
 
@@ -64,21 +56,6 @@ public class OAuthRequestFactory {
         private String kakaoTokenUrl;
         @Value("${spring.social.kakao.url.profile}")
         private String kakaoProfileUrl;
-    }
-
-    @Getter
-    @Component
-    static class GoogleInfo {
-        @Value("${spring.social.google.client_id}")
-        String googleClientId;
-        @Value("${spring.social.google.redirect}")
-        String googleRedirect;
-        @Value("${spring.social.google.client_secret}")
-        String googleClientSecret;
-        @Value("${spring.social.google.url.token}")
-        private String googleTokenUrl;
-        @Value("${spring.social.google.url.profile}")
-        private String googleProfileUrl;
     }
 
     @Getter

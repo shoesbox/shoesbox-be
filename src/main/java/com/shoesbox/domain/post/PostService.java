@@ -222,7 +222,7 @@ public class PostService {
             var newPhotos = createNewPhotos(imageUrlsUploaded, post);
             // post에 추가
             post.getPhotos().addAll(newPhotos);
-            thumbnailUrl = createThumnailFromFile(imagesToUpload.get(0));
+            thumbnailUrl = createThumnailFromUrl(post.getPhotos().get(0).getUrl());
         } else if (hasImagesToDelete) {
             // 3. 둘 다 있을 때
             // 삭제 요청
@@ -240,6 +240,7 @@ public class PostService {
             // 썸네일 생성
             thumbnailUrl = createThumnailFromUrl(post.getPhotos().get(0).getUrl());
         }
+
         // 새 썸네일이 있으면
         if (!thumbnailUrl.equals(post.getThumbnailUrl())) {
             // 기존 썸네일 삭제
@@ -364,6 +365,7 @@ public class PostService {
         try {
             // 다운 받은 이미지로부터 썸네일 생성
             thumbnailFile = s3Service.getFileFromS3Object(originalFile);
+            originalFile.close();
             thumbnailFile = imageUtil.resizeImage(thumbnailFile);
         } catch (IOException e) {
             throw new ImageConvertFailureException(e.getLocalizedMessage(), e);
