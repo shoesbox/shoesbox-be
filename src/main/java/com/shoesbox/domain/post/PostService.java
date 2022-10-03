@@ -85,7 +85,7 @@ public class PostService {
         if (!thumbnailUrl.equals(DEFAULT_THUMBNAIL_URL)) {
             createPhoto(files, post);
             // 로컬 파일 삭제
-            for(File file : files){
+            for (File file : files) {
                 file.delete();
             }
         }
@@ -182,7 +182,7 @@ public class PostService {
         createPhoto(files, post);
         post.update(postUpdateDto.getTitle(), postUpdateDto.getContent(), thumbnailUrl);
         // 로컬 파일 삭제
-        for(File file : files){
+        for (File file : files) {
             file.delete();
         }
         return toPostResponseDto(post);

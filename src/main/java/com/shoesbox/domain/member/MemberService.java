@@ -10,7 +10,9 @@ import com.shoesbox.domain.member.dto.MemberInfoResponseDto;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
+import com.shoesbox.domain.photo.PhotoService;
 import com.shoesbox.domain.photo.S3Service;
+import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
 import com.shoesbox.global.config.jwt.JwtExceptionCode;
 import com.shoesbox.global.config.jwt.JwtProvider;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
@@ -32,8 +34,13 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.util.Objects;
 
 //import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
@@ -49,6 +56,7 @@ public class MemberService {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final JwtProvider jwtProvider;
     private final S3Service s3Service;
+    private final PhotoService photoService;
     private final RedisService redisService;
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -111,8 +119,12 @@ public class MemberService {
         if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile().isEmpty()) {
             // 기존 이미지 삭제하고
             s3Service.deleteObjectByImageUrl(member.getProfileImageUrl());
+            // multipartfile -> file, 이미지 회전
+            File file = checkImageRotation(memberInfoUpdateDto.getImageFile());
             // 새로운 이미지 업로드
-            profileImageUrl = s3Service.uploadImage((File) memberInfoUpdateDto.getImageFile());
+            profileImageUrl = s3Service.uploadImage(file);
+            // 파일 삭제
+            file.delete();
         }
         member.updateInfo(memberInfoUpdateDto.getNickname(), profileImageUrl);
 
@@ -233,5 +245,29 @@ public class MemberService {
                 targetId, currentMemberId, FriendState.FRIEND) ||
                 friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
                         currentMemberId, targetId, FriendState.FRIEND);
+    }
+
+    // 이미지 회전 여부 검사
+    private File checkImageRotation(MultipartFile imageFile) {
+        String fileName = Objects.requireNonNull(imageFile.getOriginalFilename()).toLowerCase();
+        // todo : 확장자 검사 중복됨, 정리필
+        if (!(fileName.endsWith(".bmp")
+                || fileName.endsWith(".jpg")
+                || fileName.endsWith(".jpeg")
+                || fileName.endsWith(".png"))) {
+            throw new ImageUploadFailureException("이미지 파일 형식은 bmp, jpg, jpeg, png 중 하나여야 합니다.");
+        }
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+        // 회전 방향 : 1인 경우 정상
+        int orientation = photoService.getOrientation(imageFile);
+        try {
+            BufferedImage rotatedImage = photoService.rotateImageForMobile(imageFile.getInputStream(), orientation);
+            File file = new File(imageFile.getOriginalFilename());
+            ImageIO.write(rotatedImage, fileExtension, file);
+            return file;
+        } catch (IOException e) {
+            throw new RuntimeException("POST SERVICE - IMAGE_ROTATION : " + e);
+        }
     }
 }
