@@ -7,30 +7,20 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
-import com.luciad.imageio.webp.WebPWriteParam;
 import com.shoesbox.domain.photo.exception.ImageDeleteFailureException;
+import com.shoesbox.domain.photo.exception.ImageDownloadFailureException;
 import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
-import net.coobird.thumbnailator.geometry.Positions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.FileImageOutputStream;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -61,131 +51,88 @@ public class S3Service {
                 .build();
     }
 
-    // 이미지 업로드
-    public String uploadImage(File file) {
-        // 파일 이름 받아오기
-        String fileName = Objects.requireNonNull(file.getName()).toLowerCase();
-        // 확장자 점검
-        checkExtension(fileName);
-        File createdImage;
-        // 이미지 업로드 요청 생성
-        public PutObjectRequest createPutObjectRequest (File createdImageFile){
-            // 확장자 검사
-            if (!createdImageFile.getName().toLowerCase().endsWith(".webp")) {
-                throw new ImageUploadFailureException("오직 WebP 파일만 업로드 가능합니다.", null);
-            }
-            // 메타 데이터 생성
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(createdImageFile.length());
-            metadata.setContentType(CONTENT_TYPE_WEBP);
-
-            // PutObjectRequest 생성
-            return new PutObjectRequest(bucketName, createdImageFile.getName(), createdImageFile)
-                    .withCannedAcl(CannedAccessControlList.PublicRead);
+    // 이미지 업로드 요청 생성
+    public PutObjectRequest createPutObjectRequest(File createdImageFile) {
+        // 확장자 검사
+        if (!createdImageFile.getName().toLowerCase().endsWith(".webp")) {
+            throw new ImageUploadFailureException("오직 WebP 파일만 업로드 가능합니다.", null);
         }
+        // 메타 데이터 생성
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(createdImageFile.length());
+        metadata.setContentType(CONTENT_TYPE_WEBP);
 
-        // 한 장의 이미지 삭제 요청 생성
-        public DeleteObjectRequest createDeleteRequest (String imageUrl){
-            // split을 통해 나누고 나눈 length에서 1을 빼서 마지막 값(파일명)을 사용함.
-            String key = imageUrl.split("/")[imageUrl.split("/").length - 1];
-            return new DeleteObjectRequest(bucketName, key);
+        // PutObjectRequest 생성
+        return new PutObjectRequest(bucketName, createdImageFile.getName(), createdImageFile)
+                .withCannedAcl(CannedAccessControlList.PublicRead);
+    }
+
+    // 한 장의 이미지 삭제 요청 생성
+    public DeleteObjectRequest createDeleteRequest(String imageUrl) {
+        // split을 통해 나누고 나눈 length에서 1을 빼서 마지막 값(파일명)을 사용함.
+        String key = imageUrl.split("/")[imageUrl.split("/").length - 1];
+        return new DeleteObjectRequest(bucketName, key);
+    }
+
+    // 여러 장의 이미지 삭제 요청 생성
+    public DeleteObjectsRequest createDeleteRequest(List<String> imageUrls) {
+        var keys = imageUrls.stream()
+                .map((imageUrl) -> imageUrl.split("/")[imageUrl.split("/").length - 1])
+                .map(DeleteObjectsRequest.KeyVersion::new)
+                .collect(Collectors.toList());
+        return new DeleteObjectsRequest(bucketName)
+                .withKeys(keys)
+                .withQuiet(false);
+    }
+
+    // 업로드 + url 반환
+    public String executePutRequest(PutObjectRequest putObjectRequest) {
+        try {
+            s3Client.putObject(putObjectRequest);
+        } catch (SdkClientException e) {
+            throw new ImageUploadFailureException("이미지 업로드 실패!", e);
         }
+        putObjectRequest.getFile().delete();
+        return urlPrefix + putObjectRequest.getFile().getName();
+    }
 
-        // 여러 장의 이미지 삭제 요청 생성
-        public DeleteObjectsRequest createDeleteRequest (List < String > imageUrls) {
-            var keys = imageUrls.stream()
-                    .map((imageUrl) -> imageUrl.split("/")[imageUrl.split("/").length - 1])
-                    .map(DeleteObjectsRequest.KeyVersion::new)
-                    .collect(Collectors.toList());
-            return new DeleteObjectsRequest(bucketName)
-                    .withKeys(keys)
-                    .withQuiet(false);
-        }
-
-        // 업로드 + url 반환
-        public String executePutRequest (PutObjectRequest putObjectRequest){
-            try {
-                // WebP로 변환
-                createdImage = ConvertToWebp(new FileInputStream(file));
-
-                // 이미지 업로드
-                uploadImageToS3(createdImage);
-            } catch (java.io.IOException e) {
-                throw new ImageUploadFailureException(e.getMessage(), e);
+    // 다중 업로드 + url List 반환
+    public List<String> executePutRequest(List<PutObjectRequest> putObjectRequests) {
+        var urls = new ArrayList<String>();
+        try {
+            for (var putObjectRequest : putObjectRequests) {
                 s3Client.putObject(putObjectRequest);
-            } catch (SdkClientException e) {
-                throw new ImageUploadFailureException("이미지 업로드 실패!", e);
+                urls.add(urlPrefix + putObjectRequest.getFile().getName());
             }
-            putObjectRequest.getFile().delete();
-            return urlPrefix + putObjectRequest.getFile().getName();
+        } catch (SdkClientException e) {
+            throw new ImageUploadFailureException("이미지 업로드 실패!", e);
+        } finally {
+            putObjectRequests.forEach((request) -> request.getFile().delete());
         }
+        return urls;
+    }
 
-        // 다중 업로드 + url List 반환
-        public List<String> executePutRequest (List < PutObjectRequest > putObjectRequests) {
-            var urls = new ArrayList<String>();
-            try {
-                for (var putObjectRequest : putObjectRequests) {
-                    s3Client.putObject(putObjectRequest);
-                    urls.add(urlPrefix + putObjectRequest.getFile().getName());
-                }
-            } catch (SdkClientException e) {
-                throw new ImageUploadFailureException("이미지 업로드 실패!", e);
-            } finally {
-                putObjectRequests.forEach((request) -> request.getFile().delete());
-            }
-            return urls;
+    // 단일 삭제
+    public void executeDeleteRequest(DeleteObjectRequest deleteObjectRequest) {
+        try {
+            s3Client.deleteObject(deleteObjectRequest);
+        } catch (SdkClientException e) {
+            throw new ImageDeleteFailureException("이미지 삭제 실패!", e);
         }
+    }
 
-        // 단일 삭제
-        public void executeDeleteRequest (DeleteObjectRequest deleteObjectRequest){
-            try {
-                s3Client.deleteObject(deleteObjectRequest);
-            } catch (SdkClientException e) {
-                throw new ImageDeleteFailureException("이미지 삭제 실패!", e);
+    // 여러 개 삭제
+    public void executeDeleteRequest(DeleteObjectsRequest deleteObjectsRequest) {
+        try {
+            var result = s3Client.deleteObjects(deleteObjectsRequest);
+            var deletedObjects = result.getDeletedObjects();
+            if (deletedObjects.isEmpty()) {
+                throw new ImageDeleteFailureException("이미지 삭제 실패!", null);
             }
+        } catch (SdkClientException e) {
+            throw new ImageDeleteFailureException("이미지 삭제 실패!", e);
         }
-
-        public String uploadThumbnail (File file){
-            // 파일 이름 받아오기
-            String fileName = Objects.requireNonNull(file.getName()).toLowerCase();
-            // 확장자 점검
-            checkExtension(fileName);
-            // 확장자 추출
-            String fileExtension = fileName.substring(fileName.lastIndexOf("."));
-            try {
-                // 리사이즈용 임시 파일 생성
-                File originalThumbnail = new File("temp_thumbnail_" + UUID.randomUUID() + fileExtension);
-                // Thumbnailator로 리사이징
-                Thumbnails.of(new FileInputStream(file))
-                        .crop(Positions.CENTER)
-                        .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
-                        .toFile(originalThumbnail);
-                // WebP로 변환
-                var originalInputStream = new FileInputStream(originalThumbnail);
-                File encodedThumbnail = ConvertToWebp(originalInputStream);
-                // 임시 파일 삭제
-                originalInputStream.close();
-                Assert.isTrue(originalThumbnail.delete(), "임시 파일이 삭제되지 않음!");
-                // 이미지 업로드
-                fileName = encodedThumbnail.getName();
-                uploadImageToS3(encodedThumbnail);
-            } catch (java.io.IOException e) {
-                throw new ImageUploadFailureException(e.getMessage(), e);
-            }
-        }
-
-        // 여러 개 삭제
-        public void executeDeleteRequest (DeleteObjectsRequest deleteObjectsRequest){
-            try {
-                var result = s3Client.deleteObjects(deleteObjectsRequest);
-                var deletedObjects = result.getDeletedObjects();
-                if (deletedObjects.isEmpty()) {
-                    throw new ImageDeleteFailureException("이미지 삭제 실패!", null);
-                }
-            } catch (SdkClientException e) {
-                throw new ImageDeleteFailureException("이미지 삭제 실패!", e);
-            }
-        }
+    }
 
     // 이미지 다운로드
     public S3Object getObject(String imageUrl) throws IOException {
@@ -203,9 +150,9 @@ public class S3Service {
                 }
             }
             throw new ImageDownloadFailureException(e.getLocalizedMessage(), e);
-            }
-        return s3Object;
         }
+        return s3Object;
+    }
 
     public File getFileFromS3Object(S3Object s3Object) throws IOException {
         File originalFile = new File(UUID.randomUUID() + ".webp");
@@ -214,5 +161,5 @@ public class S3Service {
                 originalFile.toPath(),
                 StandardCopyOption.REPLACE_EXISTING);
         return originalFile;
-        }
     }
+}
