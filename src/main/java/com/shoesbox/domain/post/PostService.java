@@ -7,7 +7,9 @@ import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.domain.photo.PhotoRepository;
+import com.shoesbox.domain.photo.PhotoService;
 import com.shoesbox.domain.photo.S3Service;
+import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
 import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
 import com.shoesbox.domain.post.dto.PostResponseListDto;
@@ -24,6 +26,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
@@ -41,6 +47,7 @@ public class PostService {
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
     private final AlarmRepository alarmRepository;
+    private final PhotoService photoService;
     private final S3Service s3Service;
     private final TemporalField fieldISO = WeekFields.of(Locale.KOREA).dayOfWeek();
 
@@ -50,13 +57,16 @@ public class PostService {
         // 날짜 검사
         LocalDate targetDate = validatePostRequest(memberId, postRequestDto);
         String thumbnailUrl;
+        List<File> files = new ArrayList<>();
         // 새로운 이미지가 없으면
         if (!validateImageFiles(postRequestDto.getImageFiles())) {
             // 기본값 사용
             thumbnailUrl = DEFAULT_THUMBNAIL_URL;
         } else {
+            // Multipart File -> File, file 회전 여부 수정
+            files = checkImageRotation(postRequestDto.getImageFiles());
             // 새로운 이미지가 있으면 썸네일 업로드
-            thumbnailUrl = s3Service.uploadThumbnail(postRequestDto.getImageFiles().get(0));
+            thumbnailUrl = s3Service.uploadThumbnail(files.get(0));
         }
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
@@ -73,7 +83,11 @@ public class PostService {
         // 썸네일이 기본값이 아니면
         // photo 생성
         if (!thumbnailUrl.equals(DEFAULT_THUMBNAIL_URL)) {
-            createPhoto(postRequestDto.getImageFiles(), post);
+            createPhoto(files, post);
+            // 로컬 파일 삭제
+            for(File file : files){
+                file.delete();
+            }
         }
 
         // 모든 친구에 알림 생성 및 발송
@@ -160,11 +174,17 @@ public class PostService {
             }
         }
 
+        // Multipart File -> File, file 회전 여부 수정
+        List<File> files = checkImageRotation(postUpdateDto.getImageFiles());
         // 썸네일 생성
-        String thumbnailUrl = s3Service.uploadThumbnail(postUpdateDto.getImageFiles().get(0));
+        String thumbnailUrl = s3Service.uploadThumbnail(files.get(0));
         // 첨부 이미지 저장
-        createPhoto(postUpdateDto.getImageFiles(), post);
+        createPhoto(files, post);
         post.update(postUpdateDto.getTitle(), postUpdateDto.getContent(), thumbnailUrl);
+        // 로컬 파일 삭제
+        for(File file : files){
+            file.delete();
+        }
         return toPostResponseDto(post);
     }
 
@@ -226,8 +246,7 @@ public class PostService {
                 .build();
     }
 
-    private void createPhoto(List<MultipartFile> imageFiles, Post post) {
-        validateImageFiles(imageFiles);
+    private void createPhoto(List<File> imageFiles, Post post) {
         var photos = new ArrayList<Photo>();
         for (var imageFile : imageFiles) {
             var uploadedImageUrl = s3Service.uploadImage(imageFile);
@@ -253,6 +272,37 @@ public class PostService {
             }
             post.getPhotos().clear();
         }
+    }
+
+    // 이미지 회전 여부 검사
+    private List<File> checkImageRotation(List<MultipartFile> imageFiles) {
+        List<File> files = new ArrayList<>();
+        for (MultipartFile mFile : imageFiles) {
+            String fileName = Objects.requireNonNull(mFile.getOriginalFilename()).toLowerCase();
+            // todo : 확장자 검사 중복됨, 정리필
+            if (!(fileName.endsWith(".bmp")
+                    || fileName.endsWith(".jpg")
+                    || fileName.endsWith(".jpeg")
+                    || fileName.endsWith(".png"))) {
+                throw new ImageUploadFailureException("이미지 파일 형식은 bmp, jpg, jpeg, png 중 하나여야 합니다.");
+            }
+            String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+            // 회전 방향 : 1인 경우 정상
+            int orientation = photoService.getOrientation(mFile);
+            try {
+                BufferedImage rotatedImage = photoService.rotateImageForMobile(mFile.getInputStream(), orientation);
+                File file = new File(mFile.getOriginalFilename());
+                ImageIO.write(rotatedImage, fileExtension, file);
+                files.add(file);
+            } catch (IOException e) {
+                files.add((File) mFile);
+                throw new RuntimeException("POST SERVICE - IMAGE_ROTATION : " + e);
+            }
+
+
+        }
+        return files;
     }
 
     // 이미지가 있으면 true

@@ -59,6 +59,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.sejda.imageio/webp-imageio
     implementation group: 'org.sejda.imageio', name: 'webp-imageio', version: '0.1.6'
 
+    // meta data extractor : // https://mvnrepository.com/artifact/com.drewnoakes/metadata-extractor
+    implementation 'com.drewnoakes:metadata-extractor:2.18.0'
+
 }
 
 tasks.named('test') {

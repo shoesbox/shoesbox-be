@@ -33,6 +33,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
+
 //import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
 @Slf4j
@@ -110,7 +112,7 @@ public class MemberService {
             // 기존 이미지 삭제하고
             s3Service.deleteObjectByImageUrl(member.getProfileImageUrl());
             // 새로운 이미지 업로드
-            profileImageUrl = s3Service.uploadImage(memberInfoUpdateDto.getImageFile());
+            profileImageUrl = s3Service.uploadImage((File) memberInfoUpdateDto.getImageFile());
         }
         member.updateInfo(memberInfoUpdateDto.getNickname(), profileImageUrl);
 

@@ -14,9 +14,9 @@ import io.jsonwebtoken.lang.Assert;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.geometry.Positions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import javax.imageio.IIOImage;
@@ -62,15 +62,15 @@ public class S3Service {
     }
 
     // 이미지 업로드
-    public String uploadImage(MultipartFile file) {
+    public String uploadImage(File file) {
         // 파일 이름 받아오기
-        String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
+        String fileName = Objects.requireNonNull(file.getName()).toLowerCase();
         // 확장자 점검
         checkExtension(fileName);
         File createdImage;
         try {
             // WebP로 변환
-            createdImage = ConvertToWebp(file.getInputStream());
+            createdImage = ConvertToWebp(new FileInputStream(file));
 
             // 이미지 업로드
             uploadImageToS3(createdImage);
@@ -91,9 +91,9 @@ public class S3Service {
         s3Client.deleteObject(bucket, sourceKey);
     }
 
-    public String uploadThumbnail(MultipartFile file) {
+    public String uploadThumbnail(File file) {
         // 파일 이름 받아오기
-        String fileName = Objects.requireNonNull(file.getOriginalFilename()).toLowerCase();
+        String fileName = Objects.requireNonNull(file.getName()).toLowerCase();
         // 확장자 점검
         checkExtension(fileName);
         // 확장자 추출
@@ -102,7 +102,8 @@ public class S3Service {
             // 리사이즈용 임시 파일 생성
             File originalThumbnail = new File("temp_thumbnail_" + UUID.randomUUID() + fileExtension);
             // Thumbnailator로 리사이징
-            Thumbnails.of(file.getInputStream())
+            Thumbnails.of(new FileInputStream(file))
+                    .crop(Positions.CENTER)
                     .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
                     .toFile(originalThumbnail);
             // WebP로 변환
