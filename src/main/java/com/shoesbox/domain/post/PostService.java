@@ -191,7 +191,7 @@ public class PostService {
         }
         // 새로 업로드할 이미지가 있는지
         List<PutObjectRequest> putRequests = new ArrayList<>();
-        boolean hasImagesToUpload = validateImageFiles(postUpdateDto.getImageFiles());
+        boolean hasImagesToUpload = validateImageFiles(imagesToUpload);
         if (hasImagesToUpload) {
             // image 업로드 요청 생성
             putRequests.addAll(postUpdateDto.getImageFiles().stream()
@@ -222,6 +222,7 @@ public class PostService {
             var newPhotos = createNewPhotos(imageUrlsUploaded, post);
             // post에 추가
             post.getPhotos().addAll(newPhotos);
+            thumbnailUrl = createThumnailFromFile(imagesToUpload.get(0));
         } else if (hasImagesToDelete) {
             // 3. 둘 다 있을 때
             // 삭제 요청
@@ -338,6 +339,17 @@ public class PostService {
             s3Service.executeDeleteRequest(s3Service.createDeleteRequest(urls));
             post.getPhotos().clear();
         }
+    }
+
+    private String createThumnailFromFile(MultipartFile file) {
+        // 썸네일용 파일 생성 및 업로드 요청 생성
+        File thumbnailFile = imageUtil.resizeImage(file);
+        var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
+        // 이미지 업로드
+        var thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
+        // 임시파일 삭제
+        thumbnailFile.delete();
+        return thumbnailUrl;
     }
 
     private String createThumnailFromUrl(String url) {
