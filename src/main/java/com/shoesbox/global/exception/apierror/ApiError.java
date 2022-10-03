@@ -29,6 +29,7 @@ public class ApiError {
     private LocalDateTime timestamp;
     private String message;
     private String debugMessage;
+    private String originalExceptionType;
     private String exceptionType;
 
     private List<ApiSubError> subErrors;
@@ -46,6 +47,7 @@ public class ApiError {
         if (!message.equals(ex.getLocalizedMessage())) {
             this.debugMessage = ex.getLocalizedMessage();
         }
+        this.originalExceptionType = (ex.getCause() != null) ? ex.getCause().getClass().getTypeName() : null;
         this.exceptionType = ex.getClass().getTypeName();
     }
 
