@@ -68,7 +68,7 @@ public class GuestService {
         }
 
         Member toMember = memberRepository.findByEmail(toMemberEmail)
-                .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
+                .orElseThrow(() -> new EntityNotFoundException("게스트 계정"));
 
         Friend friend = Friend.builder()
                 .fromMember(fromMember)
