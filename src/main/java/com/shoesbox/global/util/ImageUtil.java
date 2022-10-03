@@ -59,7 +59,7 @@ public class ImageUtil {
         } catch (IOException e) {
             throw new ImageConvertFailureException(e.getLocalizedMessage(), e);
         }
-
+        originalFile.delete();
         return tempFile;
     }
 

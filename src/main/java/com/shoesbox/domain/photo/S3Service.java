@@ -155,7 +155,7 @@ public class S3Service {
     }
 
     public File getFileFromS3Object(S3Object s3Object) throws IOException {
-        File originalFile = new File("tmp\\" + UUID.randomUUID() + ".webp");
+        File originalFile = new File(UUID.randomUUID() + ".webp");
         java.nio.file.Files.copy(
                 s3Object.getObjectContent(),
                 originalFile.toPath(),
