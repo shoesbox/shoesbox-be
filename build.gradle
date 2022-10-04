@@ -54,10 +54,13 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     // Thumbnail : https://mvnrepository.com/artifact/net.coobird/thumbnailator
-    implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.1'
+    implementation group: 'net.coobird', name: 'thumbnailator', version: '0.4.8'
 
     // https://mvnrepository.com/artifact/com.github.gotson/webp-imageio
     implementation group: 'com.github.gotson', name: 'webp-imageio', version: '0.2.2'
+
+    // meta data extractor : // https://mvnrepository.com/artifact/com.drewnoakes/metadata-extractor
+    implementation 'com.drewnoakes:metadata-extractor:2.18.0'
 
 }
 

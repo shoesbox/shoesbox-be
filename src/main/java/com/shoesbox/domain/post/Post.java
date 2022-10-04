@@ -18,18 +18,16 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-// TODO: Setter는 임시로  넣은 것. 제거해야 함!!
-@Setter
 public class Post extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Setter
     private Long id;
     @Column(nullable = false)
     private String title;
     @Lob
     @Column(nullable = false, columnDefinition = "text")
     private String content;
+    @Setter
     @Column(nullable = false)
     private String thumbnailUrl;
     @Column(nullable = false)

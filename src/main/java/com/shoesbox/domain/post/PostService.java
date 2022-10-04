@@ -83,18 +83,21 @@ public class PostService {
             thumbnailUrl = DEFAULT_THUMBNAIL_URL;
         } else {
             // 새로운 이미지가 있으면
+            // Multipart File -> File, 사진 회전 수정
+            List<File> files = imageUtil.correctImageRotation(postRequestDto.getImageFiles());
+            // 썸네일용 파일 생성
+            File thumbnailFile = imageUtil.createThumbnail(files.get(0));
+
             // image 업로드 요청 생성
-            var imagePutRequests = postRequestDto.getImageFiles().stream()
-                    .map(imageUtil::convertMultipartFiletoWebP)
-                    .map(s3Service::createPutObjectRequest)
-                    .collect(Collectors.toList());
-            // 썸네일용 파일 생성 및 업로드 요청 생성
-            File thumbnailFile = imageUtil.resizeImage(postRequestDto.getImageFiles().get(0));
+            var imagePutRequests = s3Service.createPutObjectRequests(files);
+            // 썸네일 업로드 요청 생성
             var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
+
             // 이미지 업로드
             var imageUrlsUploaded = s3Service.executePutRequest(imagePutRequests);
             // 썸네일 업로드
             thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
+
             // photo 생성
             var newPhotos = createNewPhotos(imageUrlsUploaded, post);
             // post에 추가
@@ -193,9 +196,11 @@ public class PostService {
         List<PutObjectRequest> putRequests = new ArrayList<>();
         boolean hasImagesToUpload = validateImageFiles(imagesToUpload);
         if (hasImagesToUpload) {
+            // Multipart File -> File, file 회전 여부 수정
+            List<File> files = imageUtil.correctImageRotation(postUpdateDto.getImageFiles());
             // image 업로드 요청 생성
-            putRequests.addAll(postUpdateDto.getImageFiles().stream()
-                    .map(imageUtil::convertMultipartFiletoWebP)
+            putRequests.addAll(files.stream()
+                    .map(imageUtil::convertToWebp)
                     .map(s3Service::createPutObjectRequest)
                     .collect(Collectors.toList()));
         }
@@ -222,7 +227,7 @@ public class PostService {
             var newPhotos = createNewPhotos(imageUrlsUploaded, post);
             // post에 추가
             post.getPhotos().addAll(newPhotos);
-            thumbnailUrl = createThumnailFromFile(imagesToUpload.get(0));
+            thumbnailUrl = createThumnailFromUrl(post.getPhotos().get(0).getUrl());
         } else if (hasImagesToDelete) {
             // 3. 둘 다 있을 때
             // 삭제 요청
@@ -240,6 +245,7 @@ public class PostService {
             // 썸네일 생성
             thumbnailUrl = createThumnailFromUrl(post.getPhotos().get(0).getUrl());
         }
+
         // 새 썸네일이 있으면
         if (!thumbnailUrl.equals(post.getThumbnailUrl())) {
             // 기존 썸네일 삭제
@@ -256,6 +262,16 @@ public class PostService {
     public long deletePost(long currentMemberId, long postId) {
         Post post = getPost(postId);
         checkSelfAuthorization(currentMemberId, post.getMemberId());
+        // 첨부 이미지 삭제
+        deleteAllPhotosInPost(post);
+        postRepository.deleteById(postId);
+        return postId;
+    }
+
+    // 강제 삭제
+    @Transactional
+    public long deletePostAdmin(long postId) {
+        Post post = getPost(postId);
         // 첨부 이미지 삭제
         deleteAllPhotosInPost(post);
         postRepository.deleteById(postId);
@@ -341,19 +357,9 @@ public class PostService {
         }
     }
 
-    private String createThumnailFromFile(MultipartFile file) {
-        // 썸네일용 파일 생성 및 업로드 요청 생성
-        File thumbnailFile = imageUtil.resizeImage(file);
-        var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
-        // 이미지 업로드
-        var thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
-        // 임시파일 삭제
-        thumbnailFile.delete();
-        return thumbnailUrl;
-    }
-
     private String createThumnailFromUrl(String url) {
         S3Object originalFile;
+        File originalThumbnailFile;
         File thumbnailFile;
         try {
             // url로부터 이미지 파일 다운로드
@@ -363,8 +369,10 @@ public class PostService {
         }
         try {
             // 다운 받은 이미지로부터 썸네일 생성
-            thumbnailFile = s3Service.getFileFromS3Object(originalFile);
-            thumbnailFile = imageUtil.resizeImage(thumbnailFile);
+            originalThumbnailFile = s3Service.getFileFromS3Object(originalFile);
+            originalFile.close();
+            thumbnailFile = imageUtil.createThumbnail(originalThumbnailFile);
+            thumbnailFile.delete();
         } catch (IOException e) {
             throw new ImageConvertFailureException(e.getLocalizedMessage(), e);
         }

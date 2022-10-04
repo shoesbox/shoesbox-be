@@ -69,4 +69,10 @@ public class PostController {
         guestService.guestCheck(currentMemberId);
         return ResponseHandler.ok(postService.deletePost(currentMemberId, postId));
     }
+
+    // 강제삭제
+    @DeleteMapping("/admin/{postId}")
+    public ResponseEntity<Object> deletePostAdmin(@PathVariable long postId) {
+        return ResponseHandler.ok(postService.deletePostAdmin(postId));
+    }
 }
