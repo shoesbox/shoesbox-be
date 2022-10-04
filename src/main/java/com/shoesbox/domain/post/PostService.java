@@ -90,13 +90,10 @@ public class PostService {
                     .map(imageUtil::convertToWebp)
                     .map(s3Service::createPutObjectRequest)
                     .collect(Collectors.toList());
-            // 썸네일용 파일 생성 및 업로드 요청 생성
-            File thumbnailFile = imageUtil.resizeImage(postRequestDto.getImageFiles().get(0));
-            var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
+            // 썸네일용 파일 생성 및 업로드
+            thumbnailUrl = createThumnailFromFile(postRequestDto.getImageFiles().get(0));
             // 이미지 업로드
             var imageUrlsUploaded = s3Service.executePutRequest(imagePutRequests);
-            // 썸네일 업로드
-            thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
             // photo 생성
             var newPhotos = createNewPhotos(imageUrlsUploaded, post);
             // post에 추가
