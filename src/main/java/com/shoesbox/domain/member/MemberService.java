@@ -58,29 +58,34 @@ public class MemberService {
     @Transactional
     public String signUp(SignDto signDto) {
         checkEmail(signDto.getEmail());
-        return memberRepository.save(toMember(signDto)).getNickname();
+        return memberRepository.save(toMember(signDto))
+                .getNickname();
     }
 
     @Transactional
     public TokenResponseDto login(SignDto signDto) {
         // Login 화면에서 입력 받은 email/pw 를 기반으로 AuthenticationToken 생성
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(signDto.getEmail(), signDto.getPassword());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                signDto.getEmail(), signDto.getPassword());
 
         // 실제로 검증 (사용자 비밀번호 체크) 이 이루어지는 부분
         // authenticate 메서드가 실행이 될 때 CustomUserDetailsService 에서 만들었던 loadUserByUsername 메서드가 실행됨
         Authentication authentication;
         try {
-            authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+            authentication = authenticationManagerBuilder.getObject()
+                    .authenticate(authenticationToken);
         } catch (AuthenticationException e) {
             throw new BadCredentialsException("아이디, 혹은 비밀번호가 잘못되었습니다.");
         }
 
         // 인증 정보를 사용해 JWT 토큰 생성
-        TokenResponseDto tokenResponseDto = jwtProvider.createTokenDto((CustomUserDetails) authentication.getPrincipal());
+        TokenResponseDto tokenResponseDto = jwtProvider.createTokenDto(
+                (CustomUserDetails) authentication.getPrincipal());
 
         // RefreshToken 저장
         String refreshToken = tokenResponseDto.getRefreshToken();
-        redisService.setDataWithExpiration("RT:" + authentication.getName(), refreshToken, tokenResponseDto.getRefreshTokenLifetimeInMs());
+        redisService.setDataWithExpiration("RT:" + authentication.getName(), refreshToken,
+                                           tokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return tokenResponseDto;
@@ -94,7 +99,12 @@ public class MemberService {
             checkSelfAuthorization(currentMemberId, targetId);
         }
         Member member = getMember(targetId);
-        return MemberInfoResponseDto.builder().memberId(targetId).nickname(member.getNickname()).email(member.getEmail()).profileImageUrl(member.getProfileImageUrl()).build();
+        return MemberInfoResponseDto.builder()
+                .memberId(targetId)
+                .nickname(member.getNickname())
+                .email(member.getEmail())
+                .profileImageUrl(member.getProfileImageUrl())
+                .build();
     }
 
     @Transactional
@@ -103,7 +113,8 @@ public class MemberService {
         Member member = getMember(currentMemberId);
         String profileImageUrl = member.getProfileImageUrl();
         // 변경할 프로필 이미지가 있으면
-        if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile().isEmpty()) {
+        if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile()
+                .isEmpty()) {
             // 기존 이미지 삭제 요청
             var deleteRequest = s3Service.createDeleteRequest(member.getProfileImageUrl());
             // multipartfile -> file, 이미지 회전
@@ -158,7 +169,8 @@ public class MemberService {
         var userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         // 3. (수정) Redis 저장소에서 토큰 가져오는것으로 대체
-        String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + authentication.getName());
+        String savedRefreshToken = redisTemplate.opsForValue()
+                .get("RT:" + authentication.getName());
         if (savedRefreshToken == null) {
             throw new RefreshTokenNotFoundException("로그아웃 된 사용자입니다.");
         }
@@ -172,7 +184,9 @@ public class MemberService {
         TokenResponseDto refreshedTokenResponseDto = jwtProvider.createTokenDto(userDetails);
 
         // 6. db의 리프레쉬 토큰 정보 업데이트 -> Redis에 Refresh 업데이트
-        redisService.setDataWithExpiration("RT:" + authentication.getName(), refreshedTokenResponseDto.getRefreshToken(), refreshedTokenResponseDto.getRefreshTokenLifetimeInMs());
+        redisService.setDataWithExpiration("RT:" + authentication.getName(),
+                                           refreshedTokenResponseDto.getRefreshToken(),
+                                           refreshedTokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return refreshedTokenResponseDto;
@@ -209,7 +223,8 @@ public class MemberService {
     }
 
     private Member getMember(long memberId) {
-        return memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
     }
 
     private void checkEmail(String email) {
@@ -219,7 +234,12 @@ public class MemberService {
     }
 
     private Member toMember(SignDto signDto) {
-        return Member.builder().email(signDto.getEmail()).password(bCryptPasswordEncoder.encode(signDto.getPassword())).nickname(signDto.getEmail().split("@")[0]).profileImageUrl(DEFAULT_PROFILE_IMAGE_URL).build();
+        return Member.builder()
+                .email(signDto.getEmail())
+                .password(bCryptPasswordEncoder.encode(signDto.getPassword()))
+                .nickname(signDto.getEmail().split("@")[0])
+                .profileImageUrl(DEFAULT_PROFILE_IMAGE_URL)
+                .build();
     }
 
     // 자기 자신, 혹은 친구 관계인지 검증
@@ -239,6 +259,9 @@ public class MemberService {
 
     // 두 memberId가 서로 친구 관계인지 검증
     private boolean isFriend(long currentMemberId, long targetId) {
-        return friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(targetId, currentMemberId, FriendState.FRIEND) || friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(currentMemberId, targetId, FriendState.FRIEND);
+        return friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
+                targetId, currentMemberId, FriendState.FRIEND)
+                || friendRepository.existsByFromMemberIdAndToMemberIdAndFriendState(
+                currentMemberId, targetId, FriendState.FRIEND);
     }
 }
