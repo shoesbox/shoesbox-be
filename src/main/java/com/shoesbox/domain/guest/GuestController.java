@@ -45,13 +45,6 @@ public class GuestController {
     public ResponseEntity<Object> login() {
         SignDto signDto = null;
         int guestCount = guestService.guestCount();
-        List<String> admins = Arrays.asList(
-                "ipaper491@gmail.com",
-                "parkhj929@kakao.com",
-                "guuto9@gmail.com",
-                "moungbak421@daum.net",
-                "ciy1101@nate.com"
-        );
 
         for (int i = 0; i <= guestCount; i++) {
             String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + GUEST_ID + (i + 1) + "@" + GUEST_EMAIL);
@@ -70,7 +63,7 @@ public class GuestController {
 
                     // 새 게스트 계정의 친구 관계 설정
                     for (int j = 0; j < admins.size(); j++) {
-                        guestService.makeFriendToGuest(admins.get(i), signDto.getEmail(), FriendState.FRIEND);
+                        guestService.makeFriendToGuest(admins.get(j), signDto.getEmail(), FriendState.FRIEND);
                     }
                     guestService.makeFriendToGuest(REQUESTED_FRIEND, signDto.getEmail(), FriendState.REQUEST);
                 }
