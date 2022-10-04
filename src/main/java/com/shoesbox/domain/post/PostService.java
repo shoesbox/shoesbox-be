@@ -264,6 +264,16 @@ public class PostService {
         return postId;
     }
 
+    // 강제 삭제
+    @Transactional
+    public long deletePostAdmin(long postId) {
+        Post post = getPost(postId);
+        // 첨부 이미지 삭제
+        deleteAllPhotosInPost(post);
+        postRepository.deleteById(postId);
+        return postId;
+    }
+
     private Post getPost(long postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException(Post.class.getPackageName()));
