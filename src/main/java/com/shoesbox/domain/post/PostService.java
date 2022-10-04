@@ -347,9 +347,19 @@ public class PostService {
         }
     }
 
+    private String createThumnailFromFile(MultipartFile file) {
+        // 썸네일용 파일 생성 및 업로드 요청 생성
+        File thumbnailFile = imageUtil.resizeImage(file);
+        var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
+        // 이미지 업로드
+        var thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
+        // 임시파일 삭제
+        thumbnailFile.delete();
+        return thumbnailUrl;
+    }
+
     private String createThumnailFromUrl(String url) {
         S3Object originalFile;
-        File originalThumbnailFile;
         File thumbnailFile;
         try {
             // url로부터 이미지 파일 다운로드
@@ -359,10 +369,9 @@ public class PostService {
         }
         try {
             // 다운 받은 이미지로부터 썸네일 생성
-            originalThumbnailFile = s3Service.getFileFromS3Object(originalFile);
+            thumbnailFile = s3Service.getFileFromS3Object(originalFile);
             originalFile.close();
-            thumbnailFile = imageUtil.createThumbnail(originalThumbnailFile);
-            originalThumbnailFile.delete();
+            thumbnailFile = imageUtil.resizeImage(thumbnailFile);
         } catch (IOException e) {
             throw new ImageConvertFailureException(e.getLocalizedMessage(), e);
         }
@@ -370,7 +379,8 @@ public class PostService {
         var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
         // 썸네일 업로드
         var thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
-
+        // 임시파일 삭제
+        thumbnailFile.delete();
         return thumbnailUrl;
     }
 
