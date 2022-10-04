@@ -124,11 +124,7 @@ public class S3Service {
     // 여러 개 삭제
     public void executeDeleteRequest(DeleteObjectsRequest deleteObjectsRequest) {
         try {
-            var result = s3Client.deleteObjects(deleteObjectsRequest);
-            var deletedObjects = result.getDeletedObjects();
-            if (deletedObjects.isEmpty()) {
-                throw new ImageDeleteFailureException("이미지 삭제 실패!", null);
-            }
+            s3Client.deleteObjects(deleteObjectsRequest);
         } catch (SdkClientException e) {
             throw new ImageDeleteFailureException("이미지 삭제 실패!", e);
         }
