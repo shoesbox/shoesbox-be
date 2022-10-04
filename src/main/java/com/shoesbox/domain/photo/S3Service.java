@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.model.*;
 import com.shoesbox.domain.photo.exception.ImageDeleteFailureException;
 import com.shoesbox.domain.photo.exception.ImageDownloadFailureException;
 import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
+import com.shoesbox.global.util.ImageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,7 @@ public class S3Service {
     @Value("${cloud.aws.prefix}")
     private String urlPrefix;
     private static final String CONTENT_TYPE_WEBP = "image/webp";
+    private final ImageUtil imageUtil;
 
     @PostConstruct
     public void setS3Client() {
@@ -49,6 +51,18 @@ public class S3Service {
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
                 .withRegion(this.region)
                 .build();
+    }
+
+    public List<PutObjectRequest> createPutObjectRequests(List<File> files) {
+        List<PutObjectRequest> requests = new ArrayList<>();
+
+        for (File file : files) {
+            File convertedFile = imageUtil.convertToWebp(file);
+            PutObjectRequest request = createPutObjectRequest(convertedFile);
+            requests.add(request);
+        }
+
+        return requests;
     }
 
     // 이미지 업로드 요청 생성
@@ -63,8 +77,10 @@ public class S3Service {
         metadata.setContentType(CONTENT_TYPE_WEBP);
 
         // PutObjectRequest 생성
-        return new PutObjectRequest(bucketName, createdImageFile.getName(), createdImageFile)
+        PutObjectRequest por = new PutObjectRequest(bucketName, createdImageFile.getName(), createdImageFile)
                 .withCannedAcl(CannedAccessControlList.PublicRead);
+        log.info(">>>>>>>>>>>>>>>>>>>>>>> PutObjectRequest 생성 성공!");
+        return por;
     }
 
     // 한 장의 이미지 삭제 요청 생성
@@ -89,10 +105,13 @@ public class S3Service {
     public String executePutRequest(PutObjectRequest putObjectRequest) {
         try {
             s3Client.putObject(putObjectRequest);
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>>> 이미지 업로드 성공!");
         } catch (SdkClientException e) {
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>>> 이미지 업로드 실패!");
             throw new ImageUploadFailureException("이미지 업로드 실패!", e);
+        } finally {
+            putObjectRequest.getFile().delete();
         }
-        putObjectRequest.getFile().delete();
         return urlPrefix + putObjectRequest.getFile().getName();
     }
 
@@ -100,11 +119,13 @@ public class S3Service {
     public List<String> executePutRequest(List<PutObjectRequest> putObjectRequests) {
         var urls = new ArrayList<String>();
         try {
-            for (var putObjectRequest : putObjectRequests) {
+            for (PutObjectRequest putObjectRequest : putObjectRequests) {
                 s3Client.putObject(putObjectRequest);
                 urls.add(urlPrefix + putObjectRequest.getFile().getName());
             }
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>>> 이미지 업로드 성공!");
         } catch (SdkClientException e) {
+            log.info(">>>>>>>>>>>>>>>>>>>>>>>>>> 이미지 업로드 실패!");
             throw new ImageUploadFailureException("이미지 업로드 실패!", e);
         } finally {
             putObjectRequests.forEach((request) -> request.getFile().delete());
@@ -155,7 +176,7 @@ public class S3Service {
     }
 
     public File getFileFromS3Object(S3Object s3Object) throws IOException {
-        File originalFile = new File(UUID.randomUUID() + ".webp");
+        File originalFile = new File("editted_thumbnail_" + UUID.randomUUID() + ".webp");
         java.nio.file.Files.copy(
                 s3Object.getObjectContent(),
                 originalFile.toPath(),
