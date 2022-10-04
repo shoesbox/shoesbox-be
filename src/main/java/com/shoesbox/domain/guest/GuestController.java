@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping(("/api/members"))
@@ -24,11 +27,15 @@ public class GuestController {
     private String GUEST_EMAIL;
     @Value("1234")
     private String GUEST_PASSWORD;
-    @Value("Friend1@test.com")
-    private String FRIEND;
     @Value("Friend2@test.com")
     private String REQUESTED_FRIEND;
-
+    private final List<String> admins = Arrays.asList(
+            "ipaper491@gmail.com",
+            "parkhj929@kakao.com",
+            "guuto9@gmail.com",
+            "moungbak421@daum.net",
+            "ciy1101@nate.com"
+    );
     private final RedisTemplate<String, String> redisTemplate;
 
     private final GuestService guestService;
@@ -55,11 +62,10 @@ public class GuestController {
                     log.info("<<체험계정>> 생성 : " + signDto.getEmail());
 
                     // 새 게스트 계정의 친구 관계 설정
-                    guestService.makeFriendToGuest(FRIEND, signDto.getEmail(), FriendState.FRIEND);
+                    for (int j = 0; j < admins.size(); j++) {
+                        guestService.makeFriendToGuest(admins.get(j), signDto.getEmail(), FriendState.FRIEND);
+                    }
                     guestService.makeFriendToGuest(REQUESTED_FRIEND, signDto.getEmail(), FriendState.REQUEST);
-
-                    // 친구 계정 중 오늘 날짜의 게시물이 없을 경우 생성
-                    guestService.makeFriendPost(FRIEND);
                 }
 
                 // 등록된 계정이 있을 경우, 반복문 종료 후 로그인 처리
@@ -70,5 +76,4 @@ public class GuestController {
         log.info("<<체험계정>> 로그인 : " + signDto.getEmail());
         return ResponseHandler.ok(memberService.login(signDto));
     }
-
 }
