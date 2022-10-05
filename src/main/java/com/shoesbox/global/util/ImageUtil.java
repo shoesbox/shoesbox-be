@@ -6,9 +6,7 @@ import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.MetadataException;
 import com.drew.metadata.exif.ExifIFD0Directory;
-import com.luciad.imageio.webp.WebPWriteParam;
-import com.shoesbox.domain.photo.exception.ImageConvertFailureException;
-import com.shoesbox.domain.photo.exception.ImageUploadFailureException;
+import com.shoesbox.global.exception.runtime.image.ImageProcessException;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.geometry.Positions;
@@ -49,7 +47,7 @@ public class ImageUtil {
                     .size(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT)
                     .toFile(tempFile);
         } catch (IOException e) {
-            throw new ImageConvertFailureException(e.getLocalizedMessage(), e);
+            throw new ImageProcessException(IMAGE_RESIZE_FAILURE, e.getLocalizedMessage(), e);
         }
         return convertToWebp(tempFile);
     }
@@ -82,36 +80,14 @@ public class ImageUtil {
             log.info(">>>>>>>>>>>>>>>>>>>>>>>>> [File to WebP] 이미지 변환 성공!");
             return createdImage;
         } catch (IOException e) {
-            log.error(">>>>>>>>>>>>>>>>>>>>>>>>> [File to WebP] 이미지 변환 실패!");
-            throw new ImageConvertFailureException(e.getMessage(), e);
+            log.error("failed to convertToWebp(): " + originalFile.getName());
+            throw new ImageProcessException(IMAGE_CONVERT_FAILURE, e.getLocalizedMessage(), e);
         } finally {
-            originalFile.delete();
-        }
-    }
-
-    // 이미지 회전 수정
-    public List<File> correctImageRotation(List<MultipartFile> imageFiles) {
-        List<File> files = new ArrayList<>();
-        for (MultipartFile mFile : imageFiles) {
-            // 확장자 점검
-            checkExtension(Objects.requireNonNull(mFile.getOriginalFilename()).toLowerCase());
-            // 회전 방향 : 1인 경우 정상
-            int orientation = getOrientation(mFile);
-            if (orientation == 0) {
-                throw new ImageConvertFailureException("Image orientation is wrong!");
-            }
-            try (InputStream inputStream = mFile.getInputStream()) {
-                BufferedImage bfRotatedImage = rotateImageForMobile(inputStream, orientation);
-                File rotatedFile = convertMultipartFiletoFile(mFile);
-                Thumbnails.of(bfRotatedImage)
-                        .outputQuality(1f)
-                        .size(bfRotatedImage.getWidth(), bfRotatedImage.getHeight())
-                        .toFile(rotatedFile);
-                files.add(rotatedFile);
+            try {
+                originalFile.getInputStream().close();
             } catch (IOException e) {
-                log.info(">>>>>>>>>>>>>>>>>>>>>>>>>>> Rotation has failed");
-                files.add(convertMultipartFiletoFile(mFile));
-                throw new ImageConvertFailureException("POST SERVICE - IMAGE_ROTATION : " + e);
+                log.error("failed to close InputStream: " + originalFile.getName());
+                throw new ImageProcessException(IMAGE_CONVERT_FAILURE, e.getLocalizedMessage(), e);
             }
         }
         return files;
@@ -137,7 +113,10 @@ public class ImageUtil {
             // 스트림 종료
             bufferedIS.close();
         } catch (IOException | ImageProcessingException | MetadataException e) {
-            throw new ImageConvertFailureException("Thumbnail Orientation : " + e);
+            throw new ImageProcessException(IMAGE_ROTATE_FAILURE, e.getLocalizedMessage(), e);
+        }
+        if (orientation == 0) {
+            throw new ImageProcessException(IMAGE_ROTATE_FAILURE, "Image orientation is 0!");
         }
         return orientation;
     }
@@ -188,14 +167,14 @@ public class ImageUtil {
                 || fileName.endsWith(".jpeg")
                 || fileName.endsWith(".png")
                 || fileName.endsWith(".webp"))) {
-            throw new ImageUploadFailureException("이미지 파일 형식은 bmp, jpg, jpeg, png, webp 중 하나여야 합니다.", null);
+            throw new ImageProcessException(INVALID_IMAGE_FORMAT);
         }
         return fileName.substring(fileName.lastIndexOf("."));
     }
 
     private File convertMultipartFiletoFile(MultipartFile file) {
         if (file == null || file.getOriginalFilename() == null) {
-            throw new ImageConvertFailureException("변환하려는 file이 null입니다.");
+            throw new ImageProcessException(IMAGE_CONVERT_FAILURE, "변환하려는 file이 null입니다.");
         }
         try {
             // 파일 이름
