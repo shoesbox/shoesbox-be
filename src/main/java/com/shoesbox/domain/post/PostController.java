@@ -75,4 +75,11 @@ public class PostController {
     public ResponseEntity<Object> deletePostAdmin(@PathVariable long postId) {
         return ResponseHandler.ok(postService.deletePostAdmin(postId));
     }
+
+    // 모든 글 삭제
+    @DeleteMapping("/admin/all")
+    public ResponseEntity<Object> deleteAllPosts() {
+        long currentMemberId = SecurityUtil.getCurrentMemberId();
+        return ResponseHandler.ok(postService.deleteAllPosts(currentMemberId));
+    }
 }

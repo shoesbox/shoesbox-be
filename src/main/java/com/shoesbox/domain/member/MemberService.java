@@ -10,8 +10,6 @@ import com.shoesbox.domain.member.dto.MemberInfoResponseDto;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
-import com.shoesbox.domain.photo.S3Service;
-import com.shoesbox.domain.photo.exception.ImageDeleteFailureException;
 import com.shoesbox.global.config.jwt.JwtExceptionCode;
 import com.shoesbox.global.config.jwt.JwtProvider;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
@@ -19,6 +17,7 @@ import com.shoesbox.global.exception.runtime.InvalidJwtException;
 import com.shoesbox.global.exception.runtime.RefreshTokenNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import com.shoesbox.global.util.ImageUtil;
+import com.shoesbox.global.util.S3Util;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
@@ -35,8 +34,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-
 //import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
 @Slf4j
@@ -50,7 +47,7 @@ public class MemberService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final JwtProvider jwtProvider;
-    private final S3Service s3Service;
+    private final S3Util s3Util;
     private final RedisService redisService;
     private final RedisTemplate<String, String> redisTemplate;
     private final ImageUtil imageUtil;
@@ -113,29 +110,19 @@ public class MemberService {
         Member member = getMember(currentMemberId);
         String profileImageUrl = member.getProfileImageUrl();
         // 변경할 프로필 이미지가 있으면
-        if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile()
-                .isEmpty()) {
+        if (memberInfoUpdateDto.getImageFile() != null && !memberInfoUpdateDto.getImageFile().isEmpty()) {
             // 기존 이미지 삭제 요청
-            var deleteRequest = s3Service.createDeleteRequest(member.getProfileImageUrl());
-            // multipartfile -> file, 이미지 회전
-            var files = imageUtil.correctImageRotation(Collections.singletonList(memberInfoUpdateDto.getImageFile()));
-            // 새로운 이미지를 WebP로 변환 후 업로드 요청
-            var createdImageFile = imageUtil.convertToWebp(files.get(0));
-            var putRequest = s3Service.createPutObjectRequest(createdImageFile);
-
-            try {
-                // 업로드, 삭제 실행
-                profileImageUrl = s3Service.executePutRequest(putRequest);
-                s3Service.executeDeleteRequest(deleteRequest);
-                // 삭제 중 오류 발생 시
-            } catch (ImageDeleteFailureException e) {
-                // 업로드한 이미지가 있을 경우 삭제
-                if (profileImageUrl != null) {
-                    deleteRequest = s3Service.createDeleteRequest(profileImageUrl);
-                    s3Service.executeDeleteRequest(deleteRequest);
-                }
-                throw new ImageDeleteFailureException(e.getLocalizedMessage(), e);
-            }
+            var deleteRequest = s3Util.createDeleteRequest(member.getProfileImageUrl());
+            // 새로운 이미지를 WebP로 변환
+            var createdImageFile = imageUtil.convertToWebp(memberInfoUpdateDto.getImageFile());
+            // 리사이즈 후 원본 삭제
+            var thumbnail = imageUtil.resizeImage(createdImageFile);
+            createdImageFile.delete();
+            // 업로드 요청
+            var putRequest = s3Util.createPutObjectRequest(thumbnail);
+            // 업로드, 삭제 요청 실행
+            profileImageUrl = s3Util.executePutRequest(putRequest);
+            s3Util.executeDeleteRequest(deleteRequest);
         }
 
         member.updateInfo(memberInfoUpdateDto.getNickname(), profileImageUrl);
@@ -169,8 +156,7 @@ public class MemberService {
         var userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         // 3. (수정) Redis 저장소에서 토큰 가져오는것으로 대체
-        String savedRefreshToken = redisTemplate.opsForValue()
-                .get("RT:" + authentication.getName());
+        String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + authentication.getName());
         if (savedRefreshToken == null) {
             throw new RefreshTokenNotFoundException("로그아웃 된 사용자입니다.");
         }
@@ -203,14 +189,9 @@ public class MemberService {
     @Transactional
     public long resetProfileImage(long currentMemberId) {
         var member = getMember(currentMemberId);
-        var deleteRequest = s3Service.createDeleteRequest(member.getProfileImageUrl());
-        try {
-            s3Service.executeDeleteRequest(deleteRequest);
-            member.updateInfo(member.getNickname(), DEFAULT_PROFILE_IMAGE_URL);
-        } catch (ImageDeleteFailureException e) {
-            throw new ImageDeleteFailureException(e.getLocalizedMessage(), e);
-        }
-
+        var deleteRequest = s3Util.createDeleteRequest(member.getProfileImageUrl());
+        s3Util.executeDeleteRequest(deleteRequest);
+        member.updateInfo(member.getNickname(), DEFAULT_PROFILE_IMAGE_URL);
         return member.getId();
     }
 

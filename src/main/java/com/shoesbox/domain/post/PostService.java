@@ -2,7 +2,6 @@ package com.shoesbox.domain.post;
 
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.shoesbox.domain.friend.Friend;
 import com.shoesbox.domain.friend.FriendRepository;
 import com.shoesbox.domain.friend.FriendState;
@@ -10,9 +9,6 @@ import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.photo.Photo;
 import com.shoesbox.domain.photo.PhotoRepository;
-import com.shoesbox.domain.photo.S3Service;
-import com.shoesbox.domain.photo.exception.ImageConvertFailureException;
-import com.shoesbox.domain.photo.exception.ImageDownloadFailureException;
 import com.shoesbox.domain.post.dto.PostRequestDto;
 import com.shoesbox.domain.post.dto.PostResponseDto;
 import com.shoesbox.domain.post.dto.PostResponseListDto;
@@ -24,6 +20,7 @@ import com.shoesbox.domain.sse.MessageType;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.UnAuthorizedException;
 import com.shoesbox.global.util.ImageUtil;
+import com.shoesbox.global.util.S3Util;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,12 +29,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
 import java.time.temporal.WeekFields;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -52,7 +49,7 @@ public class PostService {
     private final PhotoRepository photoRepository;
     private final FriendRepository friendRepository;
     private final AlarmRepository alarmRepository;
-    private final S3Service s3Service;
+    private final S3Util s3Util;
     private final ImageUtil imageUtil;
     private final TemporalField fieldISO = WeekFields.of(Locale.KOREA).dayOfWeek();
 
@@ -83,21 +80,14 @@ public class PostService {
             thumbnailUrl = DEFAULT_THUMBNAIL_URL;
         } else {
             // 새로운 이미지가 있으면
-            // Multipart File -> File, 사진 회전 수정
-            List<File> files = imageUtil.correctImageRotation(postRequestDto.getImageFiles());
-            // 썸네일용 파일 생성
-            File thumbnailFile = imageUtil.createThumbnail(files.get(0));
-
-            // image 업로드 요청 생성
-            var imagePutRequests = s3Service.createPutObjectRequests(files);
-            // 썸네일 업로드 요청 생성
-            var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
-
-            // 이미지 업로드
-            var imageUrlsUploaded = s3Service.executePutRequest(imagePutRequests);
-            // 썸네일 업로드
-            thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
-
+            // image 업로드 요청 목록 생성
+            var imagePutRequests = postRequestDto.getImageFiles().stream()
+                    .map(imageUtil::convertToWebp)
+                    .map(s3Util::createPutObjectRequest)
+                    .collect(Collectors.toList());
+            thumbnailUrl = createThumnailFromFile(imagePutRequests.get(0).getFile());
+            // 업로드 요청 실행
+            var imageUrlsUploaded = s3Util.executePutRequest(imagePutRequests);
             // photo 생성
             var newPhotos = createNewPhotos(imageUrlsUploaded, post);
             // post에 추가
@@ -174,84 +164,59 @@ public class PostService {
         // 수정 권한이 있는지 검사
         checkSelfAuthorization(currentMemberId, post.getMemberId());
         // 이미지 개수 검사
-        validateImageCount(postUpdateDto.getImageFiles());
-        var imagesToDelete = postUpdateDto.getImagesToDelete();
-        var imagesToUpload = postUpdateDto.getImageFiles();
-        int imagesLeftCount = post.getPhotos().size();
-        int imagesToDeleteCount = (imagesToDelete == null) ? 0 : imagesToDelete.size();
-        int imagesUploadedCount = (imagesToUpload == null) ? 0 : imagesToUpload.size();
-        if (imagesLeftCount - imagesToDeleteCount + imagesUploadedCount > IMAGE_COUNT_LIMIT) {
-            throw new FileCountLimitExceededException("이미지가 " + IMAGE_COUNT_LIMIT + "개를 초과하였습니다.");
-        }
+        List<Long> photoIdsToDelete = postUpdateDto.getImagesToDelete();
+        List<MultipartFile> imagesToUpload = postUpdateDto.getImageFiles();
+        List<Photo> photos = post.getPhotos();
+        validateImageCount(photos, photoIdsToDelete, imagesToUpload);
 
         // 기존 이미지 중 삭제할 게 있는지
         DeleteObjectsRequest deleteRequests = null;
-        boolean hasImagesToDelete = validateImagesToDelete(imagesToDelete);
+        boolean hasImagesToDelete = validateImagesToDelete(photoIdsToDelete);
         if (hasImagesToDelete) {
             // 해당 이미지를 찾아서 삭제 요청 생성
-            var imageUrlsToDelete = getImageUrlsToDelete(post, imagesToDelete);
-            deleteRequests = s3Service.createDeleteRequest(imageUrlsToDelete);
+            var imageUrlsToDelete = deletePhotos(photos, photoIdsToDelete);
+            deleteRequests = s3Util.createDeleteRequest(imageUrlsToDelete);
         }
         // 새로 업로드할 이미지가 있는지
         List<PutObjectRequest> putRequests = new ArrayList<>();
         boolean hasImagesToUpload = validateImageFiles(imagesToUpload);
         if (hasImagesToUpload) {
-            // Multipart File -> File, file 회전 여부 수정
-            List<File> files = imageUtil.correctImageRotation(postUpdateDto.getImageFiles());
             // image 업로드 요청 생성
-            putRequests.addAll(files.stream()
-                    .map(imageUtil::convertToWebp)
-                    .map(s3Service::createPutObjectRequest)
-                    .collect(Collectors.toList()));
+            putRequests.addAll(postUpdateDto.getImageFiles().stream()
+                                       .map(imageUtil::convertToWebp)
+                                       .map(s3Util::createPutObjectRequest)
+                                       .collect(Collectors.toList()));
         }
 
-        String thumbnailUrl = post.getThumbnailUrl();
-        // 1. 삭제할 것만 있을 때
-        if (hasImagesToDelete && !hasImagesToUpload) {
-            // 삭제 요청
-            s3Service.executeDeleteRequest(deleteRequests);
-            // db에서 삭제
-            post.getPhotos().removeIf(
-                    (photo -> imagesToDelete.contains(photo.getId()))
-            );
-            // 썸네일 생성
-            if (post.getPhotos().size() == 0) {
-                thumbnailUrl = DEFAULT_THUMBNAIL_URL;
-            } else {
-                thumbnailUrl = createThumnailFromUrl(post.getPhotos().get(0).getUrl());
-            }
-        } else if (!hasImagesToDelete && hasImagesToUpload) {
-            // 2. 업로드할 것만 있을 때
-            var imageUrlsUploaded = s3Service.executePutRequest(putRequests);
+        // 삭제할 것도, 업로드할 것도 없다면 제목, 본문만 수정
+        if (!hasImagesToDelete && !hasImagesToUpload) {
+            // 수정내역 db 반영
+            post.update(postUpdateDto.getTitle(), postUpdateDto.getContent(), null);
+            return post.getId();
+        }
+
+        if (hasImagesToDelete) {
+            // 삭제 요청 실행
+            s3Util.executeDeleteRequest(deleteRequests);
+        }
+        if (hasImagesToUpload) {
+            // 업로드 요청 실행
+            var imageUrlsUploaded = s3Util.executePutRequest(putRequests);
             // photo 생성
             var newPhotos = createNewPhotos(imageUrlsUploaded, post);
             // post에 추가
-            post.getPhotos().addAll(newPhotos);
-            thumbnailUrl = createThumnailFromUrl(post.getPhotos().get(0).getUrl());
-        } else if (hasImagesToDelete) {
-            // 3. 둘 다 있을 때
-            // 삭제 요청
-            s3Service.executeDeleteRequest(deleteRequests);
-            // post에서 삭제
-            post.getPhotos().removeIf(
-                    (photo -> imagesToDelete.contains(photo.getId()))
-            );
-            // 업로드 요청
-            var imageUrlsUploaded = s3Service.executePutRequest(putRequests);
-            // photo 생성
-            var newPhotos = createNewPhotos(imageUrlsUploaded, post);
-            // post에 추가
-            post.getPhotos().addAll(newPhotos);
-            // 썸네일 생성
-            thumbnailUrl = createThumnailFromUrl(post.getPhotos().get(0).getUrl());
+            photos.addAll(newPhotos);
         }
-
-        // 새 썸네일이 있으면
-        if (!thumbnailUrl.equals(post.getThumbnailUrl())) {
-            // 기존 썸네일 삭제
-            var deleteRequest = s3Service.createDeleteRequest(post.getThumbnailUrl());
-            s3Service.executeDeleteRequest(deleteRequest);
+        // 썸네일 생성
+        String thumbnailUrl;
+        if (photos.size() == 0) {
+            thumbnailUrl = DEFAULT_THUMBNAIL_URL;
+        } else {
+            thumbnailUrl = createThumnailFromUrl(photos.get(0).getUrl());
         }
+        // 기존 썸네일 삭제
+        var deleteRequest = s3Util.createDeleteRequest(post.getThumbnailUrl());
+        s3Util.executeDeleteRequest(deleteRequest);
         // 수정내역 db 반영
         post.update(postUpdateDto.getTitle(), postUpdateDto.getContent(), thumbnailUrl);
         return post.getId();
@@ -278,6 +243,21 @@ public class PostService {
         return postId;
     }
 
+    @Transactional
+    public long deleteAllPosts(long currentMemberId) {
+        Member member = memberRepository.findById(currentMemberId)
+                .orElseThrow(() -> new EntityNotFoundException(Member.class.getPackageName()));
+        member.getPosts().forEach(this::deleteAllPhotosInPost);
+        member.getPosts().clear();
+
+        if (member.getPosts().size() > 0) {
+            log.debug("글 삭제 실패!");
+        } else {
+            log.debug("모든 글을 삭제했습니다!");
+        }
+        return member.getId();
+    }
+
     private Post getPost(long postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException(Post.class.getPackageName()));
@@ -289,7 +269,7 @@ public class PostService {
                 // PostListResponseDto의 배열로 변환한다.
                 .map(this::toPostListResponseDto)
                 .sorted(Comparator.comparing(PostResponseListDto::getCreatedMonth)
-                        .thenComparing(PostResponseListDto::getCreatedDay))
+                                .thenComparing(PostResponseListDto::getCreatedDay))
                 .toArray(PostResponseListDto[]::new);
     }
 
@@ -322,7 +302,7 @@ public class PostService {
     }
 
     private List<Photo> createNewPhotos(List<String> imageUrls, Post post) {
-        var photos = new ArrayList<Photo>();
+        List<Photo> photos = new ArrayList<>();
         for (var url : imageUrls) {
             Photo photo = Photo.builder()
                     .url(url)
@@ -335,12 +315,16 @@ public class PostService {
         return photos;
     }
 
-    private List<String> getImageUrlsToDelete(Post post, List<Long> photoIds) {
-        var imageUrlsToDelete = post.getPhotos().stream()
-                .filter((photo) -> photoIds.contains(photo.getId()))
-                .map(Photo::getUrl)
-                .collect(Collectors.toList());
-        if (imageUrlsToDelete.size() != photoIds.size()) {
+    private List<String> deletePhotos(List<Photo> photos, List<Long> photoIdsToDelete) {
+        List<String> imageUrlsToDelete = new ArrayList<>();
+        Predicate<Photo> predictable = photo -> photoIdsToDelete.contains(photo.getId());
+        // 삭제할 url
+        photos.stream()
+                .filter(predictable)
+                .forEach((photo) -> imageUrlsToDelete.add(photo.getUrl()));
+        // db에서 삭제
+        photos.removeIf(predictable);
+        if (imageUrlsToDelete.size() != photoIdsToDelete.size()) {
             throw new IllegalArgumentException("존재하지 않는 photoId입니다.");
         }
         return imageUrlsToDelete;
@@ -349,46 +333,57 @@ public class PostService {
     private void deleteAllPhotosInPost(Post post) {
         if (post.getPhotos() != null) {
             // s3 버킷에서 기존 이미지 삭제
-            var urls = post.getPhotos().stream()
+            List<String> urls = post.getPhotos().stream()
                     .map((Photo::getUrl))
                     .collect(Collectors.toList());
-            s3Service.executeDeleteRequest(s3Service.createDeleteRequest(urls));
+            s3Util.executeDeleteRequest(s3Util.createDeleteRequest(urls));
             post.getPhotos().clear();
         }
     }
 
-    private String createThumnailFromUrl(String url) {
-        S3Object originalFile;
-        File originalThumbnailFile;
-        File thumbnailFile;
-        try {
-            // url로부터 이미지 파일 다운로드
-            originalFile = s3Service.getObject(url);
-        } catch (IOException e) {
-            throw new ImageDownloadFailureException(e.getLocalizedMessage(), e);
-        }
-        try {
-            // 다운 받은 이미지로부터 썸네일 생성
-            originalThumbnailFile = s3Service.getFileFromS3Object(originalFile);
-            originalFile.close();
-            thumbnailFile = imageUtil.createThumbnail(originalThumbnailFile);
-            thumbnailFile.delete();
-        } catch (IOException e) {
-            throw new ImageConvertFailureException(e.getLocalizedMessage(), e);
-        }
-        // 썸네일 업로드 요청 생성
-        var thumbnailPutRequest = s3Service.createPutObjectRequest(thumbnailFile);
-        // 썸네일 업로드
-        var thumbnailUrl = s3Service.executePutRequest(thumbnailPutRequest);
+    private String createThumnailFromFile(File file) {
+        // 썸네일용 파일 생성 및 업로드 요청 생성
+        File thumbnailFile = imageUtil.resizeImage(file);
+        var thumbnailPutRequest = s3Util.createPutObjectRequest(thumbnailFile);
+        // 이미지 업로드
+        var thumbnailUrl = s3Util.executePutRequest(thumbnailPutRequest);
         // 임시파일 삭제
         thumbnailFile.delete();
         return thumbnailUrl;
     }
 
-    // 첨부 이미지 개수가 제한을 초과하면
+    private String createThumnailFromUrl(String url) {
+        File originalFile;
+        File thumbnailFile;
+        // url로부터 이미지 파일 다운로드
+        originalFile = s3Util.getFileFromUrl(url);
+        // 다운 받은 이미지로부터 썸네일 생성
+        thumbnailFile = imageUtil.resizeImage(originalFile);
+        originalFile.delete();
+        // 썸네일 업로드 요청 생성
+        var thumbnailPutRequest = s3Util.createPutObjectRequest(thumbnailFile);
+        // 썸네일 업로드
+        return s3Util.executePutRequest(thumbnailPutRequest);
+    }
+
+    // 첨부 이미지 개수 체크
     private boolean validateImageCount(List<MultipartFile> imageFiles) {
         if (imageFiles != null && imageFiles.size() > IMAGE_COUNT_LIMIT) {
             throw new FileCountLimitExceededException("이미지가 " + IMAGE_COUNT_LIMIT + "개를 초과하였습니다.");
+        }
+        return true;
+    }
+
+    private boolean validateImageCount(List<Photo> photos, List<Long> imagesToDelete, List<MultipartFile> imagesToUpload) {
+        if (photos != null) {
+            int imagesLeftCount = photos.size();
+            int imagesToDeleteCount = (imagesToDelete == null) ? 0 : imagesToDelete.size();
+            int imagesUploadedCount = (imagesToUpload == null) ? 0 : imagesToUpload.size();
+            if (imagesLeftCount - imagesToDeleteCount + imagesUploadedCount > IMAGE_COUNT_LIMIT) {
+                throw new FileCountLimitExceededException("이미지가 " + IMAGE_COUNT_LIMIT + "개를 초과하였습니다.");
+            }
+        } else {
+            throw new IllegalArgumentException("post.getPhotos()가 null입니다.");
         }
         return true;
     }
@@ -405,7 +400,7 @@ public class PostService {
 
     private LocalDate validatePostRequest(long memberId, PostRequestDto postRequestDto) {
         LocalDate targetDate = LocalDate.of(postRequestDto.getYear(), postRequestDto.getMonth(),
-                postRequestDto.getDay());
+                                            postRequestDto.getDay());
         // 연도 검사
         if (targetDate.getYear() != LocalDate.now().getYear()) {
             throw new IllegalArgumentException("연도를 잘못 입력하였습니다.");
