@@ -3,6 +3,7 @@ package com.shoesbox.global.exception.apierror;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import com.shoesbox.global.exception.runtime.image.ImageProcessException;
 import com.shoesbox.global.util.LowerCaseClassNameResolver;
 import lombok.Builder;
 import lombok.Data;
@@ -49,6 +50,19 @@ public class ApiError {
         }
         this.originalExceptionType = (ex.getCause() != null) ? ex.getCause().getClass().getTypeName() : null;
         this.exceptionType = ex.getClass().getTypeName();
+    }
+
+    @Builder(builderMethodName = "buildImageProcessException")
+    protected ApiError(HttpStatus status, ImageProcessException ex) {
+        this();
+        this.status = status;
+        this.httpStatusCode = status.value();
+        this.message = ex.getExceptionCode().getMessage();
+        if (!message.equals(ex.getLocalizedMessage())) {
+            this.debugMessage = ex.getDebugMessage();
+        }
+        this.originalExceptionType = (ex.getCause() != null) ? ex.getCause().getClass().getTypeName() : null;
+        this.exceptionType = ImageProcessException.class.getTypeName();
     }
 
     private void addSubError(ApiSubError subError) {
