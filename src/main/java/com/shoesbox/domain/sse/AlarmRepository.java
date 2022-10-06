@@ -11,4 +11,6 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     Alarm findBySenderMemberId(long senderMemberId);
 
     List<Alarm> findAllByReceiverMemberId(long receiverMemberId);
+
+    List<Alarm> findAllBySenderMemberIdAndReceiverMemberIdAndMessageType(long senderMemberId, long receiverMemberId, MessageType type);
 }
