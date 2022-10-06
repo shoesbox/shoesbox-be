@@ -46,16 +46,30 @@ public class AlarmService {
     private AlarmResponseDto toAlarmResponseDto(Alarm alarm) {
         // content 형태 : postId or commentId + "," + month + "," + day
         String[] data = alarm.getContent().split(",");
-        return AlarmResponseDto.builder()
-                .alarmId(alarm.getId())
-                .senderMemberId(alarm.getSenderMember().getId())
-                .senderMemberNickname(alarm.getSenderMember().getNickname())
-                .receiverMemberId(alarm.getReceiverMemberId())
-                .messageType(alarm.getMessageType())
-                .postId(Long.parseLong(data[0]))
-                .month(Integer.parseInt(data[1]))
-                .day(Integer.parseInt(data[2]))
-                .build();
+        if (data.length > 1) {
+            return AlarmResponseDto.builder()
+                    .alarmId(alarm.getId())
+                    .senderMemberId(alarm.getSenderMember().getId())
+                    .senderMemberNickname(alarm.getSenderMember().getNickname())
+                    .receiverMemberId(alarm.getReceiverMemberId())
+                    .messageType(alarm.getMessageType())
+                    .postId(Long.parseLong(data[0]))
+                    .month(Integer.parseInt(data[1]))
+                    .day(Integer.parseInt(data[2]))
+                    .build();
+        } else {
+
+            return AlarmResponseDto.builder()
+                    .alarmId(alarm.getId())
+                    .senderMemberId(alarm.getSenderMember().getId())
+                    .senderMemberNickname(alarm.getSenderMember().getNickname())
+                    .receiverMemberId(alarm.getReceiverMemberId())
+                    .messageType(alarm.getMessageType())
+                    .content(data[0])
+                    .build();
+        }
+
+
     }
 
     private Alarm getAlarm(long alarmId) {
