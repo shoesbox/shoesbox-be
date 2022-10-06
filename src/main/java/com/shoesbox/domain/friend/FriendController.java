@@ -58,7 +58,7 @@ public class FriendController {
 
         Friend fromFriend = friendService.findRelationship(fromMemberId, currentMemberId, FriendState.REQUEST);
 
-        return ResponseHandler.ok(friendService.acceptFriendRequest(fromFriend, fromMemberId, currentMemberId));
+        return ResponseHandler.ok(friendService.acceptFriendRequest(fromFriend, currentMemberId, fromMemberId));
     }
 
     // 요청받은 건 거절

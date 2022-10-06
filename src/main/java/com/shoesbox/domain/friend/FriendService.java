@@ -24,12 +24,15 @@ public class FriendService {
     private final MemberRepository memberRepository;
     private final AlarmRepository alarmRepository;
 
-    private void notifyFriendEvent(Member fromMember, long toMemberId, String content) {
-        saveAlarm(fromMember, toMemberId, content);
+    private void notifyFriendEvent(long fromMemberId, long toMemberId, String content) {
+        saveAlarm(fromMemberId, toMemberId, content);
     }
 
     @Transactional
-    public void saveAlarm(Member senderMember, long receiverMemberId, String content) {
+    public void saveAlarm(long senderMemberId, long receiverMemberId, String content) {
+
+        // 알림을 전송하는 주체
+        Member senderMember = Member.builder().id(senderMemberId).build();
 
         Alarm alarm = Alarm.builder()
                 .senderMember(senderMember)
@@ -77,7 +80,7 @@ public class FriendService {
 
         friendRepository.save(friend);
 
-        notifyFriendEvent(fromMember, toMember.getId(), String.valueOf(AlarmType.FriendRequest));
+        notifyFriendEvent(fromMember.getId(), toMember.getId(), String.valueOf(AlarmType.FriendRequest));
 
         return toFriendResponseDto(friend);
     }
@@ -118,7 +121,9 @@ public class FriendService {
     @Transactional
     public FriendResponseDto acceptFriendRequest(Friend fromFriend, long senderId, long receiverId) {
         fromFriend.updateFriendState(FriendState.FRIEND);
-        notifyFriendEvent(fromFriend.getFromMember(), receiverId, String.valueOf(AlarmType.FriendAccept));
+
+        // 알림 저장
+        notifyFriendEvent(senderId, receiverId, String.valueOf(AlarmType.FriendAccept));
         return toFriendResponseDto(fromFriend);
     }
 
