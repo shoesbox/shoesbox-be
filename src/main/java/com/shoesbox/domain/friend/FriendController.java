@@ -58,7 +58,7 @@ public class FriendController {
 
         Friend fromFriend = friendService.findRelationship(fromMemberId, currentMemberId, FriendState.REQUEST);
 
-        return ResponseHandler.ok(friendService.acceptFriendRequest(fromFriend));
+        return ResponseHandler.ok(friendService.acceptFriendRequest(fromFriend, currentMemberId, fromMemberId));
     }
 
     // 요청받은 건 거절
@@ -69,7 +69,7 @@ public class FriendController {
 
         Friend fromFriend = friendService.findRelationship(fromMemberId, currentMemberId, FriendState.REQUEST);
 
-        return ResponseHandler.ok(friendService.deleteFriendRequest(fromFriend));
+        return ResponseHandler.ok(friendService.deleteFriendRequest(fromFriend, fromMemberId, currentMemberId));
     }
 
     // 요청한 건 취소
@@ -80,7 +80,7 @@ public class FriendController {
         guestService.guestCheck(currentMemberId);
 
         Friend toFriend = friendService.findRelationship(currentMemberId, toMemberId, FriendState.REQUEST);
-        return ResponseHandler.ok(friendService.deleteFriendRequest(toFriend));
+        return ResponseHandler.ok(friendService.deleteFriendRequest(toFriend, currentMemberId, toMemberId));
     }
 
     // 친구 삭제

@@ -7,6 +7,8 @@ import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
 import com.shoesbox.domain.sse.Alarm;
 import com.shoesbox.domain.sse.AlarmRepository;
+import com.shoesbox.domain.sse.AlarmType;
+import com.shoesbox.domain.sse.MessageType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,26 @@ public class FriendService {
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
     private final AlarmRepository alarmRepository;
+
+    private void notifyFriendEvent(long fromMemberId, long toMemberId, String content) {
+        saveAlarm(fromMemberId, toMemberId, content);
+    }
+
+    @Transactional
+    public void saveAlarm(long senderMemberId, long receiverMemberId, String content) {
+
+        // 알림을 전송하는 주체
+        Member senderMember = Member.builder().id(senderMemberId).build();
+
+        Alarm alarm = Alarm.builder()
+                .senderMember(senderMember)
+                .receiverMemberId(receiverMemberId)
+                .content(content)
+                .messageType(MessageType.FRIEND)
+                .build();
+
+        alarmRepository.save(alarm);
+    }
 
     @Transactional
     public FriendResponseDto requestFriend(
@@ -57,6 +79,8 @@ public class FriendService {
                 .build();
 
         friendRepository.save(friend);
+
+        notifyFriendEvent(fromMember.getId(), toMember.getId(), String.valueOf(AlarmType.FriendRequest));
 
         return toFriendResponseDto(friend);
     }
@@ -95,14 +119,21 @@ public class FriendService {
 
     // 친구 수락
     @Transactional
-    public FriendResponseDto acceptFriendRequest(Friend fromFriend) {
+    public FriendResponseDto acceptFriendRequest(Friend fromFriend, long senderId, long receiverId) {
         fromFriend.updateFriendState(FriendState.FRIEND);
+
+        // 알림 저장
+        notifyFriendEvent(senderId, receiverId, String.valueOf(AlarmType.FriendAccept));
         return toFriendResponseDto(fromFriend);
     }
 
     // 친구 거절
-    public FriendResponseDto deleteFriendRequest(Friend fromFriend) {
+    public FriendResponseDto deleteFriendRequest(Friend fromFriend, long senderId, long receiverId) {
         friendRepository.delete(fromFriend);
+
+        // 알림 삭제
+        List<Alarm> alarms = alarmRepository.findAllBySenderMemberIdAndReceiverMemberIdAndMessageType(senderId, receiverId, MessageType.FRIEND);
+        alarmRepository.deleteAll(alarms);
         return toFriendResponseDto(fromFriend);
     }
 

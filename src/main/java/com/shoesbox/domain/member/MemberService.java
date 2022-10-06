@@ -10,6 +10,8 @@ import com.shoesbox.domain.member.dto.MemberInfoResponseDto;
 import com.shoesbox.domain.member.dto.MemberInfoUpdateDto;
 import com.shoesbox.domain.member.dto.SignDto;
 import com.shoesbox.domain.member.exception.DuplicateUserInfoException;
+import com.shoesbox.domain.sse.Alarm;
+import com.shoesbox.domain.sse.AlarmRepository;
 import com.shoesbox.global.config.jwt.JwtExceptionCode;
 import com.shoesbox.global.config.jwt.JwtProvider;
 import com.shoesbox.global.exception.runtime.EntityNotFoundException;
@@ -34,6 +36,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 //import static com.shoesbox.domain.sse.SseController.sseEmitters;
 
 @Slf4j
@@ -51,6 +55,7 @@ public class MemberService {
     private final RedisService redisService;
     private final RedisTemplate<String, String> redisTemplate;
     private final ImageUtil imageUtil;
+    private final AlarmRepository alarmRepository;
 
     @Transactional
     public String signUp(SignDto signDto) {
@@ -82,7 +87,7 @@ public class MemberService {
         // RefreshToken 저장
         String refreshToken = tokenResponseDto.getRefreshToken();
         redisService.setDataWithExpiration("RT:" + authentication.getName(), refreshToken,
-                                           tokenResponseDto.getRefreshTokenLifetimeInMs());
+                tokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return tokenResponseDto;
@@ -171,8 +176,8 @@ public class MemberService {
 
         // 6. db의 리프레쉬 토큰 정보 업데이트 -> Redis에 Refresh 업데이트
         redisService.setDataWithExpiration("RT:" + authentication.getName(),
-                                           refreshedTokenResponseDto.getRefreshToken(),
-                                           refreshedTokenResponseDto.getRefreshTokenLifetimeInMs());
+                refreshedTokenResponseDto.getRefreshToken(),
+                refreshedTokenResponseDto.getRefreshTokenLifetimeInMs());
 
         // 토큰 발급
         return refreshedTokenResponseDto;
@@ -200,6 +205,11 @@ public class MemberService {
         var member = getMember(targetId);
         memberRepository.delete(member);
         redisTemplate.delete("RT:" + member.getEmail());
+
+        // 받은 모든 알림 삭제
+        List<Alarm> alarms = alarmRepository.findAllByReceiverMemberId(targetId);
+        alarmRepository.deleteAll(alarms);
+
         return targetId;
     }
 

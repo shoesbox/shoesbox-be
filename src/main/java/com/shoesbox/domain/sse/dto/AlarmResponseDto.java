@@ -19,4 +19,6 @@ public class AlarmResponseDto {
     long postId; // post or comment or friend
     int month;
     int day;
+
+    String content;
 }
