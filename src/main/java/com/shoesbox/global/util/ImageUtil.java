@@ -78,19 +78,18 @@ public class ImageUtil {
 
     private int getOrientation(InputStream inputStream) {
         // 사진 방향 : 1~6, 1이 정상
-        int orientation;
+        int orientation = 1;
         try {
             // 메타데이터
             Metadata metadata = ImageMetadataReader.readMetadata(inputStream);
             // orientatino 가져오기
             Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
-            orientation = directory == null ? 1 : directory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
+            if (directory != null && directory.containsTag(ExifIFD0Directory.TAG_ORIENTATION)) {
+                orientation = directory.getInt(ExifIFD0Directory.TAG_ORIENTATION);
+            }
             inputStream.close();
         } catch (IOException | ImageProcessingException | MetadataException e) {
             throw new ImageProcessException(IMAGE_ROTATE_FAILURE, e.getLocalizedMessage(), e);
-        }
-        if (orientation == 0) {
-            throw new ImageProcessException(IMAGE_ROTATE_FAILURE, "Image orientation is 0!");
         }
         return orientation;
     }
