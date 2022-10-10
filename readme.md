@@ -1,5 +1,7 @@
 # ShoesBox Back-End
 
+[서비스 소개 readme 링크](https://github.com/shoesbox)
+
 ## 목차
 
 [1. 기술 스택](#1-기술-스택)
@@ -20,14 +22,14 @@
 
 * Java 11
 * Spring Boot
-* NginX
-* Redis
 * AWS
-  * EC2 (Ubuntu)
+  * EC2
   * S3
   * RDS (MySQL)
 * JWT
 * Thumbnailator (WebP)
+* NginX
+* Redis
 
 ---
 
