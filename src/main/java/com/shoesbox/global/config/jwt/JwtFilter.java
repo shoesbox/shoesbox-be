@@ -19,6 +19,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.shoesbox.global.config.jwt.JwtExceptionCode.*;
+
 @Slf4j
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -52,29 +54,29 @@ public class JwtFilter extends OncePerRequestFilter {
                 // SecurityContext에 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 log.info("사용자 email: {} 인증되었습니다.",
-                        authentication.getName());
+                         authentication.getName());
                 log.info("URI: {}", requestURI);
             }
         } catch (SecurityException | MalformedJwtException e) {
-            log.debug(Arrays.toString(e.getStackTrace()));
-            servletRequest.setAttribute("exception", JwtExceptionCode.INVALID_SIGNATURE_TOKEN.getCode());
+            log.debug(INVALID_SIGNATURE_TOKEN.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
+            servletRequest.setAttribute("exception", INVALID_SIGNATURE_TOKEN.getCode());
         } catch (ExpiredJwtException e) {
-            log.debug(Arrays.toString(e.getStackTrace()));
-            servletRequest.setAttribute("exception", JwtExceptionCode.EXPIRED_TOKEN.getCode());
+            log.debug(EXPIRED_TOKEN.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
+            servletRequest.setAttribute("exception", EXPIRED_TOKEN.getCode());
         } catch (UnsupportedJwtException e) {
-            log.debug(Arrays.toString(e.getStackTrace()));
-            servletRequest.setAttribute("exception", JwtExceptionCode.UNSUPPORTED_TOKEN.getCode());
+            log.debug(UNSUPPORTED_TOKEN.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
+            servletRequest.setAttribute("exception", UNSUPPORTED_TOKEN.getCode());
         } catch (IllegalArgumentException e) {
-            log.debug(Arrays.toString(e.getStackTrace()));
+            log.debug(WRONG_TOKEN.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.WRONG_TOKEN.getCode());
         } catch (InvalidJwtException e) {
-            log.debug(Arrays.toString(e.getStackTrace()));
+            log.debug(LOGGED_OUT_TOKEN.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.LOGGED_OUT_TOKEN.getCode());
         } catch (InvalidKeyException e) {
-            log.debug(Arrays.toString(e.getStackTrace()));
+            log.debug(INVALID_AUTHORITIES_TOKEN.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.INVALID_AUTHORITIES_TOKEN.getCode());
         } catch (Exception e) {
-            log.debug("나야 나 \n" + Arrays.toString(e.getStackTrace()));
+            log.debug(UNKNOWN_ERROR.getMessage() + "\n" + Arrays.toString(e.getStackTrace()));
             servletRequest.setAttribute("exception", JwtExceptionCode.UNKNOWN_ERROR.getCode());
         }
 
@@ -88,11 +90,12 @@ public class JwtFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
 //            log.info("일반 요청");
             return bearerToken.substring(7);
-        } else if (!StringUtils.hasText(bearerToken) && request.getQueryString() != null) {
-            log.info("SSE Subscribe 요청");
-            bearerToken = request.getQueryString().substring(4);
-            return bearerToken;
         }
+//        else if (!StringUtils.hasText(bearerToken) && request.getQueryString() != null) {
+//            log.info("SSE Subscribe 요청");
+//            bearerToken = request.getQueryString().substring(4);
+//            return bearerToken;
+//        }
 
         return null;
     }

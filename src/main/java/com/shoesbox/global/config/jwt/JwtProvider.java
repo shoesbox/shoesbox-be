@@ -4,6 +4,7 @@ import com.shoesbox.domain.auth.CustomUserDetails;
 import com.shoesbox.domain.auth.dto.TokenResponseDto;
 import com.shoesbox.domain.member.Member;
 import com.shoesbox.domain.member.MemberRepository;
+import com.shoesbox.global.exception.runtime.EntityNotFoundException;
 import com.shoesbox.global.exception.runtime.InvalidJwtException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -19,7 +20,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -117,18 +117,18 @@ public class JwtProvider {
         long memberId = Long.parseLong((String) claims.get(USER_ID));
         // 존재하는 회원인지 확인
         Member member = memberRepository.findById(memberId).orElseThrow(
-                () -> new UsernameNotFoundException("memberId: " + memberId + "는 존재하지 않습니다."));
+                () -> new EntityNotFoundException(Member.class.getPackageName()));
 
         String savedRefreshToken = redisTemplate.opsForValue().get("RT:" + member.getEmail());
 
         // db에서 리프레쉬 토큰이 존재하는지(로그인 여부) 확인
         if (savedRefreshToken == null) {
-            throw new InvalidJwtException("로그아웃한 유저입니다.");
+            throw new InvalidJwtException("리프레쉬 토큰이 없습니다. 로그아웃한 유저입니다.");
         }
 
         // 클레임에서 권한 정보 가져오기
         if (claims.get(AUTHORITIES_KEY) == null) {
-            throw new InvalidKeyException("권한 정보가 없는 토큰입니다.");
+            throw new InvalidKeyException("잘못된 토큰: 권한 정보가 없음.");
         }
         Collection<? extends GrantedAuthority> authorities =
                 Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))

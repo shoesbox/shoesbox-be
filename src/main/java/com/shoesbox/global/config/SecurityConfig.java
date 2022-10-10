@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -36,13 +35,13 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        // 로그인 없이 h2 콘솔, 파비콘 사용 허가
-        return (web) -> web.ignoring().antMatchers("/h2-console/**"
-                , "/favicon.ico"
-                , "/error");
-    }
+//    @Bean
+//    public WebSecurityCustomizer webSecurityCustomizer() {
+//        // 로그인 없이 h2 콘솔, 파비콘 사용 허가
+//        return (web) -> web.ignoring().antMatchers("/h2-console/**"
+//                , "/favicon.ico"
+//                , "/error");
+//    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -84,9 +83,10 @@ public class SecurityConfig {
                 .and()
                 .authorizeRequests()
 
-                .antMatchers("/").permitAll()
-                .antMatchers("/api/members/auth/**").permitAll()
+//                .antMatchers("/h2-console/**").permitAll()
+                .antMatchers("/favicon.ico", "/error").permitAll()
                 .antMatchers("/login").permitAll()
+                .antMatchers("/api/members/auth/**").permitAll()
                 .antMatchers("/oauth2/authorization/**").permitAll()
 
                 // 나머지는 전부 인증 필요
