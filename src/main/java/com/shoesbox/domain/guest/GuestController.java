@@ -31,7 +31,7 @@ public class GuestController {
     private String REQUESTED_FRIEND;
     private final List<String> admins = Arrays.asList(
             "ipaper491@gmail.com",
-            "parkhj929@kakao.com",
+            "parkhj929@daum.net",
             "guuto9@gmail.com",
             "moungbak421@daum.net",
             "ciy1101@nate.com"
